@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -109,7 +125,7 @@ class PluginArtefactInternal extends PluginArtefact {
         return array(
             'content/profile' => array(
                 'path' => 'content/profile',
-                'url' => 'artefact/internal/index.php',
+                'url' => 'artefact/internal/',
                 'title' => get_string('profile', 'artefact.internal'),
                 'weight' => 10,
             ),
@@ -278,113 +294,6 @@ class PluginArtefactInternal extends PluginArtefact {
         );
 
         return $bi;
-    }
-
-    public static function progressbar_additional_items() {
-        return array(
-                (object)array(
-                    'name' => 'messaging',
-                    'title' => get_string('progressbaritem_messaging', 'artefact.internal'),
-                    'plugin' => 'internal',
-                    'active' => true,
-                    'iscountable' => false,
-                    'is_metaartefact' => true,
-                ),
-                (object)array(
-                    'name' => 'joingroup',
-                    'title' => get_string('progressbaritem_joingroup', 'artefact.internal'),
-                    'plugin' => 'internal',
-                    'active' => true,
-                    'iscountable' => true,
-                    'is_metaartefact' => true,
-                ),
-                (object)array(
-                    'name' => 'makefriend',
-                    'title' => get_string('progressbaritem_makefriend', 'artefact.internal'),
-                    'plugin' => 'internal',
-                    'active' => true,
-                    'iscountable' => true,
-                    'is_metaartefact' => true,
-                )
-        );
-    }
-
-    public static function progressbar_metaartefact_count($name) {
-        global $USER;
-
-        $meta = new StdClass();
-        $meta->artefacttype = $name;
-        $meta->completed = 0;
-        switch ($name) {
-            case 'messaging':
-                // Add messaging group data and
-                // use user's entered values of individual messaging artefacts
-                $sql = "SELECT COUNT(*) AS completed FROM {artefact}
-                       WHERE owner = ? AND artefacttype IN
-                         ('aimscreenname', 'icqnumber', 'jabberusername',
-                          'msnnumber', 'skypeusername', 'yahoochat')";
-                $count = get_records_sql_array($sql, array($USER->get('id')));
-                $meta->completed = $count[0]->completed;
-                break;
-            case 'joingroup':
-                $sql = "SELECT COUNT(*) AS completed
-                         FROM {group_member}
-                       WHERE member = ?";
-                $count = get_records_sql_array($sql, array($USER->get('id')));
-                $meta->completed = $count[0]->completed;
-                break;
-            case 'makefriend':
-                $sql = "SELECT COUNT(*) AS completed
-                         FROM {usr_friend}
-                       WHERE usr1 = ?";
-                $count = get_records_sql_array($sql, array($USER->get('id')));
-                $meta->completed = $count[0]->completed;
-                break;
-            default:
-                return false;
-        }
-        return $meta;
-    }
-
-    public static function progressbar_link($artefacttype) {
-        switch ($artefacttype) {
-            case 'firstname':
-            case 'lastname':
-            case 'studentid':
-            case 'preferredname':
-            case 'introduction':
-                return 'artefact/internal/index.php';
-                break;
-            case 'email':
-            case 'officialwebsite':
-            case 'personalwebsite':
-            case 'blogaddress':
-            case 'address':
-            case 'town':
-            case 'city':
-            case 'country':
-            case 'homenumber':
-            case 'businessnumber':
-            case 'mobilenumber':
-            case 'faxnumber':
-                return 'artefact/internal/index.php?fs=contact';
-                break;
-            case 'messaging':
-                return 'artefact/internal/index.php?fs=messaging';
-                break;
-            case 'occupation':
-            case 'industry':
-                return 'artefact/internal/index.php?fs=general';
-                break;
-            case 'joingroup':
-                return 'group/find.php';
-                break;
-            case 'makefriend':
-                return 'user/find.php';
-                break;
-            default:
-                return 'view/index.php';
-        }
     }
 }
 
@@ -612,7 +521,7 @@ class ArtefactTypeProfile extends ArtefactType {
         $wwwroot = get_config('wwwroot');
 
         return array(
-            '_default' => $wwwroot . 'artefact/internal/index.php',
+            '_default' => $wwwroot . 'artefact/internal/',
         );
     }
 
@@ -633,26 +542,19 @@ class ArtefactTypeProfileField extends ArtefactTypeProfile {
     public function render_self($options) {
         return array('html' => hsc($this->title), 'javascript' => null);
     }
-
-    /**
-     * Render the import entry request for profile fields
-     */
-    public static function render_import_entry_request($entry_content) {
-        return clean_html($entry_content['title']);
-    }
 }
 
 class ArtefactTypeCachedProfileField extends ArtefactTypeProfileField {
-
+    
     public function commit() {
         global $USER;
         parent::commit();
-        $field = $this->get_artefact_type();
         if (!$this->deleted) {
+            $field = $this->get_artefact_type();
             set_field('usr', $field, $this->title, 'id', $this->owner);
-        }
-        if ($this->owner == $USER->get('id')) {
-            $USER->{$field} = $this->title;
+            if ($this->owner == $USER->get('id')) {
+                $USER->{$field} = $this->title;
+            }
         }
     }
 
@@ -669,10 +571,6 @@ class ArtefactTypeFirstname extends ArtefactTypeCachedProfileField {}
 class ArtefactTypeLastname extends ArtefactTypeCachedProfileField {}
 class ArtefactTypePreferredname extends ArtefactTypeCachedProfileField {}
 class ArtefactTypeEmail extends ArtefactTypeProfileField {
-    public static function is_singular() {
-        return false;
-    }
-
     public function commit() {
 
         parent::commit();
@@ -741,10 +639,6 @@ class ArtefactTypeEmail extends ArtefactTypeProfileField {
         }
         return array('html' => $html, 'javascript' => null);
     }
-
-    static public function is_allowed_in_progressbar() {
-        return false;
-    }
 }
 
 class ArtefactTypeStudentid extends ArtefactTypeCachedProfileField {}
@@ -789,71 +683,24 @@ class ArtefactTypeCountry extends ArtefactTypeProfileField {
           $countries = getoptions_country();
           return array('html' => $countries[$this->title], 'javascript' => null);
     }
-    /**
-     * Render the import entry request for country fields
-     */
-    public static function render_import_entry_request($entry_content) {
-        $countries = getoptions_country();
-        return (isset($countries[$entry_content['title']]) ? $countries[$entry_content['title']] : '');
-    }
 }
 class ArtefactTypeHomenumber extends ArtefactTypeProfileField {}
 class ArtefactTypeBusinessnumber extends ArtefactTypeProfileField {}
 class ArtefactTypeMobilenumber extends ArtefactTypeProfileField {}
 class ArtefactTypeFaxnumber extends ArtefactTypeProfileField {}
-class ArtefactTypeIcqnumber extends ArtefactTypeProfileField {
-
-    public static function is_allowed_in_progressbar() {
-        return false;
-    }
-}
-class ArtefactTypeMsnnumber extends ArtefactTypeProfileField {
-
-    public static function is_allowed_in_progressbar() {
-        return false;
-    }
-}
-class ArtefactTypeAimscreenname extends ArtefactTypeProfileField {
-
-    public static function is_allowed_in_progressbar() {
-        return false;
-    }
-}
-class ArtefactTypeYahoochat extends ArtefactTypeProfileField {
-
-    public static function is_allowed_in_progressbar() {
-        return false;
-    }
-}
-class ArtefactTypeSkypeusername extends ArtefactTypeProfileField {
-
-    public static function is_allowed_in_progressbar() {
-        return false;
-    }
-}
-class ArtefactTypeJabberusername extends ArtefactTypeProfileField {
-
-    public static function is_allowed_in_progressbar() {
-        return false;
-    }
-}
+class ArtefactTypeIcqnumber extends ArtefactTypeProfileField {}
+class ArtefactTypeMsnnumber extends ArtefactTypeProfileField {}
+class ArtefactTypeAimscreenname extends ArtefactTypeProfileField {}
+class ArtefactTypeYahoochat extends ArtefactTypeProfileField {}
+class ArtefactTypeSkypeusername extends ArtefactTypeProfileField {}
+class ArtefactTypeJabberusername extends ArtefactTypeProfileField {}
 class ArtefactTypeOccupation extends ArtefactTypeProfileField {}
 class ArtefactTypeIndustry extends ArtefactTypeProfileField {}
 
 /* Artefact type for generic html fragments */
 class ArtefactTypeHtml extends ArtefactType {
-
-    public function describe_size() {
-        return $this->count_attachments() . ' ' . get_string('attachments', 'artefact.blog');
-    }
-
-    public function can_have_attachments() {
-        return true;
-    }
-
     public static function get_icon($options=null) {
-        global $THEME;
-        return $THEME->get_url('images/note.png', false, 'artefact/internal');
+
     }
 
     public static function is_singular() {
@@ -861,46 +708,5 @@ class ArtefactTypeHtml extends ArtefactType {
     }
 
     public static function get_links($id) {
-        return array(
-            '_default' => get_config('wwwroot') . 'artefact/internal/editnote.php?id=' . $id,
-        );
-    }
-
-    public function render_self($options) {
-        $smarty = smarty_core();
-        $smarty->assign('title', $this->get('title'));
-        $smarty->assign('owner', $this->get('owner'));
-        $smarty->assign('tags', $this->get('tags'));
-        $smarty->assign('description', $this->get('description'));
-        if (!empty($options['details']) and get_config('licensemetadata')) {
-            $smarty->assign('license', render_license($this));
-        }
-        else {
-            $smarty->assign('license', false);
-        }
-        $attachments = $this->get_attachments();
-        if ($attachments) {
-            $this->add_to_render_path($options);
-            require_once(get_config('docroot') . 'artefact/lib.php');
-            foreach ($attachments as &$attachment) {
-                $f = artefact_instance_from_id($attachment->id);
-                $attachment->size = $f->describe_size();
-                $attachment->iconpath = $f->get_icon(array('id' => $attachment->id, 'viewid' => isset($options['viewid']) ? $options['viewid'] : 0));
-                $attachment->viewpath = get_config('wwwroot') . 'view/artefact.php?artefact=' . $attachment->id . '&view=' . (isset($options['viewid']) ? $options['viewid'] : 0);
-                $attachment->downloadpath = get_config('wwwroot') . 'artefact/file/download.php?file=' . $attachment->id;
-                if (isset($options['viewid'])) {
-                    $attachment->downloadpath .= '&view=' . $options['viewid'];
-                }
-            }
-            $smarty->assign('attachments', $attachments);
-        }
-        return array(
-            'html' => $smarty->fetch('artefact.tpl'),
-            'javascript'=>''
-        );
-    }
-
-    public static function is_allowed_in_progressbar() {
-        return false;
     }
 }

@@ -1,16 +1,7 @@
 <?php
-/**
- *
- * @package    mahara
- * @subpackage blocktype-myviews
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- *
- */
 
 defined('INTERNAL') || die();
 
-$string['title'] = 'My pages';
-$string['otherusertitle'] = "%s's pages";
-$string['description'] = 'Display all your pages that are visible to the person viewing your profile';
+$string['description'] = 'Показать все ваши виды, которые могут просматривать другие пользователи';
+$string['otherusertitle'] = 'Виды %s';
+$string['title'] = 'Мои виды';

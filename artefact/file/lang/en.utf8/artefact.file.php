@@ -1,337 +1,188 @@
 <?php
-/**
- *
- * @package    mahara
- * @subpackage lang
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- *
- */
 
 defined('INTERNAL') || die();
 
-$string['pluginname'] = 'Files';
-
-$string['sitefilesloaded'] = 'Site files loaded';
-$string['addafile'] = 'Add a file';
-$string['archive'] = 'Archive';
-$string['bytes'] = 'bytes';
-$string['cannotviewfolder'] = 'You do not have permission to view the content of this folder.';
-$string['cannoteditfolder'] = 'You do not have permission to add content to this folder.';
-$string['cannoteditfoldersubmitted'] = 'You cannot add content to a folder in a submitted page.';
-$string['cannotremovefromsubmittedfolder'] = 'You cannot remove content from a folder in a submitted page.';
-$string['cannotextractfilesubmitted'] = 'You cannot extract a file in a submitted page.';
-$string['cannotextractfileinfoldersubmitted'] = 'You cannot extract a file in a folder in a submitted page.';
-$string['changessaved'] = 'Changes saved';
-$string['clickanddragtomovefile'] = 'Move %s by clicking and dragging or by pressing the space bar';
-$string['moveto'] = 'Move to %s';
-$string['editfolderspecific'] = 'Edit folder "%s"';
-$string['deletefolderspecific'] = 'Delete folder "%s"';
-$string['foldercontents'] = 'Folder contents';
-$string['copyrightnotice'] = 'Copyright notice';
-$string['create'] = 'Create';
-$string['Created'] = 'Created';
-$string['createfolder'] = 'Create folder';
-$string['confirmdeletefile'] = 'Are you sure you want to delete this file?';
-$string['confirmdeletefolder'] = 'Are you sure you want to delete this folder?';
-$string['confirmdeletefolderandcontents'] = 'Are you sure you want to delete this folder and its content?';
-$string['customagreement'] = 'Custom agreement';
-$string['Date'] = 'Date';
-$string['resizeonupload'] = 'Resize images on upload';
-$string['resizeonuploaddescription'] = 'Automatically resize large images on upload';
-$string['resizeonuploaduseroption1'] = 'User option';
-$string['resizeonuploaduseroptiondescription1'] = 'If checked, show users the option to enable or disable automatic resizing of large images when uploading.';
-$string['resizeonuploadenable1'] = 'Resize large images automatically';
-$string['resizeonuploadenablefilebrowser1'] = 'Automatic resizing of images larger than %sx%s px (recommended)';
-$string['resizeonuploadmaxwidth'] = 'Maximum width';
-$string['resizeonuploadmaxheight'] = 'Maximum height';
-$string['resizeonuploadenabledescription1'] = 'If checked, large images will be resized on upload if they exceed the maximum width and height settings.';
-$string['defaultagreement'] = 'Default agreement';
-$string['defaultquota'] = 'Default quota';
-$string['defaultquotadescription'] = 'You can set the amount of disk space that new users will have as their quota here.';
-$string['updateuserquotas'] = 'Update user quotas';
-$string['updateuserquotasdesc'] = 'If checked, the default quota you choose above will be applied to all existing users.';
-$string['institutionoverride'] = 'Institution quota';
-$string['institutionoverridedescription'] = 'You can allow institution administrators to set user file quotas and have default quotas for each institution.';
-$string['maxquotaenabled'] = 'Enforce a sitewide maximum quota';
-$string['maxquota'] = 'Maximum quota';
-$string['maxquotatoolow'] = 'The maximum quota cannot be lower than the default quota.';
-$string['maxquotaexceeded'] = 'You specified a quota above the maximum available setting for this site (%s). Try specifying a lower value or contact the site administrators to have them increase the maximum quota.';
-$string['maxquotaexceededform'] = 'Please specify a file quota of less than %s.';
-$string['maxquotadescription'] = 'You can set the maximum quota that an administrator can give to a user. Existing user quotas will not be affected.';
-$string['defaultgroupquota'] = 'Default group quota';
-$string['defaultgroupquotadescription'] = 'You can set the amount of disk space that new groups can use in their files area.';
-$string['updategroupquotas'] = 'Update group quotas';
-$string['updategroupquotasdesc'] = 'If checked, the default quota you choose above will be applied to all existing groups.';
-$string['deletingfailed'] =  'Deleting failed: the file or folder does not exist any more';
-$string['deletefile?'] = 'Are you sure you want to delete this file?';
-$string['deletefolder?'] = 'Are you sure you want to delete this folder?';
-$string['Description'] = 'Description';
-$string['destination'] = 'Destination';
-$string['Details'] = 'Details';
-$string['View'] = 'View';
-$string['Download'] = 'Download';
-$string['downloadfile'] = 'Download %s';
-$string['downloadoriginalversion'] = 'Download the original version';
-$string['dragdrophere'] = 'Drop files here to upload';
-$string['editfile'] = 'Edit file';
-$string['editfolder'] = 'Edit folder';
-$string['editingfailed'] = 'Editing failed: file or folder does not exist any more';
-$string['emptyfolder'] = 'Empty folder';
-$string['file'] = 'File'; // Capitalised to be consistent with names of all the other artefact types
-$string['File'] = 'File';
-$string['fileadded'] = 'File selected';
-$string['filealreadyindestination'] = 'The file you moved is already in that folder';
-$string['fileappearsinviews'] = 'This file appears in one or more of your pages.';
-$string['fileattachedtoportfolioitems'] = array(
-    0 => 'This file is attached to %s other item in your portfolio.',
-    1 => 'This file is attached to %s other items in your portfolio.',
-);
-$string['fileappearsinskins'] = 'This file is used as a background image in one or more of your skins.';
-$string['profileiconattachedtoportfolioitems'] = 'This profile picture is attached to other items in your portfolio.';
-$string['profileiconappearsinviews'] = 'This profile picture appears in one or more of your pages.';
-$string['profileiconappearsinskins'] = 'This profile picture is used as a background image in one or more of your skins.';
-$string['fileremoved'] = 'File removed';
-$string['files'] = 'files';
-$string['Files'] = 'Files';
-$string['fileexists'] = 'File exists';
-$string['fileexistsoverwritecancel'] =  'A file with that name already exists. You can try a different name or overwrite the existing file.';
-$string['filelistloaded'] = 'File list loaded';
-$string['filemoved'] = 'File moved successfully';
-$string['filenamefieldisrequired'] = 'The file field is required.';
-$string['filenamefieldisrequired1'] = 'The file / folder name is required.';
-$string['fileinstructions'] = 'Upload your images, documents or other files for inclusion in pages. You can select multiple files to upload them at once. Drag and drop the icons to move files between folders.';
-$string['filethingdeleted'] = '%s deleted';
-$string['filewithnameexists'] = 'A file or folder with the name "%s" already exists.';
-$string['folder'] = 'Folder';
-$string['Folder'] = 'Folder';
-$string['folderappearsinviews'] = 'This folder appears in one or more of your pages.';
-$string['Folders'] = 'Folders';
-$string['foldernotempty'] = 'This folder is not empty.';
-$string['foldercontainsprofileicons'] = array(
-        0 => 'The folder contains %s profile picture.',
-        1 => 'The folder contains %s profile pictures.',
-);
-$string['foldercreated'] = 'Folder created';
-$string['foldernamerequired'] = 'Please provide a name for the new folder.';
-$string['gotofolder'] = 'Go to %s';
-$string['groupfiles'] = 'Group files';
-$string['home'] = 'Home';
-$string['htmlremovedmessage'] = 'You are viewing <strong>%s</strong> by <a href="%s">%s</a>. The file displayed below has been filtered to remove malicious content and is only a rough representation of the original.';
-$string['htmlremovedmessagenoowner'] = 'You are viewing <strong>%s</strong>. The file displayed below has been filtered to remove malicious content and is only a rough representation of the original.';
-$string['image'] = 'Image';
-$string['Images'] = 'Images';
-$string['imagesdir'] = 'images';
-$string['imagesdirdesc'] = 'Image files';
-$string['lastmodified'] = 'Last modified';
-$string['myfiles'] = 'My files';
-$string['Name'] = 'Name';
-$string['namefieldisrequired'] = 'The name field is required';
-$string['maxuploadsize'] = 'Maximum upload size';
-$string['movefaileddestinationinartefact'] = 'You cannot put a folder inside itself.';
-$string['movefaileddestinationnotfolder'] = 'You can only move files into folders.';
-$string['movefailednotfileartefact'] = 'Only file, folder and image artefacts can be moved.';
-$string['movefailednotowner'] = 'You do not have the permission to move the file into this folder.';
-$string['movefailed'] = 'Move failed.';
-$string['movingfailed'] = 'Moving failed: file or folder does not exist any more.';
-$string['nametoolong'] = 'That name is too long. Please choose a shorter one.';
-$string['nofilesfound'] = 'No files found';
-$string['notpublishable'] = 'You do not have the permission to publish this file.';
-$string['overwrite'] = 'Overwrite';
-$string['Owner'] = 'Owner';
-$string['parentfolder'] = 'Parent folder';
-$string['phpzipneeded'] = 'The PHP zip extension is needed to be able to use this functionality';
-$string['Preview'] = 'Preview';
-$string['requireagreement'] = 'Require agreement';
-$string['removingfailed'] = 'Removing failed: file or folder does not exist any more.';
-$string['savechanges'] = 'Save changes';
-$string['selectafile'] = 'Select a file';
-$string['selectingfailed'] = 'Selecting failed: file or folder does not exist any more.';
-$string['Size'] = 'Size';
-$string['License'] = 'License';
-$string['spaceused'] = 'Space used';
-$string['timeouterror'] = 'File upload failed: try uploading the file again.';
-$string['title'] = 'Name';
-$string['titlefieldisrequired'] = 'The name field is required.';
-$string['Type'] = 'Type';
-$string['upload'] = 'Upload';
-$string['uploadagreement'] = 'Upload agreement';
-$string['uploadagreementdescription'] = 'Enable this option if you would like to force users to agree to the text below before they can upload a file to the site.';
-$string['uploadexceedsquota'] = 'Uploading this file would exceed your disk quota. Try deleting some files you have uploaded.';
-$string['uploadexceedsquotagroup'] = 'Uploading this file would exceed this group\'s disk quota. Try deleting some files you have uploaded.';
-$string['uploadfile'] =  'Upload file';
-$string['uploadfileexistsoverwritecancel'] =  'A file with that name already exists. You can rename the file you are about to upload or overwrite the existing file.';
-$string['uploadingfiletofolder'] =  'Uploading %s to %s';
-$string['uploadoffilecomplete'] = 'Upload of %s complete';
-$string['uploadoffilefailed'] =  'Upload of %s failed';
-$string['uploadoffiletofoldercomplete'] = 'Upload of %s to %s complete';
-$string['uploadoffiletofolderfailed'] = 'Upload of %s to %s failed';
-$string['usecustomagreement'] = 'Use custom agreement';
-$string['youmustagreetothecopyrightnotice'] = 'You must agree to the copyright notice.';
-$string['fileuploadedtofolderas'] = '%s uploaded to %s as "%s"';
-$string['fileuploadedas'] = '%s uploaded as "%s"';
-$string['insufficientmemoryforresize'] = ' (Not enough memory available to resize the image. Consider resizing manually before uploading)';
-
-
-// File types
-$string['ai'] = 'Postscript document';
-$string['aiff'] = 'AIFF audio file';
-$string['application'] = 'Unknown application';
-$string['au'] = 'AU audio file';
-$string['audio'] = 'audio file';
-$string['avi'] = 'AVI video file';
-$string['bmp'] = 'Bitmap image';
-$string['doc'] = 'MS Word document';
-$string['dss'] = 'Digital speech standard sound file';
-$string['gif'] = 'GIF image';
-$string['html'] = 'HTML file';
-$string['jpg'] = 'JPEG image';
-$string['jpeg'] = 'JPEG image';
-$string['js'] = 'Javascript file';
-$string['latex'] = 'LaTeX document';
-$string['m3u'] = 'M3U audio file';
-$string['mp3'] = 'MP3 audio file';
-$string['mp4_audio'] = 'MP4 audio file';
-$string['mp4_video'] = 'MP4 video file';
-$string['mpeg'] = 'MPEG movie';
-$string['odb'] = 'OpenOffice / LibreOffice Base database file';
-$string['odc'] = 'OpenOffice / LibreOffice Calc file';
-$string['odf'] = 'OpenOffice / LibreOffice formula file';
-$string['odg'] = 'OpenOffice / LibreOffice graphics file';
-$string['odi'] = 'OpenOffice / LibreOffice image file';
-$string['odm'] = 'OpenOffice / LibreOffice master document file';
-$string['odp'] = 'OpenOffice / LibreOffice Impress file';
-$string['ods'] = 'OpenOffice / LibreOffice Spreadsheet file';
-$string['odt'] = 'OpenOffice / LibreOffice Writer document';
-$string['oth'] = 'OpenOffice / LibreOffice web document';
-$string['ott'] = 'OpenOffice / LibreOffice template document';
-$string['pdf'] = 'PDF document';
-$string['png'] = 'PNG image';
-$string['ppt'] = 'MS PowerPoint document';
-$string['quicktime'] = 'QuickTime movie';
-$string['ra'] = 'Real audio file';
-$string['rtf'] = 'RTF document';
-$string['sgi_movie'] = 'SGI movie file';
-$string['sh'] = 'Shell script';
-$string['tar'] = 'TAR archive';
-$string['gz'] = 'Gzip compressed file';
-$string['bz2'] = 'Bzip2 compressed file';
-$string['txt'] = 'Plain text file';
-$string['video'] = 'Video file';
-$string['wav'] = 'WAV audio file';
-$string['wmv'] = 'WMV video file';
-$string['xml'] = 'XML file';
-$string['zip'] = 'ZIP archive';
-$string['swf'] = 'SWF flash movie';
-$string['flv'] = 'FLV flash movie';
-$string['mov'] = 'MOV QuickTime movie';
-$string['mpg'] = 'MPG movie';
-$string['ram'] = 'RAM RealPlayer movie';
-$string['rpm'] = 'RPM RealPlayer movie';
-$string['rm'] = 'RM RealPlayer movie';
-
-
-// Profile icons
-$string['cantcreatetempprofileiconfile'] = 'Could not write temporary profile picture image in %s';
-$string['profileiconsize'] = 'Profile picture size';
-$string['profileicons'] = 'Profile pictures';
-$string['Default'] = 'Default';
-$string['defaultprofileicon'] = 'This is currently set as your default profile picture.';
-$string['deleteselectedicons'] = 'Delete selected profile pictures';
-$string['editprofileicon'] = 'Edit profile picture';
-$string['profileicon'] = 'Profile picture';
-$string['noimagesfound'] = 'No images found';
-$string['profileiconaddedtoimagesfolder'] = "Your profile picture has been uploaded to your '%s' folder.";
-$string['profileiconsetdefaultnotvalid'] = 'Could not set the default profile picture, the choice was not valid.';
-$string['profileiconsdefaultsetsuccessfully'] = 'Default profile picture set successfully';
-$string['nprofilepictures'] = array(
-    'Profile picture',
-    'Profile pictures',
-);
-$string['profileiconsnoneselected'] = 'No profile pictures were selected to be deleted.';
-$string['onlyfiveprofileicons'] = 'You may upload only five profile pictures.';
-$string['or'] = 'or';
-$string['profileiconuploadexceedsquota'] = 'Uploading this profile picture would exceed your disk quota. Try deleting some files you have uploaded.';
-$string['profileiconimagetoobig'] = 'The picture you uploaded was too big (%sx%s pixels). It must not be larger than %sx%s pixels.';
-$string['uploadingfile'] = 'uploading file...';
-$string['uploadprofileicon'] = 'Upload profile picture';
-$string['uploadedprofileicon'] = 'Uploaded profile picture';
-$string['profileiconsiconsizenotice'] = 'You may upload up to <strong>five</strong> profile pictures here and choose one to be displayed as your default picture at any one time. Your pictures must be between 16x16 and %sx%s pixels in size.';
-$string['setdefault'] = 'Set default';
-$string['markfordeletion'] = 'Mark for deletion';
-$string['Title'] = 'Title';
-$string['imagetitle'] = 'Image title';
-$string['standardavatartitle'] = 'Standard or external avatar';
-$string['standardavatarnote'] = 'Standard or external profile picture';
-$string['wrongfiletypeforblock'] = 'The file you uploaded was not the correct type for this block.';
-
-// Unzip
-$string['Contents'] = 'Contents';
-$string['Continue'] = 'Continue';
-$string['Decompress'] = 'Decompress';
-$string['decompressspecific'] = 'Decompress "%s"';
-$string['nfolders'] = array(
-    '%s folder',
-    '%s folders',
-);
-$string['nfiles'] = array(
-    '%s file',
-    '%s files',
-);
-$string['createdtwothings'] = 'Created %s and %s.';
-$string['filesextractedfromarchive'] = 'Files extracted from archive';
-$string['filesextractedfromziparchive'] = 'Files extracted from Zip archive';
-$string['fileswillbeextractedintofolder'] = 'Files will be extracted into %s';
-$string['insufficientquotaforunzip'] = 'Your remaining file quota is too small to unzip this file.';
-$string['invalidarchive'] = 'Error reading archive file.';
-$string['pleasewaitwhileyourfilesarebeingunzipped'] = 'Please wait while your files are being unzipped.';
-$string['spacerequired'] = 'Space required';
-$string['unzipprogress'] = '%s files/folders created.';
-
-// Group file permissions
-$string['filepermission.view'] = 'View';
-$string['filepermission.edit'] = 'Edit';
-$string['filepermission.republish'] = 'Publish';
-
-// Download Folder as zip
-$string['zipdownloadheading'] = 'Folder downloads';
-$string['downloadfolderzip'] = 'Download folders as a zip file';
-$string['downloadfolderzipblock'] = 'Show download link';
-$string['downloadfolderzipdescription1'] = 'If checked, users can download a folder displayed via the "Folder" block as a zip file.';
-$string['downloadfolderzipdescriptionblock'] = 'If checked, users can download the folder as a zip file.';
-$string['downloadfolderziplink'] = 'Download folder content as a zip file';
-$string['folderdownloadnofolderfound'] = 'Unable to find the folder with ID %d';
-$string['zipfilenameprefix'] = 'folder';
-$string['keepzipfor'] = 'Length of time to keep zip files';
-$string['keepzipfordescription'] = 'Zip files created during the downloading of folders should be kept for this amount of time (in seconds).';
-
-$string['progress_archive'] = array(
-    'Add 1 archive file',
-    'Add %s archive files',
-);
-$string['progress_audio'] = array(
-    'Add 1 audio file',
-    'Add %s audio files',
-);
-$string['progress_file'] = array(
-    'Add 1 file',
-    'Add %s files',
-);
-$string['progress_folder'] = array(
-    'Add 1 folder',
-    'Add %s folders',
-);
-$string['progress_image'] = array(
-    'Add 1 image',
-    'Add %s images',
-);
-$string['progress_profileicon'] = array(
-    'Add 1 profile picture',
-    'Add %s profile pictures',
-);
-$string['progress_video'] = array(
-    'Add 1 video',
-    'Add %s videos',
-);
-$string['anytypeoffile'] = 'File (any type)';
+$string['Contents'] = 'Содержание';
+$string['Continue'] = 'Продолжить';
+$string['Created'] = 'Создана';
+$string['Date'] = 'Дата';
+$string['Default'] = 'По умолчанию';
+$string['Description'] = 'Описание';
+$string['Details'] = 'Подробности';
+$string['Download'] = 'Загрузить';
+$string['File'] = 'Файл';
+$string['Files'] = 'Файлы';
+$string['Folder'] = 'Папка';
+$string['Folders'] = 'Папки';
+$string['Name'] = 'Имя';
+$string['Owner'] = 'Хозяин';
+$string['Preview'] = 'Предварительный просмотр';
+$string['Size'] = 'Размер';
+$string['Title'] = 'Название';
+$string['Type'] = 'Тип';
+$string['addafile'] = 'Добавить файл';
+$string['ai'] = 'PostScript документ';
+$string['aiff'] = 'AIFF аудио ыайл';
+$string['application'] = 'Неизвестное приложение';
+$string['archive'] = 'Архив';
+$string['au'] = 'AU аудио файл';
+$string['avi'] = 'AVI видео файл';
+$string['bmp'] = 'Bitmap изображение';
+$string['bytes'] = 'байты';
+$string['bz2'] = 'Bzip2 Compressed File';
+$string['cannoteditfolder'] = 'Вы не можете добавлять содержимое в эту папку';
+$string['cantcreatetempprofileiconfile'] = 'Невозможно записать временную иконку профиля в %s';
+$string['changessaved'] = 'Изменения сохранены';
+$string['clickanddragtomovefile'] = 'Нажмите и перетащите %s';
+$string['confirmdeletefile'] = 'Вы уверены, что хотите удалить этот файл?';
+$string['confirmdeletefolder'] = 'Вы уверены, что хотите удалить эту папку?';
+$string['confirmdeletefolderandcontents'] = 'Вы уверены, что хотите удалить эту папку и все ее содержимое?';
+$string['contents'] = 'Содержание';
+$string['copyrightnotice'] = 'Авторские права';
+$string['create'] = 'Создать';
+$string['createfolder'] = 'Создать папку';
+$string['customagreement'] = 'Пользовательские соглашения';
+$string['defaultagreement'] = 'Соглашения по умолчанию';
+$string['defaultquota'] = 'Квота по умолчанию';
+$string['defaultquotadescription'] = 'В качестве квоты, вы можете установить размер дискового пространства, которое будут иметь новые пользователи. Пользовательская квота останется без изменений.';
+$string['deletefile?'] = 'Вы уверены, что хотите удалить этот файл?';
+$string['deletefolder?'] = 'Вы уверены, что хотите удалить эту папку?';
+$string['deleteselectedicons'] = 'Удалить выделенные иконки';
+$string['destination'] = 'Назначение';
+$string['doc'] = 'MS Word документ';
+$string['downloadfile'] = 'Загрузить %s';
+$string['downloadoriginalversion'] = 'Загрузить исходную версию';
+$string['dss'] = 'Digital Speech Standard Sound File';
+$string['editfile'] = 'Редактировать файл';
+$string['editfolder'] = 'Редактировать папку';
+$string['emptyfolder'] = 'Пустая папка';
+$string['file'] = 'Файл';
+$string['filealreadyindestination'] = 'Файл, который вы перемещаете, уже содержится в этой папке';
+$string['fileappearsinviews'] = 'Этот файл появляется в одном или нескольких ваших видах.';
+$string['fileexists'] = 'Файл существует';
+$string['fileexistsoverwritecancel'] = 'Файл с таким именем уже существует. Попробуйте другое имя или перезапишите существующий файл.';
+$string['filelistloaded'] = 'Файлы загружены';
+$string['filemoved'] = 'Файл успешно перемещен';
+$string['filenamefieldisrequired'] = 'Обязательные поля файла';
+$string['files'] = 'файлы';
+$string['filesextractedfromarchive'] = 'Файлы, извлеченные из архива';
+$string['filesextractedfromziparchive'] = 'Файлы, извлеченные из Zip архива';
+$string['fileswillbeextractedintofolder'] = 'Файлы будут извлечены в %s';
+$string['filethingdeleted'] = '%s удален';
+$string['fileuploadedas'] = '%s загружен как "%s"';
+$string['fileuploadedtofolderas'] = '%s загружен в %s как "%s"';
+$string['filewithnameexists'] = 'Файл или папка с именем "%s" уже существует.';
+$string['flv'] = 'FLV Flash movie';
+$string['folder'] = 'Папка';
+$string['folderappearsinviews'] = 'Эта папка используется в одном или нескольких ваших видах.';
+$string['foldercreated'] = 'Папка создана';
+$string['foldernamerequired'] = 'Пожалуйста, укажите имя для новой папки.';
+$string['foldernotempty'] = 'Эта папка не пустая.';
+$string['gif'] = 'GIF изображение';
+$string['gotofolder'] = 'Перейти в %s';
+$string['groupfiles'] = 'Группировка Файлов';
+$string['gz'] = 'Gzip Compressed File';
+$string['home'] = 'Домой';
+$string['html'] = 'HTML файл';
+$string['htmlremovedmessage'] = 'Вы просматриваете <strong>%s</strong> пользователя <a href="%s">%s</a>. Файлы, отображаемые ниже, являются копией, так как содержали вредоносный контент.';
+$string['htmlremovedmessagenoowner'] = 'Вы просматриваете <strong>%s</strong>. Файлы, отображаемые ниже, являются копией, так как содержали вредоносный контент.';
+$string['image'] = 'Изображение';
+$string['imagetitle'] = 'Название изображения';
+$string['insufficientquotaforunzip'] = 'Чтобы распаковать этот файл, у вас недостаточно квоты.';
+$string['invalidarchive'] = 'Ошибка при чтении архивного файла.';
+$string['jpeg'] = 'JPEG изображение';
+$string['jpg'] = 'JPEG изображение';
+$string['js'] = 'Javascript файл';
+$string['lastmodified'] = 'Последнее изменение';
+$string['latex'] = 'LaTeX документ';
+$string['m3u'] = 'M3U аудио файл';
+$string['maxuploadsize'] = 'Максимальный размер загрузки';
+$string['mov'] = 'MOV Quicktime movie';
+$string['movefailed'] = 'Переместить не удалось.';
+$string['movefaileddestinationinartefact'] = 'Вы не можете поместить папку внутри себя.';
+$string['movefaileddestinationnotfolder'] = 'Вы можете только перемещать файлы в папках.';
+$string['movefailednotfileartefact'] = 'Могут быть перемещены только файлы, папка и артефакты.';
+$string['movefailednotowner'] = 'У вас нет разрешения перемещать файл в эту папку';
+$string['mp3'] = 'MP3 аудио файл';
+$string['mp4_audio'] = 'MP4 аудио файл';
+$string['mp4_video'] = 'MP4 видео файл';
+$string['mpeg'] = 'MPEG Movie';
+$string['mpg'] = 'MPG Movie';
+$string['myfiles'] = 'Мои файлы';
+$string['namefieldisrequired'] = 'Название поля обязательно';
+$string['nametoolong'] = 'Это слишком длинное имя. Пожалуйста, выберите короче.';
+$string['nofilesfound'] = 'Файлы не найдены';
+$string['noimagesfound'] = 'Изображений не найдено';
+$string['notpublishable'] = 'У вас нет разрешения на публикацию этого файла';
+$string['odb'] = 'Openoffice база данных';
+$string['odc'] = 'Openoffice Calc файл';
+$string['odf'] = 'Openoffice формула';
+$string['odg'] = 'Openoffice графика';
+$string['odi'] = 'Openoffice изображение';
+$string['odm'] = 'Openoffice мастер документов';
+$string['odp'] = 'Openoffice презентация';
+$string['ods'] = 'Openoffice таблица';
+$string['odt'] = 'Openoffice документ';
+$string['onlyfiveprofileicons'] = 'Вы можете загрузить только пять иконок профиля';
+$string['or'] = 'или';
+$string['oth'] = 'Openoffice Web документ';
+$string['ott'] = 'Openoffice шаблон';
+$string['overwrite'] = 'Заменить';
+$string['parentfolder'] = 'Родительская папка';
+$string['pdf'] = 'PDF документ';
+$string['pleasewaitwhileyourfilesarebeingunzipped'] = 'Пожалуйста, подождите, пока ваши файлы будут распакованы.';
+$string['pluginname'] = 'Файлы';
+$string['png'] = 'PNG изображение';
+$string['ppt'] = 'Powerpoint документ';
+$string['profileicon'] = 'Иконка профиля';
+$string['profileiconimagetoobig'] = 'Изображение, которое вы загрузили, слишком большое (%sx%s пикселей). Оно не должно быть больше, чем %sx%s пикселей';
+$string['profileicons'] = 'Иконки профиля';
+$string['profileiconsdefaultsetsuccessfully'] = 'Иконка профиля по умолчанию успешно установлена';
+$string['profileiconsetdefaultnotvalid'] = 'Не удается установить иконку профиля по умолчанию, выбор не действителен';
+$string['profileiconsiconsizenotice'] = 'Здесь вы можете загрузить до<strong>пяти</strong> иконок профиля, и выбрать одну для значения по умолчанию. Размер вашей иконки должен быть между 16x16 и %sx%s пикселей.';
+$string['profileiconsize'] = 'Размер иконки профиля';
+$string['profileiconsnoneselected'] = 'Не выбраны иконки профиля для удаления';
+$string['profileiconuploadexceedsquota'] = 'Загружая эту иконку профиля вы превысите квоту. Попробуйте удалить некоторые загруженные файлы';
+$string['quicktime'] = 'Quicktime Movie';
+$string['ra'] = 'Real аудио файл';
+$string['ram'] = 'RAM Real Player Movie';
+$string['requireagreement'] = 'Соглашения';
+$string['rm'] = 'RM Real Player Movie';
+$string['rpm'] = 'RPM Real Player Movie';
+$string['rtf'] = 'RTF документ';
+$string['savechanges'] = 'Сохранить изменения';
+$string['selectafile'] = 'Выбрать файл';
+$string['setdefault'] = 'Установить по умолчанию';
+$string['sgi_movie'] = 'SGI Movie File';
+$string['sh'] = 'Shell Script';
+$string['sitefilesloaded'] = 'Загруженные файлы';
+$string['spacerequired'] = 'Необходимое свободное пространство';
+$string['spaceused'] = 'Объем диска';
+$string['swf'] = 'SWF Flash movie';
+$string['tar'] = 'TAR Archive';
+$string['timeouterror'] = 'Сбой при загрузке файла: попытайтесь загрузить файл еще раз';
+$string['title'] = 'Имя';
+$string['titlefieldisrequired'] = 'Название поля обязательно';
+$string['txt'] = 'Text File';
+$string['unzipprogress'] = 'Создано %s файлов/папок.';
+$string['upload'] = 'Загрузить';
+$string['uploadagreement'] = 'Загрузить соглашение';
+$string['uploadagreementdescription'] = 'Включите эту опцию, если вы хотите заставить пользователей принять текст ниже, прежде чем они смогут загрузить файл на сайт.';
+$string['uploadexceedsquota'] = 'Загружая этот файл вы превысили квоту. Попробуйте удалить некоторые загруженные файлы.';
+$string['uploadfile'] = 'Загрузить файл';
+$string['uploadfileexistsoverwritecancel'] = 'Файл с таким именем уже существует. Вы можете переименовать файл, который собираетесь загрузить или перезаписать существующий файл.';
+$string['uploadingfile'] = 'загрузка файла...';
+$string['uploadingfiletofolder'] = 'Загрузка %s в %s';
+$string['uploadoffilecomplete'] = 'Загрузка %s завершена';
+$string['uploadoffilefailed'] = 'Сбой при загрузке %s';
+$string['uploadoffiletofoldercomplete'] = 'Загрузка %s в %s завершена';
+$string['uploadoffiletofolderfailed'] = 'Сбой при загрузке %s в %s';
+$string['uploadprofileicon'] = 'Загрузка иконки профиля';
+$string['usecustomagreement'] = 'Пользовательские соглашения';
+$string['usingnodefaultprofileicon'] = 'Теперь используйте иконку профиля не по умолчанию';
+$string['wav'] = 'WAV аудио файл';
+$string['wmv'] = 'WMV видео файл';
+$string['wrongfiletypeforblock'] = 'Загруженный файл имеет неправильный тип для этого блока.';
+$string['xml'] = 'XML файл';
+$string['youmustagreetothecopyrightnotice'] = 'Вы должны принять соглашение об авторских правах';
+$string['zip'] = 'ZIP архив';

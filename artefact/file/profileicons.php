@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -29,7 +45,7 @@ $settingsform = new Pieform(array(
             'value' => get_string('Default', 'artefact.file'),
         ),
         'delete' => array(
-            'type'  => 'submit',
+            'type'  => 'submit', 
             'value' => get_string('Delete', 'artefact.file'),
         ),
     )
@@ -72,25 +88,18 @@ else {
 }
 $profileiconattachedtoportfolioitems = json_encode(get_string('profileiconattachedtoportfolioitems', 'artefact.file'));
 $profileiconappearsinviews = json_encode(get_string('profileiconappearsinviews', 'artefact.file'));
-$profileiconappearsinskins = json_encode(get_string('profileiconappearsinskins', 'artefact.file'));
 $confirmdeletefile = json_encode(get_string('confirmdeletefile', 'artefact.file'));
-$setdefault = json_encode(get_string('setdefault', 'artefact.file'));
-$markfordeletion = json_encode(get_string('markfordeletion', 'artefact.file'));
 $IJS = <<<EOF
-formchangemanager.add('settings');
-
-var profileiconschecker = formchangemanager.find('settings');
-
 var table = new TableRenderer(
     'profileicons',
     'profileicons.json.php',
     [
         function(rowdata) {
             if (rowdata.id) {
-                return TD({'class': 'profileiconcell'}, null, IMG({'src': '{$wwwroot}thumb.php?type=profileiconbyid&maxsize=100&id=' + rowdata.id, 'alt': rowdata.title ? rowdata.title : rowdata.note}));
+                return TD({'class': 'profileiconcell'}, null, IMG({'src': '{$wwwroot}thumb.php?type=profileiconbyid&maxsize=100&id=' + rowdata.id, 'alt': rowdata.note}));
             }
             else {
-                return TD({'class': 'profileiconcell'}, null, IMG({'src': '{$ravatar}', 'alt': rowdata.title ? rowdata.title : rowdata.note}));
+                return TD({'class': 'profileiconcell'}, null, IMG({'src': '{$ravatar}', 'alt': rowdata.note}));
             }
         },
         function(rowdata) {
@@ -98,7 +107,6 @@ var table = new TableRenderer(
         },
         function(rowdata) {
             var options = {
-                'id': 'setdefault_' + rowdata.id,
                 'type': 'radio',
                 'name': 'd',
                 'value': rowdata.id
@@ -106,22 +114,15 @@ var table = new TableRenderer(
             if (rowdata['isdefault'] == 't' || rowdata['isdefault'] == 1) {
                 options.checked = 'checked';
             }
-            var label = LABEL({'class': 'accessible-hidden', 'for': 'setdefault_' + rowdata.id}, {$setdefault});
-            return TD({'class': 'defaultcell'}, INPUT(options), label);
+            return TD({'class': 'defaultcell'}, INPUT(options));
         },
         function(rowdata) {
-            var options = {
-                'id'      : 'markdelete_' + rowdata.id,
-                'type'    : 'checkbox',
-                'class'   : 'checkbox',
-                'name'    : 'icons[' + rowdata.id + ']',
-                'value'   : rowdata.attachcount + ',' + rowdata.viewcount + ',' + rowdata.skincount
-            };
-            if (!rowdata.id) {
-                options.disabled = 'disabled';
+            if (rowdata.id) {
+                return TD({'class': 'deletecell'}, INPUT({'type': 'checkbox', 'name': 'icons[' + rowdata.id + ']', 'value': rowdata.attachcount + ',' + rowdata.viewcount}));
             }
-            var label = LABEL({'class': 'accessible-hidden', 'for': 'markdelete_' + rowdata.id}, {$markfordeletion});
-            return TD({'class': 'deletecell'}, INPUT(options), label);
+            else {
+                return TD({'class': 'deletecell'}, INPUT({'disabled': 'disabled', 'type': 'checkbox', 'name': 'icons[' + rowdata.id + ']', 'value': rowdata.attachcount + ',' + rowdata.viewcount}));
+            }
         }
     ]
 );
@@ -139,10 +140,6 @@ table.updatecallback = function(response) {
             }
         });
     }
-};
-
-table.postupdatecallback = function(response) {
-    profileiconschecker.init();
 };
 
 var uploadingMessage = TR(null,
@@ -165,23 +162,18 @@ function postSubmit(form, data) {
 
 addLoadEvent( function() {
     connect('settings_delete', 'onclick', function(e) {
-        profileiconschecker.set(FORM_SUBMITTED);
-
         // Find form
-        var form = getFirstParentByTagAndClassName(this, 'form', 'pieform');
+        var form = getFirstParentByTagAndClassName(e, 'form', 'pieform');
         forEach (getElementsByTagAndClassName('input', 'checkbox', form), function (profileicon) {
             var id = getNodeAttribute(profileicon, 'name').match(/\d+/)[0];
             if (profileicon.checked == true) {
-                var counts = profileicon.value.split(',', 3);
+                var counts = profileicon.value.split(',', 2);
                 var warn = '';
                 if (counts[0] > 0) {
                     warn += {$profileiconattachedtoportfolioitems} + ' ';
                 }
                 if (counts[1] > 0) {
                     warn += {$profileiconappearsinviews} + ' ';
-                }
-                if (counts[2] > 0) {
-                    warn += {$profileiconappearsinskins} + ' ';
                 }
                 if (warn != '') {
                     warn += {$confirmdeletefile};
@@ -292,14 +284,15 @@ function settings_submit_default(Pieform $form, $values) {
         }
 
         $USER->profileicon = $default;
+        $USER->commit();
+        $SESSION->add_ok_msg(get_string('profileiconsdefaultsetsuccessfully', 'artefact.file'));
+        redirect('/artefact/file/profileicons.php');
     }
     else {
         $USER->profileicon = null;
+        $USER->commit();
+        $SESSION->add_info_msg(get_string('usingnodefaultprofileicon', 'artefact.file'));
     }
-    $USER->commit();
-
-    $SESSION->add_ok_msg(get_string('profileiconsdefaultsetsuccessfully', 'artefact.file'));
-    redirect('/artefact/file/profileicons.php');
 }
 
 function settings_submit_delete(Pieform $form, $values) {
@@ -315,9 +308,6 @@ function settings_submit_delete(Pieform $form, $values) {
             $iconartefact = artefact_instance_from_id($icon);
             // Just to be sure
             if ($iconartefact->get('artefacttype') == 'profileicon' && $iconartefact->get('owner') == $USER->get('id')) {
-                // Remove the skin background and update the skin thumbs
-                require_once(get_config('libroot') . 'skin.php');
-                Skin::remove_background($iconartefact->get('id'));
                 $iconartefact->delete();
             }
             else {

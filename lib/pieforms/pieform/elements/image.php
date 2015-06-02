@@ -19,8 +19,8 @@
  * @package    pieform
  * @subpackage element
  * @author     Nigel McNie <nigel@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -41,16 +41,7 @@ function pieform_element_image(Pieform $form, $element) {/*{{{*/
     if (isset($element['confirm'])) {
         $element['onclick'] = 'return confirm(' . json_encode($element['confirm']) . ');';
     }
-    if (!isset($element['alt'])) {
-        if (isset($element['elementtitle'])) {
-            $element['alt'] = $element['elementtitle'];
-        }
-        else {
-            $element['alt'] = '';
-        }
-    }
     return '<input type="image" src="' . Pieform::hsc($element['src']) . '"'
-        . ' alt="' . Pieform::hsc($element['alt']) . '"'
         . $form->element_attributes($element)
         . ' value="' . Pieform::hsc($form->get_value($element)) . '">';
 }/*}}}*/

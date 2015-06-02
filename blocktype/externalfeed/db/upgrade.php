@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype-externalfeed
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -14,14 +30,14 @@ defined('INTERNAL') || die();
 function xmldb_blocktype_externalfeed_upgrade($oldversion=0) {
 
     if ($oldversion < 2008042100) {
-        // Add the 'image' column so that information about a feed's image can
+        // Add the 'image' column so that information about a feed's image can 
         // be stored
         $table = new XMLDBTable('blocktype_externalfeed_data');
         $field = new XMLDBField('image');
         $field->setAttributes(XMLDB_TYPE_TEXT);
         add_field($table, $field);
     }
-
+    
     if ($oldversion < 2008042101) {
         // We hit the 255 character limit for feed URLs
         if (is_postgres()) {
@@ -90,57 +106,11 @@ function xmldb_blocktype_externalfeed_upgrade($oldversion=0) {
         add_field($table, $field);
     }
 
-    if ($oldversion < 2012090700) {
+    if ($oldversion < 2011091403) {
         // Reset all feeds to reset themselves
-        set_field('blocktype_externalfeed_data', 'lastupdate', db_format_timestamp('0'));
+        set_field('blocktype_externalfeed_data', 'lastupdate', db_format_timestamp(strtotime('-90 minutes')));
         safe_require('blocktype', 'externalfeed');
         call_static_method('PluginBlocktypeExternalfeed', 'refresh_feeds');
-    }
-
-    if ($oldversion < 2014041500) {
-        log_debug('Cleaning up duplicate feeds in the externalfeed blocktype');
-        log_debug('1. Find the duplicate feed urls');
-        // Setting these to be empty strings instead of NULL will make our SQL a lot simpler in the next section
-        execute_sql("update {blocktype_externalfeed_data} set authuser='' where authuser is null");
-        execute_sql("update {blocktype_externalfeed_data} set authpassword='' where authpassword is null");
-        if ($duplicatefeeds = get_records_sql_array("SELECT COUNT(url), url, authuser, authpassword FROM {blocktype_externalfeed_data} GROUP BY url, authuser, authpassword HAVING COUNT(url) > 1 ORDER BY url, authuser, authpassword", array())) {
-            log_debug('2. Get all feed ids for the duplicated feed urls');
-            // Use the 1st one found to be the feed id for the block instances that need updating
-            $feedstoupdate = array();
-            foreach ($duplicatefeeds as $feed) {
-                $feedids = get_column('blocktype_externalfeed_data', 'id', 'url', $feed->url, 'authuser', $feed->authuser, 'authpassword', $feed->authpassword);
-                $feedstoupdate[$feed->url] = $feedids;
-            }
-            log_debug('3. Updating blocks to use correct feed id');
-            // Find the block instances using external feeds. Check to see if they are not using the 'true' id and update them accordingly
-            require_once(get_config('docroot') . 'blocktype/lib.php');
-            $blockids = get_records_array('block_instance', 'blocktype', 'externalfeed', 'id ASC', 'id');
-            foreach ($blockids as $blockid) {
-                $blockinstance = new BlockInstance($blockid->id);
-                $configdata = $blockinstance->get('configdata');
-                if (!empty($configdata['feedid'])) {
-                    foreach ($feedstoupdate as $url => $ids) {
-                        foreach ($ids as $key => $id) {
-                            if ($id == $configdata['feedid'] && $key != '0') {
-                                $configdata['feedid'] = $ids[0];
-                                $blockinstance->set('configdata', $configdata);
-                                $blockinstance->set('dirty', true);
-                                $blockinstance->commit();
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            log_debug('4. Removing orphaned feed rows');
-            foreach ($feedstoupdate as $url => $ids) {
-                foreach ($ids as $key => $id) {
-                    if ($key != '0') {
-                        execute_sql("DELETE FROM {blocktype_externalfeed_data} WHERE id = ?", array($id));
-                    }
-                }
-            }
-        }
     }
 
     return true;

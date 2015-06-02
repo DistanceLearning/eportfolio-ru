@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -25,6 +41,7 @@ class Peer {
                              'name' => '',
                              'institution' => '',
                              'ipaddress' => '',
+                             'portno' => 80,
                              'publickey' => '',
                              'publickeyexpires' => 0,
                              'deleted' => 0,
@@ -74,6 +91,7 @@ class Peer {
             !empty($this->name) &&
             !empty($this->institution) &&
             !empty($this->ipaddress) &&
+            !empty($this->portno) &&
             !empty($this->appname) &&
             !empty($this->publickey) &&
             !empty($this->publickeyexpires)) {
@@ -123,6 +141,7 @@ class Peer {
         $host->name             = $this->name;
         $host->publickey        = $this->certificate;
         $host->publickeyexpires = $this->publickeyexpires;
+        $host->portno           = $this->portno;
         $host->lastconnecttime  = $this->lastconnecttime;
         $host->appname          = $this->appname;
         $host->institution      = $this->institution;

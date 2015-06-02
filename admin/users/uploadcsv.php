@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -319,7 +335,7 @@ function uploadcsv_validate(Pieform $form, $values) {
                     FROM {auth_remote_user} aru JOIN {usr} u ON aru.localusr = u.id
                     WHERE aru.remoteusername = ? AND aru.authinstance = ?',
                     array($remoteuser, $authinstance))) {
-                    $csverrors->add($i, get_string('uploadcsverrorremoteusertaken', 'admin', $i, $remoteuser, $remoteuserowner->username));
+                    $csverrors->add($i, get_string('uploadcsverrorremoteusertaken', 'admin', $i, $remoteuser, $remoteuserowner));
                 }
             }
             $remoteusers[$remoteuser] = true;
@@ -445,7 +461,7 @@ function uploadcsv_validate(Pieform $form, $values) {
     }
 
     if ($errors = $csverrors->process()) {
-        $form->set_error('file', clean_html($errors), false);
+        $form->set_error('file', clean_html($errors));
         return;
     }
 
@@ -497,20 +513,21 @@ function uploadcsv_submit(Pieform $form, $values) {
 
     foreach ($CSVDATA as $record) {
         $user = new StdClass;
-        foreach ($FORMAT as $field) {
-            if ($field == 'username'  ||
-                $field == 'firstname' ||
-                $field == 'lastname'  ||
-                $field == 'password'  ||
-                $field == 'email'     ||
-                $field == 'studentid' ||
-                $field == 'preferredname') {
-                $user->{$field} = $record[$formatkeylookup[$field]];
-            }
-        }
         $user->authinstance = $authinstance;
+        $user->username     = $record[$formatkeylookup['username']];
+        $user->firstname    = $record[$formatkeylookup['firstname']];
+        $user->lastname     = $record[$formatkeylookup['lastname']];
+        $user->password     = $record[$formatkeylookup['password']];
+        $user->email        = $record[$formatkeylookup['email']];
         if ($USER->get('admin') || get_config_plugin('artefact', 'file', 'institutionaloverride')) {
             $user->quota        = $values['quota'];
+        }
+
+        if (isset($formatkeylookup['studentid'])) {
+            $user->studentid = $record[$formatkeylookup['studentid']];
+        }
+        if (isset($formatkeylookup['preferredname'])) {
+            $user->preferredname = $record[$formatkeylookup['preferredname']];
         }
 
         $profilefields = new StdClass;

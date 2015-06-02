@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  * @copyright  (C) portions from Moodle, (C) Martin Dougiamas http://dougiamas.com
  */
 
@@ -44,7 +60,7 @@ function smarty_core() {
  */
 
 function smarty($javascript = array(), $headers = array(), $pagestrings = array(), $extraconfig = array()) {
-    global $USER, $SESSION, $THEME, $HEADDATA, $langselectform;
+    global $USER, $SESSION, $THEME, $HEADDATA;
 
     if (!is_array($headers)) {
         $headers = array();
@@ -57,15 +73,11 @@ function smarty($javascript = array(), $headers = array(), $pagestrings = array(
     }
 
     $SIDEBLOCKS = array();
-    // Some things like die_info() will try and create a smarty() call when we are already in one, which causes
-    // language_select_form() to throw headdata error as it is called twice.
-    if (!isset($langselectform)) {
-        $langselectform = language_select_form();
-    }
+
     $smarty = smarty_core();
 
     $wwwroot = get_config('wwwroot');
-    // NOTE: not using jswwwroot - it seems to wreck image paths if you
+    // NOTE: not using jswwwroot - it seems to wreck image paths if you 
     // drag them around the wysiwyg editor
     $jswwwroot = json_encode($wwwroot);
 
@@ -85,7 +97,7 @@ function smarty($javascript = array(), $headers = array(), $pagestrings = array(
     }
 
     $theme_list = array();
-
+    
     if (function_exists('pieform_get_headdata')) {
         $headers = array_merge($headers, pieform_get_headdata());
         if (!defined('PIEFORM_GOT_HEADDATA')) {
@@ -93,7 +105,7 @@ function smarty($javascript = array(), $headers = array(), $pagestrings = array(
         }
     }
 
-    // Insert the appropriate javascript tags
+    // Insert the appropriate javascript tags 
     $javascript_array = array();
     $jsroot = $wwwroot . 'js/';
 
@@ -113,32 +125,15 @@ function smarty($javascript = array(), $headers = array(), $pagestrings = array(
                     $found_tinymce = $check[$key];
                     $javascript_array[] = $jsroot . 'tinymce/tiny_mce.js';
                     $content_css = json_encode($THEME->get_url('style/tinymce.css'));
-                    $language = current_language();
-                    $language = substr($language, 0, ((substr_count($language, '_') > 0) ? 5 : 2));
-                    $language = strtolower(str_replace('_', '-', $language));
+                    $language = substr(current_language(), 0, 2);
                     if ($language != 'en' && !file_exists(get_config('docroot') . 'js/tinymce/langs/' . $language . '.js')) {
-                        // In case we fail to find a language of 5 chars, eg pt_BR (Portugese, Brazil) we try the 'parent' pt (Portugese)
-                        $language = substr($language, 0, 2);
-                        if ($language != 'en' && !file_exists(get_config('docroot') . 'js/tinymce/langs/' . $language . '.js')) {
-                            $language = 'en';
-                        }
+                        $language = 'en';
                     }
                     $extrasetup = isset($extraconfig['tinymcesetup']) ? $extraconfig['tinymcesetup'] : '';
 
-                    // Check whether to make the spellchecker available
-                    $aspellpath = get_config('pathtoaspell');
-                    if ($aspellpath && file_exists($aspellpath) && is_executable($aspellpath)) {
-                        $spellchecker = ',spellchecker';
-                        $spellchecker_config = "gecko_spellcheck : false, spellchecker_rpc_url : \"{$jsroot}tinymce/plugins/spellchecker/rpc.php\",";
-                    }
-                    else {
-                        $spellchecker = '';
-                        $spellchecker_config = 'gecko_spellcheck : true,';
-                    }
-
                     $adv_buttons = array(
                         "undo,redo,separator,bold,italic,underline,separator,justifyleft,justifycenter,justifyright,justifyfull,separator,bullist,numlist,separator,link,unlink,separator,code,fullscreen",
-                        "bold,italic,underline,strikethrough,separator,forecolor,backcolor,separator,justifyleft,justifycenter,justifyright,justifyfull,separator,hr,emotions,image{$spellchecker},cleanup,separator,link,unlink,separator,code,fullscreen",
+                        "bold,italic,underline,strikethrough,separator,forecolor,backcolor,separator,justifyleft,justifycenter,justifyright,justifyfull,separator,hr,emotions,image,spellchecker,cleanup,separator,link,unlink,separator,code,fullscreen",
                         "undo,redo,separator,bullist,numlist,separator,tablecontrols,separator,cut,copy,paste,pasteword",
                         "fontselect,separator,fontsizeselect,separator,formatselect",
                     );
@@ -148,17 +143,18 @@ function smarty($javascript = array(), $headers = array(), $pagestrings = array(
                     $toolbar_align = 'left';
 
                     if ($check[$key] == 'tinymce') {
+                        $spellchecker_rpc = $jsroot.'tinymce/plugins/spellchecker/rpc.php';
                         $tinymce_config = <<<EOF
     mode: "none",
     theme: "advanced",
-    plugins: "table,emotions,inlinepopups,paste,fullscreen{$spellchecker}",
+    plugins: "table,emotions,spellchecker,inlinepopups,paste,fullscreen",
     theme_advanced_buttons1 : "{$adv_buttons[1]}",
     theme_advanced_buttons2 : "{$adv_buttons[2]}",
     theme_advanced_buttons3 : "{$adv_buttons[3]}",
     theme_advanced_toolbar_location : "top",
     theme_advanced_toolbar_align : "{$toolbar_align}",
     fix_list_elements: true,
-    {$spellchecker_config}
+    spellchecker_rpc_url : "{$spellchecker_rpc}",
     //width: '512',
 EOF;
                     }
@@ -310,7 +306,7 @@ EOF;
             // A local .js file with a fully specified path
             $javascript_array[] = $wwwroot . $jsfile;
             // If $jsfile is from a plugin (i.e. plugintype/pluginname/js/foo.js)
-            // Then get js strings from static function jsstrings in plugintype/pluginname/lib.php
+            // Then get js strings from static function jsstrings in plugintype/pluginname/lib.php 
             $bits = explode('/', $jsfile);
             if (count($bits) == 4) {
                 safe_require($bits[0], $bits[1]);
@@ -348,7 +344,6 @@ EOF;
     }
 
     $javascript_array[] = $jsroot . 'mahara.js';
-    $javascript_array[] = $jsroot . 'formchangechecker.js';
     if (get_config('developermode') & DEVMODE_DEBUGJS) {
         $javascript_array[] = $jsroot . 'debug.js';
     }
@@ -382,7 +377,6 @@ EOF;
             $stylesheets = array_merge($stylesheets, array_reverse($adminsheets));
         }
     }
-
     if (get_config('developermode') & DEVMODE_DEBUGCSS) {
         $stylesheets[] = get_config('wwwroot') . 'theme/debug.css';
     }
@@ -399,17 +393,6 @@ EOF;
         $stylesheets = array_merge($stylesheets, $sheets);
     }
 
-    // Give the skin a chance to affect the page
-    if (!empty($extraconfig['skin'])) {
-        require_once(get_config('docroot').'/lib/skin.php');
-        $skinobj = new Skin($extraconfig['skin']['skinid']);
-        $viewid = isset($extraconfig['skin']['viewid']) ? $extraconfig['skin']['viewid'] : null;
-        $stylesheets = array_merge($stylesheets, $skinobj->get_stylesheets($viewid));
-    }
-
-    // Allow us to set the HTML lang attribute
-    $smarty->assign('LANGUAGE', substr(current_language(), 0, 2));
-
     // Include rtl.css for right-to-left langs
     if ($langdirection == 'rtl') {
         $smarty->assign('LANGDIRECTION', 'rtl');
@@ -419,39 +402,17 @@ EOF;
     }
 
     $smarty->assign('STRINGJS', $stringjs);
-    $stylesheets = append_version_number($stylesheets);
+
     $smarty->assign('STYLESHEETLIST', $stylesheets);
     if (!empty($theme_list)) {
         // this gets assigned in smarty_core, but do it again here if it's changed locally
-        $smarty->assign('THEMELIST', json_encode(array_merge((array)json_decode($smarty->get_template_vars('THEMELIST')),  $theme_list)));
+        $smarty->assign('THEMELIST', json_encode(array_merge((array)json_decode($smarty->get_template_vars('THEMELIST')),  $theme_list))); 
     }
 
-    $dropdownmenu = get_config('dropdownmenu');
-    // disable drop-downs if overridden at institution level
-    $sitethemeprefs = get_config('sitethemeprefs');
-    $institutions = $USER->institutions;
-    if (!empty($institutions)) {
-        foreach ($institutions as $i) {
-            if (!empty($sitethemeprefs)) {
-                if (!empty($USER->accountprefs['theme']) && $USER->accountprefs['theme'] == $THEME->basename . '/' . $i->institution) {
-                    $dropdownmenu = $i->dropdownmenu;
-                }
-            }
-            else {
-                if ((!empty($USER->accountprefs['theme']) && $USER->accountprefs['theme'] == $THEME->basename . '/' . $i->institution)
-                    || (empty($USER->accountprefs) && $i->theme == $THEME->basename && $USER->institutiontheme->institutionname == $i->institution)) {
-                    $dropdownmenu = $i->dropdownmenu;
-                }
-            }
-        }
-    }
-
-    // and/or disable drop-downs if a handheld device detected
-    $dropdownmenu = $SESSION->get('handheld_device') ? false : $dropdownmenu;
-
+    // disable drop-downs if a handheld device detected
+    $dropdownmenu = $SESSION->get('handheld_device') ? false : get_config('dropdownmenu');
     if ($dropdownmenu) {
         $smarty->assign('DROPDOWNMENU', $dropdownmenu);
-        $javascript_array[] = $jsroot . 'dropdown-nav.js';
     }
 
     $smarty->assign('MOBILE', $SESSION->get('mobile'));
@@ -498,13 +459,6 @@ EOF;
     }
 
     $smarty->assign('LOGGEDIN', $USER->is_logged_in());
-    $publicsearchallowed = false;
-    $searchplugin = get_config('searchplugin');
-    if ($searchplugin) {
-        safe_require('search', $searchplugin);
-        $publicsearchallowed = (call_static_method(generate_class_name('search', $searchplugin), 'publicform_allowed') && get_config('publicsearchallowed'));
-    }
-    $smarty->assign('publicsearchallowed', $publicsearchallowed);
     if ($USER->is_logged_in()) {
         global $SELECTEDSUBNAV; // It's evil, but rightnav & mainnav stuff are now in different templates.
         $smarty->assign('MAINNAV', main_nav());
@@ -521,16 +475,13 @@ EOF;
         }
     }
     else {
-        $smarty->assign('languageform', $langselectform);
+        $smarty->assign('languageform', language_select_form());
     }
     $smarty->assign('FOOTERMENU', footer_menu());
 
     $smarty->assign_by_ref('USER', $USER);
     $smarty->assign('SESSKEY', $USER->get('sesskey'));
-    $smarty->assign('CC_ENABLED', get_config('cookieconsent_enabled'));
-    $javascript_array = append_version_number($javascript_array);
     $smarty->assign_by_ref('JAVASCRIPT', $javascript_array);
-    $smarty->assign('RELEASE', get_config('release'));
     $siteclosedforupgrade = get_config('siteclosed');
     if ($siteclosedforupgrade && get_config('disablelogin')) {
         $smarty->assign('SITECLOSED', 'logindisabled');
@@ -618,21 +569,14 @@ EOF;
                     'data'   => onlineusers_sideblock(),
                 );
             }
-            if (get_config('showprogressbar') && $USER->get_account_preference('showprogressbar')) {
-                $SIDEBLOCKS[] = array(
-                    'name'   => 'progressbar',
-                    'id'     => 'sb-progressbar',
-                    'weight' => -10,
-                    'data'   => progressbar_sideblock(),
-                );
-            }
         }
 
-        if ($USER->is_logged_in() && $adminsection && defined('SECTION_PAGE') && SECTION_PAGE == 'progressbar') {
+        if(defined('GROUP')) {
             $SIDEBLOCKS[] = array(
-                'name'   => 'progressbar',
-                'id'     => 'sb-progressbar',
-                'data'   => progressbar_sideblock(true),
+                'name'   => 'group',
+                'id'     => 'sb-groupnav',
+                'weight' => -10,
+                'data'   => group_sideblock()
             );
         }
 
@@ -666,8 +610,8 @@ EOF;
 
         usort($SIDEBLOCKS, create_function('$a,$b', 'if ($a["weight"] == $b["weight"]) return 0; return ($a["weight"] < $b["weight"]) ? -1 : 1;'));
 
-        // Place all sideblocks on the right. If this structure is munged
-        // appropriately, you can put blocks on the left. In future versions of
+        // Place all sideblocks on the right. If this structure is munged 
+        // appropriately, you can put blocks on the left. In future versions of 
         // Mahara, we'll make it easy to do this.
         $sidebars = $sidebars && !empty($SIDEBLOCKS);
         $SIDEBLOCKS = array('left' => array(), 'right' => $SIDEBLOCKS);
@@ -693,25 +637,6 @@ EOF;
             . '</a>');
     }
 
-    // Define additional html content
-    if (get_config('installed')) {
-        $additionalhtmlitems = array(
-            'ADDITIONALHTMLHEAD'      => get_config('additionalhtmlhead'),
-            'ADDITIONALHTMLTOPOFBODY' => get_config('additionalhtmltopofbody'),
-            'ADDITIONALHTMLFOOTER'    => get_config('additionalhtmlfooter')
-        );
-        if ($additionalhtmlitems) {
-            foreach ($additionalhtmlitems as $name=>$content) {
-                $smarty->assign($name, $content);
-            }
-        }
-    }
-
-    // If Cookie Consent is enabled, than define conent
-    if (get_config('cookieconsent_enabled')) {
-        require_once('cookieconsent.php');
-        $smarty->assign('COOKIECONSENTCODE', get_cookieconsent_code());
-    }
     return $smarty;
 }
 
@@ -719,7 +644,7 @@ EOF;
 /**
  * Manages theme configuration.
  *
- * Does its best to give the user _a_ theme, even if it's not the theme they
+ * Does its best to give the user _a_ theme, even if it's not the theme they 
  * want to use (e.g. the theme they want has been uninstalled)
  */
 class Theme {
@@ -793,11 +718,11 @@ class Theme {
     /**
      * Initialises a theme object based on the theme 'hint' passed.
      *
-     * If arg is a string, it's taken to be a theme name. If it's a user
-     * object, we ask it for a theme name. If it's an integer, we pretend
+     * If arg is a string, it's taken to be a theme name. If it's a user 
+     * object, we ask it for a theme name. If it's an integer, we pretend 
      * that's a user ID and ask for the theme for that user.
      *
-     * If the theme they want doesn't exist, the object is initialised for the
+     * If the theme they want doesn't exist, the object is initialised for the 
      * default theme. This means you can initialise one of these for a user
      * and then use it without worrying if the theme exists.
      *
@@ -855,7 +780,7 @@ class Theme {
 
         $themeconfigfile = get_config('docroot') . 'theme/' . $this->basename . '/themeconfig.php';
         if (!is_readable($themeconfigfile)) {
-            // We can safely assume that the default theme is installed, users
+            // We can safely assume that the default theme is installed, users 
             // should never be able to remove it
             $this->basename = 'default';
             $themeconfigfile = get_config('docroot') . 'theme/default/themeconfig.php';
@@ -879,7 +804,7 @@ class Theme {
 
         $this->templatedirs[] = get_config('docroot') . 'local/theme/templates/';
 
-        // Now go through the theme hierarchy assigning variables from the
+        // Now go through the theme hierarchy assigning variables from the 
         // parent themes
         $currenttheme = $this->basename;
         while ($currenttheme != 'raw') {
@@ -940,16 +865,9 @@ class Theme {
         return $returnprefix . $plugindirectory . 'theme/' . $themedir . '/static/' . $filename;
     }
 
-    /**
-     * Displaying of the header logo
-     * If $name is specified the site-logo-[$name].png will be returned
-     */
-    public function header_logo($name = false) {
+    public function header_logo() {
         if (!empty($this->headerlogo)) {
             return get_config('wwwroot') . 'thumb.php?type=logobyid&id=' . $this->headerlogo;
-        }
-        else if ($name) {
-            return $this->get_url('images/site-logo-' . $name . '.png');
         }
         return $this->get_url('images/site-logo.png');
     }
@@ -964,9 +882,9 @@ class Theme {
 }
 
 
-/**
+/** 
  * Returns the lists of strings used in the .js files
- * @return array
+ * @return array                   
  */
 
 function jsstrings() {
@@ -980,23 +898,13 @@ function jsstrings() {
                 'showtags',
                 'couldnotgethelp',
                 'password',
-                'deleteitem',
-                'moveitemup',
-                'moveitemdown',
                 'username',
                 'login',
                 'sessiontimedout',
                 'loginfailed',
                 'home',
                 'youhavenottaggedanythingyet',
-                'wanttoleavewithoutsaving?',
-                'Help',
-                'closehelp',
-                'tabs',
             ),
-            'pieforms' => array(
-                'element.calendar.opendatepicker'
-            )
         ),
         'tablerenderer' => array(
             'mahara' => array(
@@ -1021,14 +929,13 @@ function themepaths() {
     if (empty($paths)) {
         $paths = array(
             'mahara' => array(
-                'images/btn_close.png',
-                'images/btn_deleteremove.png',
-                'images/btn_edit.png',
-                'images/failure.png',
+                'images/icon_close.gif',
+                'images/edit.gif',
+                'images/failure.gif',
                 'images/loading.gif',
-                'images/success.png',
-                'images/warning.png',
-                'images/help.png',
+                'images/success.gif',
+                'images/icon_problem.gif',
+                'images/icon_help.gif',
                 'style/js.css',
             ),
         );
@@ -1036,7 +943,7 @@ function themepaths() {
     return $paths;
 }
 
-/**
+/** 
  * Takes an array of string identifiers and returns an array of the
  * corresponding strings, quoted for use in inline javascript here
  * docs.
@@ -1052,7 +959,7 @@ function quotestrings($strings) {
     return $qstrings;
 }
 
-/**
+/** 
  * This function sets up and caches info about the current selected theme
  * contains inheritance path (used for locating images) and template dirs
  * and potentially more stuff later ( like mime header to send (html vs xhtml))
@@ -1064,7 +971,7 @@ function theme_setup() {
     return $THEME;
 }
 
-/**
+/** 
  * This function returns the full url to an image
  * Always use it to get image urls
  * @param $imagelocation path to image relative to theme/$theme/static/
@@ -1081,7 +988,7 @@ function theme_get_url($location, $pluginlocation='', $all = false) {
     return $THEME->get_url($location, $all, $plugintype, $pluginname);
 }
 
-/**
+/** 
  * This function returns the full path to an image
  * Always use it to get image paths
  * @param $imagelocation path to image relative to theme/$theme/static/
@@ -1103,7 +1010,9 @@ function theme_get_path($location, $pluginlocation='', $all=false) {
  *
  */
 function json_headers() {
-    header('Content-type: application/json');
+    // @todo Catalyst IT Ltd
+    // header('Content-type: text/x-json');
+    header('Content-type: text/plain');
     header('Pragma: no-cache');
 }
 
@@ -1130,7 +1039,7 @@ function _param_retrieve($name) {
     // prefer post
     if (isset($_POST[$name])) {
         $value = $_POST[$name];
-    }
+    } 
     else if (isset($_GET[$name])) {
         $value = $_GET[$name];
     }
@@ -1375,7 +1284,7 @@ function param_integer_list($name) {
  *
  */
 function param_boolean($name) {
-
+    
     list ($value) = _param_retrieve($name, false);
 
     if (!is_null($value)) {
@@ -1394,7 +1303,7 @@ function param_boolean($name) {
  * NOTE: this function is only meant to be used by get_imagesize_parameters(),
  * which you should use in your scripts.
  *
- * It expects the parameter to be a string, in the form /\d+x\d+/ - e.g.
+ * It expects the parameter to be a string, in the form /\d+x\d+/ - e.g. 
  * 200x150.
  *
  * @param string The GET or POST parameter you want checked
@@ -1421,7 +1330,7 @@ function param_imagesize($name) {
 /**
  * Works out what size a requested image should be, based on request parameters
  *
- * The result of this function can be passed to get_dataroot_image_path to
+ * The result of this function can be passed to get_dataroot_image_path to 
  * retrieve the filesystem path of the appropriate image
  */
 function get_imagesize_parameters($sizeparam='size', $widthparam='width', $heightparam='height',
@@ -1438,17 +1347,17 @@ function get_imagesize_parameters($sizeparam='size', $widthparam='width', $heigh
 }
 
 /**
- * Given sizing information, converts it to a form that get_dataroot_image_path
+ * Given sizing information, converts it to a form that get_dataroot_image_path 
  * can use.
  *
- * @param mixed $size    either an array with 'w' and 'h' keys, or a string 'WxH'.
+ * @param mixed $size    either an array with 'w' and 'h' keys, or a string 'WxH'. 
  *                       Image will be exactly this size
  * @param int $width     Width. Image will be scaled to be exactly this wide
  * @param int $height    Height. Image will be scaled to be exactly this high
  * @param int $maxsize   The longest side will be scaled to be this size
- * @param int $maxwidth  Use with maxheight - image dimensions will be made as
+ * @param int $maxwidth  Use with maxheight - image dimensions will be made as 
  *                       large as possible but not exceed either one
- * @param int $maxheight Use with maxwidth - image dimensions will be made as
+ * @param int $maxheight Use with maxwidth - image dimensions will be made as 
  *                       large as possible but not exceed either one
  * @return mixed         A sizing parameter that can be used with get_dataroot_image_path()
  */
@@ -1571,13 +1480,7 @@ function set_cookie($name, $value='', $expires=0, $access=false) {
     if (!$domain = get_config('cookiedomain')) {
         $domain = $url['host'];
     }
-
-    // If Cookie Consent is enabled with cc_necessary cookie set to 'yes'
-    // or Cookie Consent is not enabled
-    if (empty($_COOKIE['cc_necessary']) || (isset($_COOKIE['cc_necessary']) && $_COOKIE['cc_necessary'] == 'yes')) {
-        setcookie($name, $value, $expires, $url['path'], $domain, false, true);
-    }
-
+    setcookie($name, $value, $expires, $url['path'], $domain, false, true);
     if ($access) {  // View access cookies may be needed on this request
         $_COOKIE[$name] = $value;
     }
@@ -1848,7 +1751,7 @@ function getoptions_country() {
 }
 
 /**
- *
+ * 
  */
 
 function get_help_icon($plugintype, $pluginname, $form, $element, $page='', $section='') {
@@ -1857,14 +1760,14 @@ function get_help_icon($plugintype, $pluginname, $form, $element, $page='', $sec
     // I see no reason why IE has to drag the quality of the interwebs down with it
 
     $imageext = (isset($_SERVER['HTTP_USER_AGENT']) && false !== stripos($_SERVER['HTTP_USER_AGENT'], 'msie 6.0')) ? 'gif' : 'png';
-    return ' <span class="help"><a href="" onclick="'.
+    return ' <span class="help"><a href="" onclick="'. 
         hsc(
-            'contextualHelp(' . json_encode($form) . ',' .
-            json_encode($element) . ',' . json_encode($plugintype) . ',' .
-            json_encode($pluginname) . ',' . json_encode($page) . ',' .
+            'contextualHelp(' . json_encode($form) . ',' . 
+            json_encode($element) . ',' . json_encode($plugintype) . ',' . 
+            json_encode($pluginname) . ',' . json_encode($page) . ',' . 
             json_encode($section)
             . ',this); return false;'
-        ) . '"><img src="' . $THEME->get_url('images/help.' . $imageext) . '" alt="' . get_string('Help') . '" title="' . get_string('Help') . '"></a></span>';
+        ) . '"><img src="' . $THEME->get_url('images/icon_help.' . $imageext) . '" alt="' . get_string('Help') . '" title="' . get_string('Help') . '"></a></span>';
 }
 
 function pieform_get_help(Pieform $form, $element) {
@@ -1891,14 +1794,13 @@ function admin_nav() {
     $menu = array(
         'adminhome' => array(
             'path'   => 'adminhome',
-            'url'    => 'admin/index.php',
+            'url'    => 'admin/',
             'title'  => get_string('adminhome', 'admin'),
             'weight' => 10,
-            'accesskey' => 'a',
         ),
         'adminhome/home' => array(
             'path'   => 'adminhome/home',
-            'url'    => 'admin/index.php',
+            'url'    => 'admin/',
             'title'  => get_string('overview'),
             'weight' => 10,
         ),
@@ -1919,7 +1821,6 @@ function admin_nav() {
             'url'    => 'admin/site/options.php',
             'title'  => get_string('configsite', 'admin'),
             'weight' => 20,
-            'accesskey' => 'c',
         ),
         'configsite/siteoptions' => array(
             'path'   => 'configsite/siteoptions',
@@ -1930,7 +1831,7 @@ function admin_nav() {
         'configsite/sitepages' => array(
             'path'   => 'configsite/sitepages',
             'url'    => 'admin/site/pages.php',
-            'title'  => get_string('staticpages', 'admin'),
+            'title'  => get_string('editsitepages', 'admin'),
             'weight' => 20
         ),
         'configsite/sitemenu' => array(
@@ -1944,12 +1845,6 @@ function admin_nav() {
             'url'    => 'admin/site/networking.php',
             'title'  => get_string('networking', 'admin'),
             'weight' => 40,
-        ),
-        'configsite/sitelicenses' => array(
-            'path'   => 'configsite/sitelicenses',
-            'url'    => 'admin/site/licenses.php',
-            'title'  => get_string('sitelicenses', 'admin'),
-            'weight' => 45,
         ),
         'configsite/siteviews' => array(
             'path'   => 'configsite/siteviews',
@@ -1975,18 +1870,11 @@ function admin_nav() {
             'title'  => get_string('Files', 'artefact.file'),
             'weight' => 80,
         ),
-        'configsite/cookieconsent' => array(
-            'path'   => 'configsite/cookieconsent',
-            'url'    => 'admin/site/cookieconsent.php',
-            'title'  => get_string('cookieconsent', 'cookieconsent'),
-            'weight' => 90,
-        ),
         'configusers' => array(
             'path'   => 'configusers',
             'url'    => 'admin/users/search.php',
             'title'  => get_string('users'),
             'weight' => 30,
-            'accesskey' => 'u',
         ),
         'configusers/usersearch' => array(
             'path'   => 'configusers/usersearch',
@@ -2029,7 +1917,6 @@ function admin_nav() {
             'url'    => 'admin/groups/groups.php',
             'title'  => get_string('groups', 'admin'),
             'weight' => 40,
-            'accesskey' => 'g',
         ),
         'managegroups/groups' => array(
             'path'   => 'managegroups/groups',
@@ -2060,19 +1947,12 @@ function admin_nav() {
             'url'    => 'admin/users/institutions.php',
             'title'  => get_string('Institutions', 'admin'),
             'weight' => 50,
-            'accesskey' => 'i',
         ),
         'manageinstitutions/institutions' => array(
             'path'   => 'manageinstitutions/institutions',
             'url'    => 'admin/users/institutions.php',
             'title'  => get_string('Institutions', 'admin'),
             'weight' => 10,
-        ),
-        'manageinstitutions/sitepages' => array(
-            'path'   => 'manageinstitutions/sitepages',
-            'url'    => 'admin/users/institutionpages.php',
-            'title'  => get_string('staticpages', 'admin'),
-            'weight' => 15
         ),
         'manageinstitutions/institutionusers' => array(
             'path'   => 'manageinstitutions/institutionusers',
@@ -2097,12 +1977,6 @@ function admin_nav() {
             'url'    => 'admin/users/notifications.php',
             'title'  => get_string('adminnotifications', 'admin'),
             'weight' => 50,
-        ),
-        'manageinstitutions/progressbar' => array(
-            'path'   => 'manageinstitutions/progressbar',
-            'url'    => 'admin/users/progressbar.php',
-            'title'  => get_string('progressbar', 'admin'),
-            'weight' => 55,
         ),
         'manageinstitutions/institutionviews' => array(
             'path'   => 'manageinstitutions/institutionviews',
@@ -2145,7 +2019,6 @@ function admin_nav() {
             'url'    => 'admin/extensions/plugins.php',
             'title'  => get_string('Extensions', 'admin'),
             'weight' => 60,
-            'accesskey' => 'e',
         ),
         'configextensions/pluginadmin' => array(
             'path'   => 'configextensions/pluginadmin',
@@ -2173,21 +2046,6 @@ function admin_nav() {
         ),
     );
 
-    // Add the menu items for skins, if that feature is enabled
-    if (get_config('skins')) {
-        $menu['configsite/siteskins'] = array(
-           'path'   => 'configsite/siteskins',
-           'url'    => 'admin/site/skins.php',
-           'title'  => get_string('siteskinmenu', 'skin'),
-           'weight' => 75,
-        );
-        $menu['configsite/sitefonts'] = array(
-           'path'   => 'configsite/sitefonts',
-           'url'    => 'admin/site/fonts.php',
-           'title'  => get_string('sitefontsmenu', 'skin'),
-           'weight' => 76,
-        );
-    }
     return $menu;
 }
 
@@ -2205,7 +2063,6 @@ function institutional_admin_nav() {
             'url'    => 'admin/users/search.php',
             'title'  => get_string('users'),
             'weight' => 10,
-            'accesskey' => 'u',
         ),
         'configusers/usersearch' => array(
             'path'   => 'configusers/usersearch',
@@ -2236,7 +2093,6 @@ function institutional_admin_nav() {
             'url'    => 'admin/groups/uploadcsv.php',
             'title'  => get_string('groups', 'admin'),
             'weight' => 20,
-            'accesskey' => 'g',
         ),
         'managegroups/uploadcsv' => array(
             'path'   => 'managegroups/uploadcsv',
@@ -2255,19 +2111,12 @@ function institutional_admin_nav() {
             'url'    => 'admin/users/institutions.php',
             'title'  => get_string('Institutions', 'admin'),
             'weight' => 30,
-            'accesskey' => 'i',
         ),
         'manageinstitutions/institutions' => array(
             'path'   => 'manageinstitutions/institutions',
             'url'    => 'admin/users/institutions.php',
             'title'  => get_string('settings'),
             'weight' => 10,
-        ),
-        'manageinstitutions/sitepages' => array(
-            'path'   => 'manageinstitutions/sitepages',
-            'url'    => 'admin/users/institutionpages.php',
-            'title'  => get_string('staticpages', 'admin'),
-            'weight' => 15
         ),
         'manageinstitutions/institutionusers' => array(
             'path'   => 'manageinstitutions/institutionusers',
@@ -2336,7 +2185,6 @@ function institutional_admin_nav() {
             'url'    => 'admin/statistics.php',
             'title'  => get_string('site', 'admin'),
             'weight' => 40,
-            'accesskey' => 'a',
         );
         $ret['adminhome/statistics'] = array(
             'path'   => 'adminhome/statistics',
@@ -2362,21 +2210,18 @@ function staff_nav() {
             'url'    => 'admin/users/search.php',
             'title'  => get_string('usersearch', 'admin'),
             'weight' => 10,
-            'accesskey' => 'u',
         ),
         'statistics' => array(
             'path'   => 'statistics',
             'url'    => 'admin/statistics.php',
             'title'  => get_string('sitestatistics', 'admin'),
             'weight' => 20,
-            'accesskey' => 's',
         ),
         'institutionalstatistics' => array(
             'path'   => 'statistics',
             'url'    => 'admin/users/statistics.php',
             'title'  => get_string('institutionstatistics', 'admin'),
             'weight' => 30,
-            'accesskey' => 'i',
         ),
     );
 }
@@ -2393,14 +2238,12 @@ function institutional_staff_nav() {
             'url'    => 'admin/users/search.php',
             'title'  => get_string('usersearch', 'admin'),
             'weight' => 10,
-            'accesskey' => 'u',
         ),
         'institutionalstatistics' => array(
             'path'   => 'statistics',
             'url'    => 'admin/users/statistics.php',
             'title'  => get_string('institutionstatistics', 'admin'),
             'weight' => 20,
-            'accesskey' => 'i',
         ),
     );
 }
@@ -2421,56 +2264,43 @@ function mahara_standard_nav() {
             'url' => '',
             'title' => get_string('dashboard', 'view'),
             'weight' => 10,
-            'accesskey' => 'd',
+            'accesskey' => 'h',
         ),
         'content' => array(
             'path' => 'content',
-            'url'  => 'artefact/internal/index.php', // @todo possibly do path aliasing and dispatch?
+            'url'  => 'artefact/internal/', // @todo possibly do path aliasing and dispatch?
             'title' => get_string('Content'),
             'weight' => 20,
-            'accesskey' => 'c',
         ),
         'myportfolio' => array(
             'path' => 'myportfolio',
-            'url' => 'view/index.php',
+            'url' => 'view/',
             'title' => get_string('myportfolio'),
             'weight' => 30,
-            'accesskey' => 'p',
+            'accesskey' => 'v',
         ),
         'myportfolio/views' => array(
             'path' => 'myportfolio/views',
-            'url' => 'view/index.php',
+            'url' => 'view/',
             'title' => get_string('Views', 'view'),
             'weight' => 10,
         ),
         'myportfolio/share' => array(
             'path' => 'myportfolio/share',
             'url' => 'view/share.php',
-            'title' => get_string('sharedbyme', 'view'),
+            'title' => get_string('share', 'view'),
             'weight' => 30,
-        ),
-        'myportfolio/sharedviews' => array(
-            'path' => 'myportfolio/sharedviews',
-            'url' => 'view/sharedviews.php',
-            'title' => get_string('sharedwithme', 'view'),
-            'weight' => 60,
         ),
         'myportfolio/export' => array(
             'path' => 'myportfolio/export',
-            'url' => 'export/index.php',
+            'url' => 'export/',
             'title' => get_string('Export', 'export'),
             'weight' => 70,
             'ignore' => !$exportenabled,
         ),
-        'myportfolio/import' => array(
-            'path' => 'myportfolio/import',
-            'url' => 'import/index.php',
-            'title' => get_string('Import', 'import'),
-            'weight' => 80,
-        ),
         'myportfolio/collection' => array(
             'path' => 'myportfolio/collection',
-            'url' => 'collection/index.php',
+            'url' => 'collection/',
             'title' => get_string('Collections', 'collection'),
             'weight' => 20,
         ),
@@ -2511,16 +2341,14 @@ function mahara_standard_nav() {
             'title' => get_string('institutionmembership'),
             'weight' => 50,
         ),
+        'groups/sharedviews' => array(
+            'path' => 'groups/sharedviews',
+            'url' => 'view/sharedviews.php',
+            'title' => get_string('sharedviews', 'view'),
+            'weight' => 60,
+        ),
     );
 
-    if (can_use_skins()) {
-        $menu['myportfolio/skins'] = array(
-           'path' => 'myportfolio/skins',
-           'url' => 'skin/index.php',
-           'title' => get_string('myskins', 'skin'),
-           'weight' => 65,
-        );
-    }
     return $menu;
 }
 
@@ -2591,16 +2419,16 @@ function right_nav() {
     $menu = array(
         'settings' => array(
             'path' => 'settings',
-            'url' => 'account/index.php',
+            'url' => 'account/',
             'title' => get_string('settings'),
             'icon' => $THEME->get_url('images/settings.png'),
-            'alt' => '',
+            'alt' => get_string('settings'),
             'weight' => 10,
         ),
         'inbox' => array(
             'path' => 'inbox',
-            'url' => 'account/activity/index.php',
-            'icon' => $THEME->get_url($unread ? 'images/newmail.png' : 'images/message.png'),
+            'url' => 'account/activity',
+            'icon' => $THEME->get_url($unread ? 'images/newemail.gif' : 'images/email.gif'),
             'alt' => get_string('inbox'),
             'count' => $unread,
             'countclass' => 'unreadmessagecount',
@@ -2608,13 +2436,13 @@ function right_nav() {
         ),
         'settings/account' => array(
             'path' => 'settings/account',
-            'url' => 'account/index.php',
+            'url' => 'account/',
             'title' => get_config('dropdownmenu') ? get_string('general') : get_string('account'),
             'weight' => 10,
         ),
         'settings/notifications' => array(
             'path' => 'settings/notifications',
-            'url' => 'account/activity/preferences/index.php',
+            'url' => 'account/activity/preferences/',
             'title' => get_string('notifications'),
             'weight' => 30,
         ),
@@ -2691,8 +2519,8 @@ function footer_menu($all=false) {
 
 
 /**
- * Given a menu structure and a path, returns a data structure representing all
- * of the child menu items of the path, and removes those items from the menu
+ * Given a menu structure and a path, returns a data structure representing all 
+ * of the child menu items of the path, and removes those items from the menu 
  * structure
  *
  * Used by main_nav()
@@ -2774,42 +2602,26 @@ function site_content_pages() {
 }
 
 function get_site_page_content($pagename) {
-    global $USER;
-    $institution = $USER->sitepages_institutionname_by_theme($pagename);
-
-    // try to get the content for this institution and if it fails try to get default site information
-    // first check to see if the db upgrade has been run so the institution column exists
-    if (get_config('version') >= '2014010801') {
-        if ($pagedata = get_record('site_content', 'name', $pagename, 'institution', $institution)) {
-            return $pagedata->content;
-        }
-        else if ($defaultpagedata = get_record('site_content', 'name', $pagename, 'institution', 'mahara')) {
-            return $defaultpagedata->content;
-        }
-        return get_string('sitecontentnotfound', 'mahara', get_string($pagename, $institution));
-    }
-    else {
-        if ($pagedata = get_record('site_content', 'name', $pagename)) {
-            return $pagedata->content;
-        }
+    if ($pagedata = get_record('site_content', 'name', $pagename)) {
+        return $pagedata->content;
     }
     return get_string('sitecontentnotfound', 'mahara', get_string($pagename));
 }
 
 
 
-/**
+/** 
  * Redirects the browser to a new location. The path to redirect to can take
  * two forms:
- *
+ *  
  * - http[something]: will redirect the user to that exact URL
  * - /[something]: will redirect to WWWROOT/[something]
- *
+ *       
  * Any other form is illegal and will cause an error.
- *
+ *      
  * @param string $location The location to redirect the user to. Defaults to
  *                         the application home page.
- */
+ */     
 function redirect($location='/') {
     $file = $line = null;
     if (headers_sent($file, $line)) {
@@ -2843,15 +2655,30 @@ function hsc ($text) {
 }
 
 /**
- * Builds the pieform for the search field in the page header
+ * Builds the pieform for the user search, normally found in the header of most 
+ * themes
  */
-function header_search_form() {
-    $plugin = get_config('searchplugin');
-    safe_require('search', $plugin);
-    return call_static_method(
-        generate_class_name('search', $plugin),
-        'header_search_form'
-    );
+function user_search_form() {
+    require_once('pieforms/pieform.php');
+    return pieform(array(
+        'name'                => 'usf',
+        'action'              => get_config('wwwroot') . 'user/find.php',
+        'renderer'            => 'oneline',
+        'autofocus'           => false,
+        'validate'            => false,
+        'presubmitcallback'   => '',
+        'elements'            => array(
+            'query' => array(
+                'type'           => 'text',
+                'defaultvalue'   => get_string('searchusers'),
+                'class'          => 'emptyonfocus',
+            ),
+            'submit' => array(
+                'type' => 'submit',
+                'value' => get_string('go'),
+            )
+        )
+    ));
 }
 
 
@@ -2887,8 +2714,7 @@ function get_script_path() {
         }
         return $_SERVER['URL'];
 
-    }
-    else {
+    } else {
         log_warn('Warning: Could not find any of these web server variables: $REQUEST_URI, $PHP_SELF, $SCRIPT_NAME or $URL');
         return false;
     }
@@ -2903,45 +2729,26 @@ function get_script_path() {
 function get_requested_host_name() {
     global $CFG;
 
-    $hostname = false;
-    if (false === $hostname && !empty($_SERVER['SERVER_NAME'])) {
-        $hostname = $_SERVER['SERVER_NAME'];
+    if (!empty($_SERVER['SERVER_NAME'])) {
+        return $_SERVER['SERVER_NAME'];
     }
-    if (false === $hostname && !empty($_ENV['SERVER_NAME'])) {
-        $hostname = $_ENV['SERVER_NAME'];
+    if (!empty($_ENV['SERVER_NAME'])) {
+        return $_ENV['SERVER_NAME'];
     }
-    if (false === $hostname && !empty($_SERVER['HTTP_HOST'])) {
-        $hostname = $_SERVER['HTTP_HOST'];
+    if (!empty($_SERVER['HTTP_HOST'])) {
+        return $_SERVER['HTTP_HOST'];
     }
-    if (false === $hostname && !empty($_ENV['HTTP_HOST'])) {
-        $hostname = $_ENV['HTTP_HOST'];
+    if (!empty($_ENV['HTTP_HOST'])) {
+        return $_ENV['HTTP_HOST'];
     }
-    if (false === $hostname && !empty($CFG->wwwroot)) {
+    if (!empty($CFG->wwwroot)) {
         $url = parse_url($CFG->wwwroot);
         if (!empty($url['host'])) {
-            $hostname = $url['host'];
+            return $url['host'];
         }
     }
-
-    if (false === $hostname) {
-        log_warn('Warning: could not find the name of this server!');
-        return false;
-    }
-    else {
-        $hostname = strtolower($hostname);
-        // Because the hostname can be user provided data (from the HTTP request), we
-        // should whitelist it.
-        if (!preg_match(
-                '/^([a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])(\\.([a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9]))*$/',
-                $hostname
-            )
-        ) {
-            log_warn('Warning: invalid hostname found in get_requested_host_name.');
-            return false;
-        }
-
-        return $hostname;
-    }
+    log_warn('Warning: could not find the name of this server!');
+    return false;
 }
 
 /**
@@ -2971,11 +2778,9 @@ function get_full_script_path() {
 
     if (isset($_SERVER['HTTPS'])) {
         $protocol = ($_SERVER['HTTPS'] == 'on') ? 'https://' : 'http://';
-    }
-    else if (isset($_SERVER['SERVER_PORT'])) { # Apache2 does not export $_SERVER['HTTPS']
+    } else if (isset($_SERVER['SERVER_PORT'])) { # Apache2 does not export $_SERVER['HTTPS']
         $protocol = ($_SERVER['SERVER_PORT'] == '443') ? 'https://' : 'http://';
-    }
-    else {
+    } else {
         $protocol = 'http://';
     }
 
@@ -2995,28 +2800,6 @@ function get_relative_script_path() {
 }
 
 /**
- * Get query string from url
- *
- * Takes in a URL and returns the querystring portion
- * or returns $_SERVER['QUERY_STRING']) if set
- *
- * @param string $url the url which may have a query string attached
- * @return string
- */
-function get_querystring($url = null) {
-
-    if (!empty($url) && $commapos = strpos($url, '?')) {
-        return substr($url, $commapos + 1);
-    }
-    else if (!empty($_SERVER['QUERY_STRING'])) {
-        return $_SERVER['QUERY_STRING'];
-    }
-    else {
-        return '';
-    }
-}
-
-/**
  * Remove query string from url
  *
  * Takes in a URL and returns it without the querystring portion
@@ -3028,8 +2811,7 @@ function strip_querystring($url) {
 
     if ($commapos = strpos($url, '?')) {
         return substr($url, 0, $commapos);
-    }
-    else {
+    } else {
         return $url;
     }
 }
@@ -3095,11 +2877,11 @@ function parse_bbcode($text) {
 }
 
 /**
- * Given some plain text, adds the appropriate HTML to it to make it appear in
+ * Given some plain text, adds the appropriate HTML to it to make it appear in 
  * an HTML document with the same formatting
  *
- * This includes escaping entities, replacing newlines etc. It is not
- * particularly intelligent about paragraphs, it just adds <br> to every
+ * This includes escaping entities, replacing newlines etc. It is not 
+ * particularly intelligent about paragraphs, it just adds <br> to every 
  * newline
  *
  * @param string $text The text to format
@@ -3116,29 +2898,6 @@ function format_whitespace($text) {
 }
 
 /**
- * Get the list of custom filters to be used in HTMLPurifier
- * @return array
- */
-function get_htmlpurifier_custom_filters() {
-    $customfilters = array();
-    if (get_config('filters')) {
-        foreach (unserialize(get_config('filters')) as $filter) {
-            // These filters are no longer necessary and have been removed
-            $builtinfilters = array('YouTube', 'TeacherTube', 'SlideShare', 'SciVee', 'GoogleVideo');
-
-            if (!in_array($filter->file, $builtinfilters)) {
-                include_once(get_config('libroot') . 'htmlpurifiercustom/' . $filter->file . '.php');
-                $classname = 'HTMLPurifier_Filter_' . $filter->file;
-                if (class_exists($classname)) {
-                    $customfilters[] = new $classname();
-                }
-            }
-        }
-    }
-    return $customfilters;
-}
-
-/**
  * Given raw html (eg typed in by a user), this function cleans it up
  * and removes any nasty tags that could mess up pages.
  *
@@ -3152,8 +2911,7 @@ function clean_html($text, $xhtml=false) {
     $config->set('Cache.SerializerPath', get_config('dataroot') . 'htmlpurifier');
     if (empty($xhtml)) {
         $config->set('HTML.Doctype', 'HTML 4.01 Transitional');
-    }
-    else {
+    } else {
         $config->set('HTML.Doctype', 'XHTML 1.0 Transitional');
     }
     $config->set('AutoFormat.Linkify', true);
@@ -3176,13 +2934,25 @@ function clean_html($text, $xhtml=false) {
     $config->set('Attr.EnableID', true);
     $config->set('Attr.IDPrefix', 'user_');
 
-    $customfilters = get_htmlpurifier_custom_filters();
-    if (!empty($customfilters)) {
+    $customfilters = array();
+    if (get_config('filters')) {
+        foreach (unserialize(get_config('filters')) as $filter) {
+            // These filters are no longer necessary and have been removed
+            $builtinfilters = array('YouTube', 'TeacherTube', 'SlideShare', 'SciVee', 'GoogleVideo');
+
+            if (!in_array($filter->file, $builtinfilters)) {
+                include_once(get_config('libroot') . 'htmlpurifiercustom/' . $filter->file . '.php');
+                $classname = 'HTMLPurifier_Filter_' . $filter->file;
+                if (class_exists($classname)) {
+                    $customfilters[] = new $classname();
+                }
+            }
+        }
         $config->set('Filter.Custom', $customfilters);
     }
 
-    // These settings help identify the configuration definition. If the
-    // definition (the $def object below) is changed (e.g. new method calls
+    // These settings help identify the configuration definition. If the 
+    // definition (the $def object below) is changed (e.g. new method calls 
     // made on it), the DefinitionRev needs to be increased. See
     // http://htmlpurifier.org/live/configdoc/plain.html#HTML.DefinitionID
     $config->set('HTML.DefinitionID', 'Mahara customisations to default config');
@@ -3194,55 +2964,6 @@ function clean_html($text, $xhtml=false) {
     $purifier = new HTMLPurifier($config);
     return $purifier->purify($text);
 }
-
-/**
- * Like clean_html(), but for CSS!
- *
- * Much of the code in this function was taken from the sample code in this post:
- * http://stackoverflow.com/questions/3241616/sanitize-user-defined-css-in-php#5209050
- *
- * @param string $input_css
- * @return string The cleaned CSS
- */
-function clean_css($input_css) {
-    require_once('htmlpurifier/HTMLPurifier.auto.php');
-    require_once('csstidy/class.csstidy.php');
-
-    // Create a new configuration object
-    $config = HTMLPurifier_Config::createDefault();
-    $config->set('Cache.SerializerPath', get_config('dataroot') . 'htmlpurifier');
-
-    $config->set('Filter.ExtractStyleBlocks', true);
-
-    if (get_config('disableexternalresources')) {
-        $config->set('URI.DisableExternalResources', true);
-    }
-
-    $customfilters = get_htmlpurifier_custom_filters();
-    if (!empty($customfilters)) {
-        $config->set('Filter.Custom', $customfilters);
-    }
-
-    $config->set('HTML.DefinitionID', 'Mahara customisations to default config for CSS');
-    $config->set('HTML.DefinitionRev', 1);
-
-    // Create a new purifier instance
-    $purifier = new HTMLPurifier($config);
-
-    // Wrap our CSS in style tags and pass to purifier.
-    // we're not actually interested in the html response though
-    $html = $purifier->purify('<style>'.$input_css.'</style>');
-
-    // The "style" blocks are stored seperately
-    $output_css = $purifier->context->get('StyleBlocks');
-
-    // Get the first style block
-    if (is_array($output_css) && count($output_css)) {
-        return $output_css[0];
-    }
-    return '';
-}
-
 
 /**
  * Given HTML, converts and formats it as text
@@ -3265,10 +2986,10 @@ function html2text($html, $fragment=true) {
  * @param string $text The text to locate URLs in
  * @return string
  *
- * {@internal{Note, it's perhaps unreasonably expected that the input to this
- * function is HTML escaped already. Especially because it's expected that
- * there are no <a href="...">s in there. This works for now because the bbcode
- * parser breaks things out into tokens, but this function might need reworking
+ * {@internal{Note, it's perhaps unreasonably expected that the input to this 
+ * function is HTML escaped already. Especially because it's expected that 
+ * there are no <a href="...">s in there. This works for now because the bbcode 
+ * parser breaks things out into tokens, but this function might need reworking 
  * to be more useful in other places.}}
  */
 function autolink_text($text) {
@@ -3283,12 +3004,12 @@ function autolink_text($text) {
 /**
  * Helps autolink_text by providing the HTML to link up URLs found.
  *
- * Intelligently decides what parts of the matched URL should be linked up, to
- * get around issues where URLs are surrounded by brackets or have trailing
+ * Intelligently decides what parts of the matched URL should be linked up, to 
+ * get around issues where URLs are surrounded by brackets or have trailing 
  * punctuation on them
  *
  * @param string $potentialurl     The URL to check. It should already have been run through hsc()
- * @param string $leadingcharacter The character (if any) before the URL. Used
+ * @param string $leadingcharacter The character (if any) before the URL. Used 
  *                                 to check for URLs surrounded by brackets
  */
 function _autolink_text_helper($potentialurl, $leadingcharacter) {
@@ -3296,29 +3017,29 @@ function _autolink_text_helper($potentialurl, $leadingcharacter) {
     $trailingcharacter = substr($potentialurl, -1);
     $startofurl = substr($potentialurl, 0, -1);
 
-    // Attempt to intelligently handle several annoyances that happen with URL
-    // auto linking. We don't want to link up brackets if the URL is enclosed
+    // Attempt to intelligently handle several annoyances that happen with URL 
+    // auto linking. We don't want to link up brackets if the URL is enclosed 
     // in them. We also don't want to link up punctuation after URLs
     if (in_array($leadingcharacter, array_keys($brackets)) &&
         in_array($trailingcharacter, $brackets)) {
         // The URL was surrounded by brackets
-        return $leadingcharacter . '<a href="' . $startofurl . '">' . $startofurl . '</a>' . $trailingcharacter;
+        return $leadingcharacter . '<a href="' . $startofurl . '">' . $startofurl . '</a>' . $trailingcharacter; 
     }
     else {
         foreach($brackets as $opener => $closer) {
             if ($trailingcharacter == $closer &&
                 false === strpos($startofurl, $opener)) {
                 // The URL ended in a bracket and didn't contain one
-                // Note that we can't just use this clause without using the clause
-                // about URLs surrounded by brackets, because otherwise we won't catch
+                // Note that we can't just use this clause without using the clause 
+                // about URLs surrounded by brackets, because otherwise we won't catch 
                 // URLs with balanced brackets in them like http://url/?(foo)&bar=1
-                return $leadingcharacter . '<a href="' . $startofurl . '">' . $startofurl . '</a>' . $trailingcharacter;
+                return $leadingcharacter . '<a href="' . $startofurl . '">' . $startofurl . '</a>' . $trailingcharacter; 
             }
         }
 
         // Check for trailing punctuation
         if (in_array($trailingcharacter, array('.', ',', '!', '?'))) {
-            return $leadingcharacter . '<a href="' . $startofurl . '">' . $startofurl . '</a>' . $trailingcharacter;
+            return $leadingcharacter . '<a href="' . $startofurl . '">' . $startofurl . '</a>' . $trailingcharacter; 
         }
         else {
             return $leadingcharacter . '<a href="' . $potentialurl . '">' . $potentialurl . '</a>';
@@ -3381,7 +3102,7 @@ function bbcode_format_post_message() {
 
 /**
  * Displays purified html on a page with an explanatory message.
- *
+ * 
  * @param string $html     The purified html.
  * @param string $filename The filename to serve the file as
  * @param array $params    Parameters previously passed to serve_file
@@ -3391,8 +3112,7 @@ function display_cleaned_html($html, $filename, $params) {
     $smarty->assign('params', $params);
     if ($params['owner']) {
         $smarty->assign('htmlremovedmessage', get_string('htmlremovedmessage', 'artefact.file', hsc($filename), profile_url((int) $params['owner']), hsc(display_name($params['owner']))));
-    }
-    else {
+    } else {
         $smarty->assign('htmlremovedmessage', get_string('htmlremovedmessagenoowner', 'artefact.file', hsc($filename)));
     }
     $smarty->assign('content', $html);
@@ -3406,7 +3126,7 @@ function display_cleaned_html($html, $filename, $params) {
  *
  * It also strips all tags except <br> and <p>.
  *
- * This version is appropriate for use on HTML. See str_shorten_text() for use
+ * This version is appropriate for use on HTML. See str_shorten_text() for use 
  * on text strings.
  *
  * @param string $str    The string to shorten
@@ -3460,10 +3180,10 @@ function str_shorten_html($str, $maxlen=100, $truncate=false, $newlines=true) {
 }
 
 /**
- * Takes a string and a length, and ensures that the string is no longer than
+ * Takes a string and a length, and ensures that the string is no longer than 
  * this length, by putting '...' in it somewhere.
  *
- * This version is appropriate for use on plain text. See str_shorten_html()
+ * This version is appropriate for use on plain text. See str_shorten_html() 
  * for use on HTML strings.
  *
  * @param string $str    The string to shorten
@@ -3493,13 +3213,13 @@ function str_shorten_text($str, $maxlen=100, $truncate=false) {
 /**
  * Builds pagination links for HTML display.
  *
- * The pagination is quite configurable, but at the same time gives a consistent
+ * The pagination is quite configurable, but at the same time gives a consistent 
  * look and feel to all pagination.
  *
- * This function takes one array that contains the options to configure the
+ * This function takes one array that contains the options to configure the 
  * pagination. Required options include:
  *
- * - url: The base URL to use for all links (it should not contain special characters)
+ * - url: The base URL to use for all links
  * - count: The total number of results to paginate for
  * - setlimit: toggle variable for enabling/disabling limit dropbox, default value = false
  * - limit: How many to show per page
@@ -3514,7 +3234,7 @@ function str_shorten_text($str, $maxlen=100, $truncate=false) {
  * - previoustext: The text to use for the 'previous page' link
  * - nexttext: The text to use for the 'next page' link
  * - lasttext: The text to use for the 'last page' link
- * - numbersincludefirstlast: Whether the page numbering should include links
+ * - numbersincludefirstlast: Whether the page numbering should include links 
  *   for the first and last pages
  * - numbersincludeprevnext: The number of pagelinks, adjacent the the current page,
  *   to include per side
@@ -3526,12 +3246,12 @@ function str_shorten_text($str, $maxlen=100, $truncate=false) {
  *
  * Optional options to support javascript pagination include:
  *
- * - datatable: The ID of the table whose TBODY's rows will be replaced with the
+ * - datatable: The ID of the table whose TBODY's rows will be replaced with the 
  *   resulting rows
- * - jsonscript: The script to make a json request to in order to retrieve
- *   both the new rows and the new pagination. See js/artefactchooser.json.php
- *   for an example. Note that the paginator javascript library is NOT
- *   automatically included just because you call this function, so make sure
+ * - jsonscript: The script to make a json request to in order to retrieve 
+ *   both the new rows and the new pagination. See js/artefactchooser.json.php 
+ *   for an example. Note that the paginator javascript library is NOT 
+ *   automatically included just because you call this function, so make sure 
  *   that your smarty() call hooks it in.
  *
  * @param array $params Options for the pagination
@@ -3642,7 +3362,7 @@ function build_pagination($params) {
 
         // Current page with adjacent prev and next pages
         if ($params['numbersincludeprevnext'] > 0) {
-            for ($i = 1; $i <= $params['numbersincludeprevnext']; $i++) {
+            for ($i=$params['numbersincludeprevnext']; $i > 0; $i--) {
                 $prevlink = $page - $i;
                 if ($prevlink < 0) {
                     break;
@@ -3712,8 +3432,8 @@ function build_pagination($params) {
             $params['lasttext'] . ' &raquo;', get_string('lastpage'), $islast, $params['offsetname']);
     }
 
-    // Build limitoptions dropbox if results are more than 10 (minimum dropbox pagination)
-    if ($params['setlimit'] && $params['count'] > 10) {
+    // Build limitoptions dropbox
+    if ($params['setlimit']) {
         $strlimitoptions = array();
         $limit = $params['limit'];
         for ($i = 0; $i < count($limitoptions); $i++) {
@@ -3725,17 +3445,13 @@ function build_pagination($params) {
             }
         }
         $output .= '<form class="pagination" action="' . hsc($params['url']) . '" method="POST">
-            <label for="setlimitselect" class="pagination"> ' . $params['limittext'] . ' </label>' .
+            <span class="pagination"> ' . $params['limittext'] . '</span>' .
             '<select id="setlimitselect" class="pagination" name="limit"> '.
                 join(' ', $strlimitoptions) .
             '</select>
             <input class="currentoffset" type="hidden" name="' . $params['offsetname'] . '" value="' . $params['offset'] . '"/>
             <input class="pagination js-hidden" type="submit" name="submit" value="' . get_string('change') . '"/>
         </form>';
-    }
-    // if $params['count'] is less than 10 add the setlimitselect as a hidden field so that elasticsearch js can access it
-    else if ($params['setlimit']) {
-        $output .= '<input type="hidden" id="setlimitselect" name="limit" value="' . $params['limit'] . '">';
     }
 
     // Work out what javascript we need for the paginator
@@ -3744,18 +3460,12 @@ function build_pagination($params) {
     if (isset($params['jsonscript']) && isset($params['datatable'])) {
         $paginator_js = hsc(get_config('wwwroot') . 'js/paginator.js');
         $datatable    = json_encode($params['datatable']);
-        if (!empty($params['searchresultsheading'])) {
-            $heading  = json_encode($params['searchresultsheading']);
-        }
-        else {
-            $heading  = 'null';
-        }
         $jsonscript   = json_encode($params['jsonscript']);
         $extradata    = json_encode($params['extradata']);
-        $js .= "new Paginator($id, $datatable, $heading, $jsonscript, $extradata);";
+        $js .= "new Paginator($id, $datatable, $jsonscript, $extradata);";
     }
     else {
-        $js .= "new Paginator($id, null, null, null, null);";
+        $js .= "new Paginator($id, null, null, null);";
     }
 
     // Output the count of results
@@ -3770,18 +3480,18 @@ function build_pagination($params) {
 }
 
 /**
- * Used by build_pagination to build individual links. Shouldn't be used
+ * Used by build_pagination to build individual links. Shouldn't be used 
  * elsewhere.
  */
 function build_pagination_pagelink($class, $url, $setlimit, $limit, $offset, $text, $title, $disabled=false, $offsetname='offset') {
     $return = '<span class="pagination';
     $return .= ($class) ? " $class" : '';
 
-    $url = (false === strpos($url, '?')) ? $url . '?' : $url . '&';
+    $url = (false === strpos($url, '?')) ? $url . '?' : $url . '&amp;';
     $url .= "$offsetname=$offset";
     if ($setlimit) {
-        $url .= '&' . "setlimit=$setlimit";
-        $url .= '&' . "limit=$limit";
+        $url .= '&amp;' . "setlimit=$setlimit";
+        $url .= '&amp;' . "limit=$limit";
     }
 
     if ($disabled) {
@@ -3821,7 +3531,6 @@ function mahara_http_request($config, $quiet=false) {
     if (strpos($config[CURLOPT_URL], 'https://') === 0) {
         if ($cainfo = get_config('cacertinfo')) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
             curl_setopt($ch, CURLOPT_CAINFO, $cainfo);
         }
     }
@@ -4012,87 +3721,4 @@ function sorttablearraydesc($a, $b) {
         return strcmp(strtolower($b[$sortvalue]), strtolower($a[$sortvalue]));
     }
     return ($b[$sortvalue] < $a[$sortvalue]) ? -1 : 1;
-}
-
-/**
- * Add version number to url
- * This allows auto refreshing of cache when upgrading
- * or updating Mahara to different version
- */
-function append_version_number($urls) {
-    if (is_array($urls)) {
-        $formattedurls = array();
-        foreach ($urls as $url) {
-            if (preg_match('/\?/',$url)) {
-                $url .= '&v=' . get_config('release');
-            }
-            else {
-                $url .= '?v=' . get_config('release');
-            }
-            $formattedurls[] = $url;
-        }
-        return $formattedurls;
-    }
-    if (preg_match('/\?/',$urls)) {
-        $urls .= '&v=' . get_config('release');
-    }
-    else {
-        $urls .= '?v=' . get_config('release');
-    }
-    return $urls;
-}
-
-/**
- * Escape a string so that it's suitable to be used as a CSS quote-enclosed string
- * If it's single-quoted, preface single-quotes with a backslash. If it's double-quoted,
- * preface double-quotes with a backslash. Preface non-escaping backslashes with a
- * backslash. Remove newlines.
- * @param string $string The string to escape
- * @param bool $singlequote True to escape for single quotes, False to escape for double
- * @return string
- */
-function escape_css_string($string, $singlequote=true) {
-    if ($singlequote) {
-        $delim = "'";
-    }
-    else {
-        $delim = '"';
-    }
-    return str_replace(
-        array('\\', "\n", $delim),
-        array('\\\\', '', "\\$delim"),
-        $string
-    );
-}
-
-/**
- * Indicates whether a particular user can use skins on their pages or not. This is in
- * lib/web.php instead of lib/skin.php so that we can use it while generating the main nav.
-
- * @param int $userid The Id of the user to check. Null checks the current user.
- * @param bool $managesiteskin = true if admins try to manage the site skin
- * @param bool $issiteview = true if admins try to use skins for site views
- * @return bool
- */
-function can_use_skins($userid = null, $managesiteskin=false, $issiteview=false) {
-    global $USER;
-
-    if (!get_config('skins')) {
-        return false;
-    }
-
-    // Site Admins can access site skin
-    if ($USER->get('admin') && ($managesiteskin || $issiteview)) {
-        return true;
-    }
-
-    // A user can belong to multiple institutions. If any of their institutions allow it, then
-    // let them use skins!
-    $results = get_configs_user_institutions('skins', $userid);
-    foreach ($results as $r) {
-        if ($r) {
-            return true;
-        }
-    }
-    return false;
 }

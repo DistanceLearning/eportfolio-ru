@@ -1,12 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2007 Catalyst IT Ltd (http://www.catalyst.net.nz)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Martin Dougiamas <martin@moodle.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
  * @copyright  (C) 2001-3001 Martin Dougiamas http://dougiamas.com
+ * @copyright  additional modifications (c) Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -28,19 +43,11 @@ function db_table_name($name) {
  * @return string
  */
 function db_quote_table_placeholders($sql) {
-    return preg_replace_callback('/\{([a-z][a-z0-9_]+)\}/', '_db_quote_table_placeholders_callback', $sql);
+    return preg_replace_callback('/\{([a-z][a-z0-9_]+)\}/', create_function('$matches', 'return db_table_name($matches[1]);'), $sql);
 }
 
 /**
- * A callback function used only in db_quote_table_placeholders
- * @param array $matches
- */
-function _db_quote_table_placeholders_callback($matches) {
-    return db_table_name($matches[1]);
-}
-
-/**
- * Given a table name or other identifier, return it quoted for the appropriate
+ * Given a table name or other identifier, return it quoted for the appropriate 
  * database engine currently being used
  *
  * @param string $identifier The identifier to quote
@@ -1385,15 +1392,7 @@ function execute_sql_arr($sqlarr, $continue=true, $feedback=true) {
 
     $status = true;
     foreach($sqlarr as $sql) {
-        try {
-            if (!execute_sql($sql)) {
-                $status = false;
-                if (!$continue) {
-                    break;
-                }
-            }
-        }
-        catch (Exception $e) {
+        if (!execute_sql($sql)) {
             $status = false;
             if (!$continue) {
                 break;
@@ -1475,19 +1474,11 @@ function configure_dbconnection() {
     $db->Execute("SET NAMES 'utf8'");
 
     if (is_mysql()) {
-        $db->Execute("SET SQL_MODE='POSTGRESQL'");
         $db->Execute("SET CHARACTER SET utf8");
-        $db->Execute("SET SQL_BIG_SELECTS=1");
+        $db->Execute("SET SQL_MODE='POSTGRESQL'");
     }
 
-    if (!empty($CFG->dbtimezone)) {
-        if (is_postgres()) {
-            $db->Execute("SET SESSION TIME ZONE '{$CFG->dbtimezone}'");
-        }
-        if (is_mysql()) {
-            $db->Execute("SET time_zone='{$CFG->dbtimezone}'");
-        }
-    }
+    // more later..
 }
 
 function is_postgres() {
@@ -1798,12 +1789,12 @@ function db_drop_trigger($name, $table) {
     if (is_postgres()) {
         $functionname = $name . '_function';
         $triggername  = $name . '_trigger';
-        execute_sql('DROP TRIGGER IF EXISTS {' . $triggername . '} ON {' . $table . '}');
-        execute_sql('DROP FUNCTION IF EXISTS {' . $functionname . '}()');
+        execute_sql('DROP TRIGGER {' . $triggername . '} ON {' . $table . '}');
+        execute_sql('DROP FUNCTION {' . $functionname . '}()');
     }
     else if (is_mysql()) {
         $triggername = $name . '_trigger';
-        execute_sql('DROP TRIGGER IF EXISTS {' . $triggername . '}');
+        execute_sql('DROP TRIGGER {' . $triggername . '}');
     }
     else {
         throw new SQLException("db_drop_trigger() is not implemented for your database engine");

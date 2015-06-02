@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage form
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -28,12 +44,8 @@ function pieform_element_viewacl(Pieform $form, $element) {
     $value = $form->get_value($element);
 
     // Look for the presets and split them into two groups
-    require_once(get_config('libroot') . 'antispam.php');
     $public = false;
-    if (is_probationary_user()) {
-        $public = false;
-    }
-    else if (get_config('allowpublicviews') && $USER->institution_allows_public_views()) {
+    if (get_config('allowpublicviews') && $USER->institution_allows_public_views()) {
         $public = true;
     }
     else if (get_config('allowpublicprofiles') && $element['viewtype'] == 'profile') {
@@ -75,8 +87,7 @@ function pieform_element_viewacl(Pieform $form, $element) {
             }
         }
     }
-
-    $defaultaccesslist = ($accesslist) ? 0 : 1;
+    
     $myinstitutions = array();
     foreach ($USER->get('institutions') as $i) {
         $myinstitutions[] = array(
@@ -144,7 +155,6 @@ function pieform_element_viewacl(Pieform $form, $element) {
     $smarty->assign('potentialpresets', json_encode($allowedpresets));
     $smarty->assign('loggedinindex', $loggedinindex);
     $smarty->assign('accesslist', json_encode($accesslist));
-    $smarty->assign('defaultaccesslist', $defaultaccesslist);
     $smarty->assign('viewid', $form->get_property('viewid'));
     $smarty->assign('formname', $form->get_property('name'));
     $smarty->assign('myinstitutions', json_encode($myinstitutions));

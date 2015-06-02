@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -157,13 +173,13 @@ function releaseview_submit() {
     redirect($view->get_url());
 }
 
-$javascript = array('paginator', 'viewmenu', 'expandable');
+$javascript = array('paginator', 'viewmenu', 'artefact/resume/resumeshowhide.js');
 $blocktype_js = $view->get_all_blocktype_javascript();
 $javascript = array_merge($javascript, $blocktype_js['jsfiles']);
 $inlinejs = "addLoadEvent( function() {\n" . join("\n", $blocktype_js['initjs']) . "\n});";
 
 $extrastylesheets = array('style/views.css');
-
+  
 // If the view has comments turned off, tutors can still leave
 // comments if the view is submitted to their group.
 if (!empty($releaseform) || ($commenttype = $view->user_comments_allowed($USER))) {
@@ -189,18 +205,7 @@ $viewtheme = $view->get('theme');
 if ($viewtheme && $THEME->basename != $viewtheme) {
     $THEME = new Theme($viewtheme);
 }
-$headers = array('<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'theme/views.css?v=' . get_config('release'). '">');
-$headers = array_merge($headers, $view->get_all_blocktype_css());
-// Set up skin, if the page has one
-$viewskin = $view->get('skin');
-$issiteview = $view->get('institution') == 'mahara';
-if ($viewskin && get_config('skins') && can_use_skins($owner, false, $issiteview) && (!isset($THEME->skins) || $THEME->skins !== false)) {
-    $skin = array('skinid' => $viewskin, 'viewid' => $view->get('id'));
-    $skindata = unserialize(get_field('skin', 'viewskin', 'id', $viewskin));
-}
-else {
-    $skin = false;
-}
+$headers = array('<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'theme/views.css">');
 
 if (!$view->is_public()) {
     $headers[] = '<meta name="robots" content="noindex">';  // Tell search engines not to index non-public views
@@ -210,21 +215,12 @@ if (!$view->is_public()) {
 if (get_config_plugin('blocktype', 'gallery', 'useslimbox2')) {
     $langdir = (get_string('thisdirection', 'langconfig') == 'rtl' ? '-rtl' : '');
     $headers = array_merge($headers, array(
-        '<script type="text/javascript" src="' . get_config('wwwroot') . 'lib/slimbox2/js/slimbox2.js?v=' . get_config('release'). '"></script>',
-        '<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'lib/slimbox2/css/slimbox2' . $langdir . '.css?v=' . get_config('release'). '">'
+        '<script type="text/javascript" src="' . get_config('wwwroot') . 'lib/slimbox2/js/slimbox2.js"></script>',
+        '<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'lib/slimbox2/css/slimbox2' . $langdir . '.css">'
     ));
 }
 
 $can_edit = $USER->can_edit_view($view) && !$submittedgroup && !$view->is_submitted();
-
-$viewgroupform = false;
-if ($owner && $owner == $USER->get('id')) {
-    if ($tutorgroupdata = group_get_user_course_groups()) {
-        if (!$view->is_submitted()) {
-            $viewgroupform = view_group_submission_form($view, $tutorgroupdata, 'view');
-        }
-    }
-}
 
 $smarty = smarty(
     $javascript,
@@ -233,7 +229,6 @@ $smarty = smarty(
     array(
         'stylesheets' => $extrastylesheets,
         'sidebars' => false,
-        'skin' => $skin
     )
 );
 
@@ -275,17 +270,6 @@ if (get_config('viewmicroheaders')) {
 
     $smarty->assign('microheadertitle', $titletext);
 
-    $smarty->assign('maharalogofilename', 'images/site-logo-small.png');
-    // Support for normal, light, or dark small Mahara logo - to use with skins
-    if ($skin) {
-        if ($skindata['header_logo_image'] == 'light') {
-            $smarty->assign('maharalogofilename', 'images/site-logo-small-light.png');
-        }
-        else if ($skindata['header_logo_image'] == 'dark') {
-            $smarty->assign('maharalogofilename', 'images/site-logo-small-dark.png');
-        }
-    }
-
     if ($can_edit) {
         if ($new) {
             $microheaderlinks = array(
@@ -300,7 +284,7 @@ if (get_config('viewmicroheaders')) {
             $microheaderlinks = array(
                 array(
                     'name' => get_string('editthisview', 'view'),
-                    'image' => $THEME->get_url('images/btn_edit.png'),
+                    'image' => $THEME->get_url('images/edit.gif'),
                     'url' => get_config('wwwroot') . 'view/blocks.php?id=' . $viewid,
                 ),
             );
@@ -318,13 +302,6 @@ $title = hsc(TITLE);
 
 if (!get_config('viewmicroheaders')) {
     $smarty->assign('maintitle', $titletext);
-    if ($skin) {
-        if ($skindata['header_logo_image'] == 'light' || $skindata['header_logo_image'] == 'dark') {
-            // override the default $smarty->assign('sitelogo') that happens
-            // in the initial call to smarty()
-            $smarty->assign('sitelogo', $THEME->header_logo($skindata['header_logo_image']));
-        }
-    }
 }
 
 // Provide a link for roaming teachers to return
@@ -342,7 +319,7 @@ if ($mnetviewlist = $SESSION->get('mnetviewaccess')) {
 }
 
 $smarty->assign('viewdescription', $view->get('description'));
-$smarty->assign('viewcontent', $view->build_rows());
+$smarty->assign('viewcontent', $view->build_columns());
 $smarty->assign('releaseform', $releaseform);
 if (isset($addfeedbackform)) {
     $smarty->assign('enablecomments', 1);
@@ -354,8 +331,15 @@ if (isset($objectionform)) {
 }
 $smarty->assign('viewbeingwatched', $viewbeingwatched);
 
-if ($viewgroupform) {
-    $smarty->assign('view_group_submission_form', $viewgroupform);
+if ($owner && $owner == $USER->get('id')) {
+    if ($tutorgroupdata = group_get_user_course_groups()) {
+        if (!$view->is_submitted()) {
+            $smarty->assign(
+                'view_group_submission_form',
+                view_group_submission_form($view, $tutorgroupdata, 'view')
+            );
+        }
+    }
 }
 
 $smarty->display('view/view.tpl');

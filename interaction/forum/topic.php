@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage interaction-forum
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -115,10 +131,8 @@ $posts = get_records_sql_array(
     $offset,
     $limit
 );
-
 // Get extra info of posts
-$prevdeletedid = false;
-foreach ($posts as $postid => $post) {
+foreach ($posts as $post) {
     // Get the number of posts
     $post->postcount = get_postcount($post->poster);
 
@@ -130,23 +144,7 @@ foreach ($posts as $postid => $post) {
     $post->moderator = is_moderator($post->poster)? $post->poster : null;
     // Update the subject of posts
     $post->subject = !empty($post->subject) ? $post->subject : get_string('re', 'interaction.forum', get_ancestorpostsubject($post->id));
-
-    // Consolidate deleted message posts by the same author into one "X posts by Spammer Joe were deleted"
-    if ($post->deleted) {
-        if ($prevdeletedid && $posts[$prevdeletedid]->poster == $post->poster) {
-            $posts[$prevdeletedid]->deletedcount++;
-            unset($posts[$postid]);
-        }
-        else {
-            $prevdeletedid = $postid;
-            $post->deletedcount = 1;
-        }
-    }
-    else {
-        $prevdeletedid = false;
-    }
 }
-
 // If the user has internal notifications for this topic, mark them
 // all as read.  Obviously there's no guarantee the user will actually
 // read all the posts on this page, but better than letting the unread
@@ -238,6 +236,28 @@ function renderpost($post, $indent) {
     $smarty->assign('closed', $topic->closed);
     $smarty->assign('ineditwindow', $ineditwindow);
     return $smarty->fetch('interaction:forum:post.tpl');
+}
+
+/*
+ * Return the subject for the topic
+ *
+ * @param int $postid the ID of the post
+ *
+ * @return string the subject
+ */
+
+function get_ancestorpostsubject($postid) {
+    while ($ppost = get_record_sql(
+           'SELECT p1.id, p1.subject
+            FROM {interaction_forum_post} p1
+            INNER JOIN {interaction_forum_post} p2 ON (p1.id = p2.parent)
+            WHERE p2.id = ?', array($postid))) {
+        if (!empty ($ppost->subject)) {
+            return $ppost->subject;
+        }
+        $postid = $ppost->id;
+    }
+    return null;
 }
 
 function subscribe_topic_validate(Pieform $form, $values) {

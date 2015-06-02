@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -33,11 +49,11 @@ results.rowfunction = function (r, rownumber, d) {
 
     var titleElement;
     if (r.links && r.links._default) {
-        titleElement = [H3({'class': 'title'}, A({'href': r.links._default}, r.title))];
+        titleElement = [H3(null, A({'href': r.links._default}, r.title))];
         delete r.links._default;
     }
     else {
-        titleElement = [H3({'class': 'title'}, r.title)];
+        titleElement = [H3(null, r.title)];
     }
 
     for ( var k in r.links ) {
@@ -47,7 +63,7 @@ results.rowfunction = function (r, rownumber, d) {
 
     if (r.views) {
         var viewsList = UL(null);
-        var viewsElement = DIV(null, LABEL(null, $enc_pages), viewsList);
+        var viewsElement = P(null, STRONG(null, $enc_pages), viewsList);
         for ( var k in r.views ) {
             var link = A({'href': r.views[k]}, k);
             viewsList.appendChild(LI(null, link));
@@ -72,7 +88,7 @@ function dosearch(e) {
 }
 EOF;
 
-if ($query != '') {
+if (!empty($query)) {
     $javascript .= 'results.query = ' . json_encode($query) . ";\n";
     $javascript .= "results.updateOnLoad();\n";
 }
@@ -80,7 +96,7 @@ else {
     $javascript .= 'results.query = \'\';';
 }
 
-$smarty = smarty(array('tablerenderer'), array(), array(), array('sidebars' => true));
+$smarty = smarty(array('tablerenderer'), array(), array(), array('sidebars' => false));
 $smarty->assign('query', $query);
 $smarty->assign('artefacttype', $artefacttype);
 $smarty->assign('INLINEJAVASCRIPT', $javascript);

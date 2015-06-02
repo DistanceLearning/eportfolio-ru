@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -14,7 +30,7 @@ define('ADMIN', 1);
 define('MENUITEM', 'managegroups/categories');
 
 require(dirname(dirname(dirname(__FILE__))) . '/init.php');
-define('TITLE', get_string('groupcategories', 'admin'));
+define('TITLE', get_string('groups', 'admin'));
 
 $optionform = pieform(array(
     'name'       => 'groupcategories',
@@ -39,17 +55,13 @@ function groupcategories_submit(Pieform $form, $values) {
     redirect(get_config('wwwroot') . 'admin/groups/groupcategories.php');
 }
 
-$strings = array('edit', 'delete', 'update', 'cancel', 'add', 'name', 'unknownerror');
-$adminstrings = array('confirmdeletecategory', 'deletefailed', 'addnewgroupcategory');
-$argumentstrings = array('editspecific', 'deletespecific');
+$strings = array('edit','delete','update','cancel','add','name','unknownerror');
+$adminstrings = array('confirmdeletecategory', 'deletefailed');
 foreach ($strings as $string) {
     $getstring[$string] = json_encode(get_string($string));
 }
 foreach ($adminstrings as $string) {
     $getstring[$string] = json_encode(get_string($string, 'admin'));
-}
-foreach ($argumentstrings as $string) {
-    $getstring[$string] = json_encode(get_string($string, 'mahara', '%s'));
 }
 
 $thead = array(json_encode(get_string('name', 'admin')), '""');
@@ -57,35 +69,27 @@ $ijs = "var thead = TR(null,map(partial(TH,null),[" . implode($thead,",") . "]))
 
 $ijs .= <<< EOJS
 // Request a list of menu items from the server
-function getitems(r) {
-    sendjsonrequest('getgroupcategories.json.php', {}, 'GET', function(data) {
-        data.focusid = (typeof r != 'undefined') ? r.id : false;
-        displaymenuitems(data);
-    });
+function getitems() {
+    sendjsonrequest('getgroupcategories.json.php', {}, 'GET',
+                    function(data) { displaymenuitems(data.groupcategories); });
 }
 
 
 // Puts the list of menu items into the empty table.
-function displaymenuitems(data) {
-    var itemlist = data.groupcategories;
+function displaymenuitems(itemlist) {
     var rows = map(formatrow,itemlist);
     var form = FORM({'id':'form','method':'post','enctype':'multipart/form-data',
                          'encoding':'multipart/form-data'},
                     TABLE({'class':'nohead'},TBODY(null,[thead,rows,addform()])));
     replaceChildNodes($('menuitemlist'),form);
-    if (data.focusid) {
-        $('item' + data.focusid).focus();
-    }
 }
 
 // Creates one table row
 function formatrow (item) {
     // item has id, type, name, link, linkedto
-    var edit = INPUT({'id':'item' + item.id,'type':'image','src':config.theme['images/btn_edit.png'],
-        'title':{$getstring['edit']},'alt':{$getstring['editspecific']}.replace('%s', item.name)});
+    var edit = INPUT({'type':'image','src':config.theme['images/edit.gif'],'title':{$getstring['edit']}});
     connect(edit, 'onclick', function (e) { e.stop(); edititem(item); });
-    var del = INPUT({'type':'image','src':config.theme['images/btn_deleteremove.png'],
-        'title':{$getstring['delete']},'alt':{$getstring['deletespecific']}.replace('%s', item.name)});
+    var del = INPUT({'type':'image','src':config.theme['images/icon_close.gif'],'title':{$getstring['delete']}});
     connect(del, 'onclick', function (e) { e.stop(); delitem(item.id); });
     var cells = map(
         partial(TD,null),
@@ -116,7 +120,6 @@ function editform(item) {
     var rowtype = 'add';
     if (!item.name) {
         item.name = '';
-        item.label = {$getstring['addnewgroupcategory']};
         // The save button says 'add', and there's no cancel button.
         setNodeAttribute(save,'value',{$getstring['add']});
         savecancel = [save];
@@ -128,21 +131,13 @@ function editform(item) {
         var cancel = INPUT({'type':'button','class':'button','value':{$getstring['cancel']}});
         connect(cancel, 'onclick', closeopenedits);
         savecancel = [save,cancel];
-        item.label = {$getstring['edit']};
     }
 
     // A text field for the name
-    var label = LABEL({'for':'name'+item.id,'class':'accessible-hidden'}, null, item.label);
     var name = INPUT({'type':'text','class':'text','id':'name'+item.id,'value':item.name});
-    connect(name, 'onkeydown', function(e) {
-        if (keypressKeyCode(e) == 13) {
-            signal(save, 'onclick');
-            e.stop();
-        }
-    });
-    var parentspan = createDOM('span',null,label,name);
+
     var row = TR({'id':'row'+item.id, 'class':rowtype},
-                 map(partial(TD,null),[parentspan,savecancel]));
+                 map(partial(TD,null),[name,savecancel]));
     return row;
 }
 
@@ -166,7 +161,6 @@ function edititem(item) {
     addElementClass(menuitem,'hidden');
     var newrow = editform(item);
     insertSiblingNodesBefore(menuitem, newrow);
-    $('name' + item.id).focus();
 }
 
 // Receive standard json error message
@@ -188,9 +182,7 @@ function saveitem(itemid) {
 
     var data = {'name':name,
                 'itemid':itemid};
-    sendjsonrequest('updategroup.json.php', data, 'POST', function(r) {
-        getitems(r);
-    });
+    sendjsonrequest('updategroup.json.php', data, 'POST', getitems);
     return false;
 }
 

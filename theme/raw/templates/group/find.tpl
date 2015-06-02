@@ -1,13 +1,15 @@
 {include file="header.tpl"}
 {$form|safe}
-{if $groups}<div id="findgroups" class="fullwidth listing">
+{if $groups}<table id="findgroups" class="fullwidth listing">
 {foreach from=$groups item=group}
-            <div class="listrow {cycle values='r0,r1'}">
+            <tr><td class="{cycle values='r0,r1'}">
+                    {include file="group/groupuserstatus.tpl" group=$group returnto='find'}
+                <div class="findgroupsdetails">
                      {include file="group/group.tpl" group=$group returnto='mygroups'}
-            <div class="cb"></div>
-            </div>
+                </div>
+            </td></tr>
 {/foreach}
-			</div>
+			</table>
 {$pagination|safe}
 {else}
             <div class="message">{str tag="nogroupsfound" section="group"}</div>

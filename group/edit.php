@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -14,7 +30,6 @@ define('MENUITEM', 'groups/groupsiown');
 require(dirname(dirname(__FILE__)) . '/init.php');
 require_once('pieforms/pieform.php');
 require_once('group.php');
-require_once(get_config('libroot') . 'antispam.php');
 
 if ($id = param_integer('id', null)) {
     define('TITLE', get_string('editgroup', 'group'));
@@ -65,8 +80,7 @@ else {
         'suggestfriends' => 0,
         'urlid'          => null,
         'editwindowstart' => null,
-        'editwindowend'  => null,
-        'sendnow'        => 0
+        'editwindowend'  => null
     );
 }
 
@@ -235,7 +249,6 @@ else {
 }
 
 $publicallowed = get_config('createpublicgroups') == 'all' || (get_config('createpublicgroups') == 'admins' && $USER->get('admin'));
-$publicallowed = $publicallowed && !is_probationary_user();
 
 if (!$id && !param_exists('pieform_editgroup')) {
     // If a 'public=0' parameter is passed on the first page load, hide the
@@ -372,20 +385,7 @@ $elements['viewnotify'] = array(
     'description' => get_string('viewnotifydescription', 'group'),
     'defaultvalue' => $group_data->viewnotify
 );
-if ($cancreatecontrolled) {
-    $elements['sendnow'] = array(
-        'type'         => 'checkbox',
-        'title'        => get_string('allowsendnow', 'group'),
-        'description'  => get_string('allowsendnowdescription', 'group'),
-        'defaultvalue' => $group_data->sendnow
-    );
-}
-else {
-    $form['elements']['sendnow'] = array(
-        'type'         => 'hidden',
-        'value'        => $group_data->sendnow,
-    );
-}
+
 $form['elements']['settings']['elements'] = $elements;
 $editgroup = pieform($form);
 
@@ -442,7 +442,7 @@ function editgroup_cancel_submit() {
 }
 
 function editgroup_submit(Pieform $form, $values) {
-    global $USER, $SESSION, $group_data, $publicallowed;
+    global $USER, $SESSION, $group_data;
 
     $values['public'] = (isset($values['public'])) ? $values['public'] : 0;
     $values['usersautoadded'] = (isset($values['usersautoadded'])) ? $values['usersautoadded'] : 0;
@@ -456,7 +456,7 @@ function editgroup_submit(Pieform $form, $values) {
         'controlled'     => intval($values['controlled']),
         'request'        => intval($values['request']),
         'usersautoadded' => intval($values['usersautoadded']),
-        'public'         => ($publicallowed ? intval($values['public']) : 0),
+        'public'         => intval($values['public']),
         'viewnotify'     => intval($values['viewnotify']),
         'submittableto'  => intval($values['submittableto']),
         'editroles'      => $values['editroles'],
@@ -467,15 +467,10 @@ function editgroup_submit(Pieform $form, $values) {
         'invitefriends'  => intval($values['invitefriends']),
         'suggestfriends' => intval($values['suggestfriends']),
         'editwindowstart' => db_format_timestamp($values['editwindowstart']),
-        'editwindowend'  => db_format_timestamp($values['editwindowend']),
-        'sendnow'        => intval($values['sendnow'])
+        'editwindowend'  => db_format_timestamp($values['editwindowend'])
     );
 
-    if (
-            get_config('cleanurls')
-            && isset($values['urlid'])
-            && '' !== (string) $values['urlid']
-    ) {
+    if (get_config('cleanurls') && isset($values['urlid'])) {
         $newvalues['urlid'] = $values['urlid'];
     }
 
@@ -506,7 +501,7 @@ function editgroup_submit(Pieform $form, $values) {
 $js = '
 $j(function() {
     $j("#editgroup_controlled").click(function() {
-        if (this.checked) {
+        if ($(this).checked) {
             $j("#editgroup_request").removeAttr("disabled");
             $j("#editgroup_open").removeAttr("checked");
             if (!$j("#editgroup_request").attr("checked")) {
@@ -516,7 +511,7 @@ $j(function() {
         }
     });
     $j("#editgroup_open").click(function() {
-        if (this.checked) {
+        if ($(this).checked) {
             $j("#editgroup_controlled").removeAttr("checked");
             $j("#editgroup_request").removeAttr("checked");
             $j("#editgroup_request").attr("disabled", true);
@@ -531,7 +526,7 @@ $j(function() {
         }
     });
     $j("#editgroup_request").click(function() {
-        if (this.checked) {
+        if ($(this).checked) {
             $j("#editgroup_suggestfriends").removeAttr("disabled");
         }
         else {
@@ -542,7 +537,7 @@ $j(function() {
         }
     });
     $j("#editgroup_invitefriends").click(function() {
-        if (this.checked) {
+        if ($(this).checked) {
             if ($j("#editgroup_request").attr("checked") || $j("#editgroup_open").attr("checked")) {
                 $j("#editgroup_suggestfriends").removeAttr("disabled");
             }
@@ -550,12 +545,12 @@ $j(function() {
         }
     });
     $j("#editgroup_suggestfriends").click(function() {
-        if (this.checked) {
+        if ($(this).checked) {
             $j("#editgroup_invitefriends").removeAttr("checked");
         }
     });
     $j("#editgroup_hidemembersfrommembers").click(function() {
-        if (this.checked) {
+        if ($(this).checked) {
             $j("#editgroup_hidemembers").attr("checked", true);
             $j("#editgroup_hidemembers").attr("disabled", true);
         }

@@ -9,6 +9,7 @@
         {else}
             {str tag=nameplural section='interaction.$plugin}
         {/if}
+        </li>
         {if $interactions}
             <ul>
             {foreach from=$interactions item=interaction}
@@ -22,7 +23,6 @@
             {/foreach}
             </ul>
         {/if}
-        </li>
     {/foreach} 
     </ul>
     {else}

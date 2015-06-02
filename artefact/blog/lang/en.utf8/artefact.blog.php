@@ -1,160 +1,112 @@
 <?php
-/**
- *
- * @package    mahara
- * @subpackage lang
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- *
- */
 
 defined('INTERNAL') || die();
 
-$string['pluginname'] = 'Journals';
-
-$string['blog'] = 'Journal';
-$string['blogs'] = 'Journals';
-$string['addblog'] = 'Create journal';
-$string['addpost'] = 'New entry';
-$string['alignment'] = 'Alignment';
-$string['allowcommentsonpost'] = 'Allow comments on your entry.';
-$string['allposts'] = 'All entries';
-$string['attach'] = 'Attach';
-$string['attachedfilelistloaded'] = 'Attached file list loaded';
-$string['attachedfiles'] = 'Attached files';
-$string['attachment'] = 'Attachment';
-$string['attachments'] = 'Attachments';
-$string['blogcopiedfromanotherview'] = 'Note: This block has been copied from another page. You may move it around or remove it, but you cannot change what %s is in it.';
-$string['blogdesc'] = 'Description';
-$string['blogdescdesc'] = 'e.g., ‘A record of Jill\'s experiences and reflections’.';
-$string['blogdoesnotexist'] = 'You are trying to access a journal that does not exist';
-$string['blogpostdoesnotexist'] = 'You are trying to access a journal entry that does not exist';
-$string['blogpost'] = 'Journal entry';
-$string['blogdeleted'] = 'Journal deleted';
-$string['blogpostdeleted'] = 'Journal entry deleted';
-$string['blogpostpublished'] = 'Journal entry published';
-$string['blogpostunpublished'] = 'Journal entry unpublished';
-$string['blogpostsaved'] = 'Journal entry saved';
-$string['blogsettings'] = 'Journal settings';
-$string['blogtitle'] = 'Title';
-$string['blogtitledesc'] = 'e.g., ‘Jill’s Nursing Practicum Journal’.';
-$string['border'] = 'Border';
-$string['by'] = 'by';
-$string['cancel'] = 'Cancel';
-$string['createandpublishdesc'] = 'This will create the journal entry and make it available to others.';
-$string['createasdraftdesc'] = 'This will create the journal entry, but it will not become available to others until you choose to publish it.';
-$string['createblog'] = 'Create journal';
-$string['dataimportedfrom'] = 'Data imported from %s';
-$string['defaultblogtitle'] = '%s\'s Journal';
-$string['deleteblog?'] = 'Are you sure you want to delete this journal?';
-$string['deletebloghaspost?'] = array(
-    0 => 'This journal contains 1 entry. Are you sure you want to delete this journal?',
-    1 => 'This journal contains %d entries. Are you sure you want to delete this journal?'
-);
-$string['deletebloghasview?'] = array(
-    0 => 'This journal contains entries that are used in 1 page. Are you sure you want to delete this journal?',
-    1 => 'This journal contains entries that are used in %d pages. Are you sure you want to delete this journal?'
-);
-$string['deleteblogpost?'] = 'Are you sure you want to delete this entry?';
-$string['description'] = 'Description';
-$string['dimensions'] = 'Dimensions';
-$string['draft'] = 'Draft';
-$string['edit'] = 'Edit';
-$string['editblogpost'] = 'Edit journal entry';
-$string['entriesimportedfromleapexport'] = 'Entries imported from a LEAP export that were not able to be imported elsewhere';
-$string['errorsavingattachments'] = 'An error occurred while saving journal entry attachments';
-$string['horizontalspace'] = 'Horizontal space';
-$string['insert'] = 'Insert';
-$string['insertimage'] = 'Insert image';
-$string['moreoptions'] = 'More options';
-$string['mustspecifytitle'] = 'You must specify a title for your entry';
-$string['mustspecifycontent'] = 'You must specify some content for your entry';
-$string['name'] = 'Name';
-$string['newattachmentsexceedquota'] = 'The total size of the new files that you have uploaded to this entry would exceed your quota. You may be able to save the entry if you remove some of the attachments you have just added.';
-$string['newblog'] = 'New journal';
-$string['newblogpost'] = 'New journal entry in journal "%s"';
-$string['newerposts'] = 'Newer entries';
-$string['nodefaultblogfound'] = 'No default journal found. This is a bug in the system. To fix it, you need to enable the multiple journals option on the <a href="%saccount/index.php">account settings</a> page.';
-$string['nopostsyet'] = 'No entries yet.';
-$string['noimageshavebeenattachedtothispost'] = 'No images have been attached to this entry. You need to upload or attach an image to the entry before you can insert it.';
-$string['nofilesattachedtothispost'] = 'No attached files';
-$string['noresults'] = 'No journal entries found';
-$string['olderposts'] = 'Older entries';
-$string['post'] = 'entry';
-$string['postbody'] = 'Entry';
+$string['addblog'] = 'Добавить блог';
+$string['addpost'] = 'Добавить пост';
+$string['alignment'] = 'Выравнивание';
+$string['allowcommentsonpost'] = 'Разрешить комментировать вашу запись.';
+$string['allposts'] = 'Все записи';
+$string['alt'] = 'Описание';
+$string['attach'] = 'Прикрепить';
+$string['attachedfilelistloaded'] = 'Прикрепленные файлы загружены';
+$string['attachedfiles'] = 'Прикрепленные файлы';
+$string['attachment'] = 'Вложение';
+$string['attachments'] = 'Вложения';
+$string['baseline'] = 'Базовая линия';
+$string['blog'] = 'Блог';
+$string['blogcopiedfromanotherview'] = 'Примечание: Этот блок скопирован с другой страницы. Вы можете переместить или удалить, его  но не можете изменить %s.';
+$string['blogdeleted'] = 'Блог удален';
+$string['blogdesc'] = 'Описание';
+$string['blogdescdesc'] = 'например, "Записки и размышления Юлии".';
+$string['blogdoesnotexist'] = 'Вы пытаетесь получить доступ к блогу, которого не существует';
+$string['blogpost'] = 'Пост блога';
+$string['blogpostdeleted'] = 'Запись блога была удалена';
+$string['blogpostdoesnotexist'] = 'Вы пытаетесь получить доступ к посту блога, которого не существует';
+$string['blogpostpublished'] = 'Запись в блоге опубликована';
+$string['blogpostsaved'] = 'Запись в блоге сохранена';
+$string['blogs'] = 'Блоги';
+$string['blogsettings'] = 'Настройки блога';
+$string['blogtitle'] = 'Название';
+$string['blogtitledesc'] = 'например, ‘Журнал’.';
+$string['border'] = 'Граница';
+$string['bottom'] = 'Вниз';
+$string['cancel'] = 'Отмена';
+$string['cannotdeleteblogpost'] = 'Ошибка удаления поста блога.';
+$string['copyfull'] = 'Другие пользователи получат свои собственные копии вашего %s';
+$string['copynocopy'] = 'Пропустить этот блок целиком при копировании вида';
+$string['copyreference'] = 'Другие пользователи могут отображать ваш %s в своем виде';
+$string['createandpublishdesc'] = 'Это создаст запись блога и сделает её доступной для других.';
+$string['createasdraftdesc'] = 'Это создаст запись в блоге, но она будет недоступна для других, пока вы не опубликуете её.';
+$string['createblog'] = 'Создать блог';
+$string['dataimportedfrom'] = 'Импортированные данные из %s';
+$string['defaultblogtitle'] = '%s блог';
+$string['delete'] = 'Удалить';
+$string['deleteblog?'] = 'Вы уверены, что хотите удалить блог?';
+$string['deleteblogpost?'] = 'Вы уверены, что хотите удалить эту запись?';
+$string['description'] = 'Описание';
+$string['dimensions'] = 'Размеры';
+$string['draft'] = 'Черновик';
+$string['edit'] = 'Правка';
+$string['editblogpost'] = 'Редактировать пост блога';
+$string['enablemultipleblogstext'] = 'У вас есть один блог. Если Вы хотите начать второй, разрешите ведение нескольких блогов в натройках на странице <a href="%saccount/">настройки учетной записи</a>.';
+$string['entriesimportedfromleapexport'] = 'Записи, экспортированные из LEAP, не могут быть импортированы';
+$string['errorsavingattachments'] = 'Произошла ошибка при сохранении вложения в блоге';
+$string['feedrights'] = 'Авторское право %s.';
+$string['feedsnotavailable'] = 'Каналы не доступны для этого типа.';
+$string['horizontalspace'] = 'Горизонтальное пространство';
+$string['image_list'] = 'Прикрепленное изображение.';
+$string['insert'] = 'Вставить';
+$string['insertimage'] = 'Вставить изображение';
+$string['left'] = 'Влево';
+$string['middle'] = 'Посередине';
+$string['moreoptions'] = 'Дополнительные параметры';
+$string['mustspecifycontent'] = 'Вы должны уточнить содержание вашего поста';
+$string['mustspecifytitle'] = 'Вы должны указать название вашего поста';
+$string['name'] = 'Имя';
+$string['newattachmentsexceedquota'] = 'Общий размер файлов, которые вы загрузили на этот пост, превысил допустимую квоту. Удалите часть вложений.';
+$string['newblog'] = 'Новый блог';
+$string['newblogpost'] = 'Новый пост блога в блоге "%s"';
+$string['newerposts'] = 'Новые посты';
+$string['nofilesattachedtothispost'] = 'Нет вложенных файлов';
+$string['noimageshavebeenattachedtothispost'] = 'В этом посте нет вложенных изображений. Перед тем, как вставить изображение в пост, вам необходимо загрузить или вложить его.';
+$string['nopostsyet'] = 'Пока записей нет.';
+$string['noresults'] = 'Посты блога не найдены';
+$string['olderposts'] = 'Старые посты';
+$string['pluginname'] = 'Блоги';
+$string['post'] = 'запись';
+$string['postbody'] = 'Тело';
 $string['postbodydesc'] = ' ';
-$string['postedon'] = 'Posted on';
-$string['postedbyon'] = 'Posted by %s on %s';
-$string['posttitle'] = 'Title';
-$string['posts'] = 'entries';
-$string['nposts'] = array(
-    '1 entry',
-    '%s entries',
-);
-
-$string['publish'] = 'Publish';
-$string['unpublish'] = 'Unpublish';
-$string['publishfailed'] = 'An error occurred. Your entry was not published.';
-$string['publishblogpost?'] = 'Are you sure you want to publish this entry?';
-$string['published'] = 'Published';
-$string['remove'] = 'Remove';
-$string['save'] = 'Save';
-$string['saveandpublish'] = 'Save and publish';
-$string['saveasdraft'] = 'Save as draft';
-$string['savepost'] = 'Save entry';
-$string['savesettings'] = 'Save settings';
-$string['settings'] = 'Settings';
-$string['thisisdraft'] = 'This entry is a draft';
-$string['thisisdraftdesc'] = 'When your entry is a draft, no one except you can see it.';
-$string['title'] = 'Title';
-$string['update'] = 'Update';
-$string['verticalspace'] = 'Vertical space';
-$string['viewblog'] = 'View journal';
-$string['youarenottheownerofthisblog'] = 'You are not the owner of this journal.';
-$string['youarenottheownerofthisblogpost'] = 'You are not the owner of this journal entry.';
-$string['cannotdeleteblogpost'] = 'An error occurred removing this journal entry.';
-
-$string['baseline'] = 'Baseline';
-$string['top'] = 'Top';
-$string['middle'] = 'Middle';
-$string['bottom'] = 'Bottom';
-$string['texttop'] = 'Text top';
-$string['textbottom'] = 'Text bottom';
-$string['left'] = 'Left';
-$string['right'] = 'Right';
-$string['src'] = 'Image URL';
-$string['image_list'] = 'Attached image';
-$string['alt'] = 'Description';
-
-$string['copyfull'] = 'Others will get their own copy of your %s';
-$string['copyreference'] = 'Others may display your %s in their page';
-$string['copynocopy'] = 'Skip this block entirely when copying the page';
-
-$string['viewposts'] = 'Copied entries (%s)';
-$string['postscopiedfromview'] = 'Entries copied from %s';
-
-$string['youhavenoblogs'] = 'You have no journals.';
-$string['youhaveoneblog'] = 'You have 1 journal.';
-$string['youhaveblogs'] = 'You have %s journals.';
-
-$string['feedsnotavailable'] = 'Feeds are not available for this artefact type.';
-$string['feedrights'] = 'Copyright %s.';
-
-$string['enablemultipleblogstext'] = 'You have one journal. If you would like to start a second one, enable the multiple journals option on the <a href="%saccount/index.php">account settings</a> page.';
-$string['hiddenblogsnotification'] = 'Additional journal(s) have been made for you, but your account does not have the multiple journals option activated. You can enable it on the <a href="%saccount/index.php">account settings</a> page.';
-
-$string['shortcutaddpost'] = 'Add a new entry to';
-$string['shortcutgo'] = 'Go';
-$string['shortcutnewentry'] = 'New entry';
-
-$string['duplicatedblog'] = 'Duplicated journal';
-$string['existingblogs'] = 'Existing journals';
-$string['duplicatedpost'] = 'Duplicated journal entry';
-$string['existingposts'] = 'Existing journal entries';
-
-$string['progress_blog'] = 'Add a journal';
-$string['progress_blogpost'] = array(
-    'Add 1 entry to a journal',
-    'Add %s entries to a journal',
-);
+$string['postedbyon'] = 'Опубликовано %s %s';
+$string['postedon'] = 'Опубликовано';
+$string['posts'] = 'посты';
+$string['postscopiedfromview'] = 'Посты, скопированные из %s';
+$string['posttitle'] = 'Название';
+$string['publish'] = 'Опубликовать';
+$string['publishblogpost?'] = 'Вы уверены, что хотите опубликовать этот пост?';
+$string['published'] = 'Опубликовано';
+$string['publishfailed'] = 'Произошла ошибка. Ваш пост не был опубликован';
+$string['remove'] = 'Удалить';
+$string['right'] = 'Вправо';
+$string['save'] = 'Сохранить';
+$string['saveandpublish'] = 'Сохранить и опубликовать';
+$string['saveasdraft'] = 'Сохранить как черновик';
+$string['savepost'] = 'Сохранить пост';
+$string['savesettings'] = 'Сохранить настройки';
+$string['settings'] = 'Настройки';
+$string['src'] = 'URL изображения';
+$string['textbottom'] = 'Текст посередине';
+$string['texttop'] = 'Текст наверх';
+$string['thisisdraft'] = 'Этот пост является черновым';
+$string['thisisdraftdesc'] = 'Когда ваш пост является черновым, никто, кроме вас не может просматривать его.';
+$string['title'] = 'Название';
+$string['top'] = 'Наверх';
+$string['update'] = 'Обновить';
+$string['verticalspace'] = 'Вертикальное пространство';
+$string['viewblog'] = 'Просмотреть блог';
+$string['viewposts'] = 'Скопированные посты (%s)';
+$string['youarenottheownerofthisblog'] = 'Вы не хозяин блога';
+$string['youarenottheownerofthisblogpost'] = 'Вы не хозяин поста блога';
+$string['youhaveblogs'] = 'У вас %s блогов.';
+$string['youhavenoblogs'] = 'У вас нет блогов.';
+$string['youhaveoneblog'] = 'У вас 1 блог.';

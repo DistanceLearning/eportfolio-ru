@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  * @copyright  (C) portions from Moodle, (C) Martin Dougiamas http://dougiamas.com
  */
 
@@ -29,15 +45,13 @@ function ensure_sanity() {
         throw new ConfigSanityException(get_string('jsonextensionnotloaded', 'error'));
     }
     switch (get_config('dbtype')) {
-    case 'postgres':
-    case 'postgres8': // for legacy purposes we also accept "postgres8"
+    case 'postgres8':
         if (!extension_loaded('pgsql')) {
             throw new ConfigSanityException(get_string('pgsqldbextensionnotloaded', 'error'));
         }
         break;
-    case 'mysql':
-    case 'mysql5': // for legacy purposes we also accept "mysql5"
-        if (!extension_loaded('mysqli') && !extension_loaded('mysql')) {
+    case 'mysql5':
+        if (!extension_loaded('mysql')) {
             throw new ConfigSanityException(get_string('mysqldbextensionnotloaded', 'error'));
         }
         break;
@@ -145,17 +159,13 @@ function ensure_sanity() {
     if (
         !check_dir_exists(get_config('dataroot') . 'smarty/compile') ||
         !check_dir_exists(get_config('dataroot') . 'smarty/cache') ||
+        !check_dir_exists(get_config('dataroot') . 'sessions') ||
         !check_dir_exists(get_config('dataroot') . 'temp') ||
         !check_dir_exists(get_config('dataroot') . 'langpacks') ||
         !check_dir_exists(get_config('dataroot') . 'htmlpurifier') ||
         !check_dir_exists(get_config('dataroot') . 'log') ||
         !check_dir_exists(get_config('dataroot') . 'images')) {
         throw new ConfigSanityException(get_string('couldnotmakedatadirectories', 'error'));
-    }
-    // Since sessionpath can now exist outside of the the dataroot, check it separately.
-    // NOTE: If we implement separate session handlers, we may want to remove or alter this check
-    if (!check_dir_exists(get_config('sessionpath')) || !is_writable(get_config('sessionpath'))) {
-        throw new ConfigSanityException(get_string('sessionpathnotwritable', 'error', get_config('sessionpath')));
     }
 
     raise_memory_limit('128M');
@@ -310,7 +320,7 @@ function get_helpfile_location($plugintype, $pluginname, $form, $element, $page=
     $subdir = 'help/';
 
     if ($page) {
-        $pagebits = explode('-', $page);
+        $pagebits = split('-', $page);
         $file = array_pop($pagebits) . '.html';
         if ($plugintype != 'core') {
             $subdir .= 'pages/' . join('/', $pagebits) . '/';
@@ -411,17 +421,6 @@ function get_helpfile_location($plugintype, $pluginname, $form, $element, $page=
             return $langfile;
         }
     }
-
-    // if it's a form element, try the wildcard form name
-    if (!empty($form) && !empty($element) && $form !== 'ANY') {
-        // if it's a block instance config form element, try the wildcard form name
-        // and element without it's prefixes
-        if (preg_match('/^instconf_/', $element)) {
-            $element = end(explode('_', $element));
-        }
-        return get_helpfile_location('core', '', 'ANY', $element, $page, $section);
-    }
-
     return false;
 }
 
@@ -594,12 +593,7 @@ function language_get_searchpaths() {
         $docrootpath = array(get_config('docroot'));
 
         // Paths to language files in dataroot
-        $datarootbase = get_config('dataroot') . 'langpacks/*';
-        $datarootpaths = glob($datarootbase, GLOB_MARK | GLOB_ONLYDIR);
-        if ($datarootpaths === false) {
-            log_warn("Problem searching for langfiles at this path: " . $datarootbase);
-            $datarootpaths = array();
-        }
+        $datarootpaths = (array)glob(get_config('dataroot') . 'langpacks/*', GLOB_MARK | GLOB_ONLYDIR);
 
         // langpacksearchpaths configuration variable - for experts :)
         $lpsearchpaths = (array)get_config('langpacksearchpaths');
@@ -888,74 +882,39 @@ function set_config($key, $value) {
 
 /**
  * This function returns a value for $CFG for a plugin
- * or null if it is not found.
- *
- * It will give precedence to config values set in config.php like so:
- * $cfg->plugin->{$plugintype}->{$pluginname}->{$key} = 'whatever';
- *
- * If it doesn't find one of those, it will look for the config value in
- * the database.
+ * or null if it is not found
+ * note that it may go and look in the database
  *
  * @param string $plugintype eg artefact
  * @param string $pluginname eg blog
  * @param string $key the config setting to look for
- * @return mixed The value of the key if found, or NULL if not found
  */
 function get_config_plugin($plugintype, $pluginname, $key) {
     global $CFG;
 
-    // If we've already fetched this value, then return it
-    if (isset($CFG->plugin->{$plugintype}->{$pluginname}->{$key})) {
-        return $CFG->plugin->{$plugintype}->{$pluginname}->{$key};
-    }
-    // If we have already fetched this plugin's data from the database, then return NULL.
-    // (Note that some values may come from config.php before we hit the database.)
-    else if (isset($CFG->plugin->pluginsfetched->{$plugintype}->{$pluginname})) {
-        return null;
-    }
-    // We haven't fetched this plugin's data yet. So do it!
-    else {
+    $CFG->plugin = new StdClass;
 
-        // First build the object structure for it.
-        if (!isset($CFG->plugin)) {
-            $CFG->plugin = new stdClass();
-        }
-        if (!isset($CFG->plugin->{$plugintype})) {
-            $CFG->plugin->{$plugintype} = new stdClass();
-        }
-        if (!isset($CFG->plugin->{$plugintype}->{$pluginname})) {
-            $CFG->plugin->{$plugintype}->{$pluginname} = new stdClass();
-        }
+    // Suppress NOTICE with @ in case $key is not yet cached
+    @$value = $CFG->plugin->{$plugintype}->{$pluginname}->{$key};
+    if (isset($CFG->plugin->{$plugintype})) {
+        return $value;
+    }
 
-        // To minimize database calls, get all the records for this plugin from the database at once.
-        $records = get_records_array($plugintype . '_config', 'plugin', $pluginname, 'field');
-        if (!empty($records)) {
-            foreach ($records as $record) {
-                if (!isset($CFG->plugin->{$plugintype}->{$pluginname}->{$record->field})) {
-                    $CFG->plugin->{$plugintype}->{$pluginname}->{$record->field} = $record->value;
-                }
+    $CFG->plugin = new stdClass();
+    $CFG->plugin->{$plugintype} = new StdClass;
+
+    $records = get_records_array($plugintype . '_config');
+    if (!empty($records)) {
+        foreach($records as $record) {
+            $CFG->plugin->{$plugintype}->{$record->plugin} = new stdClass();
+            $CFG->plugin->{$plugintype}->{$record->plugin}->{$record->field} = $record->value;
+            if ($record->field == $key && $record->plugin == $pluginname) {
+                $value = $record->value;
             }
         }
-
-        // Make a note that we've now hit the database over this one.
-        if (!isset($CFG->plugin->pluginsfetched)) {
-            $CFG->plugin->pluginsfetched = new stdClass();
-        }
-        if (!isset($CFG->plugin->pluginsfetched->{$plugintype})) {
-            $CFG->plugin->pluginsfetched->{$plugintype} = new stdClass();
-        }
-        $CFG->plugin->pluginsfetched->{$plugintype}->{$pluginname} = true;
-
-        // Now, return it if we found it, otherwise null.
-        // (This could be done by a recursive call to get_config_plugin(), but it's
-        // less error-prone to do it this way and it doesn't cause that much duplication)
-        if (isset($CFG->plugin->{$plugintype}->{$pluginname}->{$key})) {
-            return $CFG->plugin->{$plugintype}->{$pluginname}->{$key};
-        }
-        else {
-            return null;
-        }
     }
+
+    return $value;
 }
 
 function set_config_plugin($plugintype, $pluginname, $key, $value) {
@@ -975,18 +934,16 @@ function set_config_plugin($plugintype, $pluginname, $key, $value) {
         $pconfig->value  = $value;
         $status = insert_record($table, $pconfig);
     }
-    // Now update the cached version
     if ($status) {
         if (!isset($CFG->plugin)) {
             $CFG->plugin = new stdClass();
         }
+
         if (!isset($CFG->plugin->{$plugintype})) {
             $CFG->plugin->{$plugintype} = new stdClass();
         }
-        if (!isset($CFG->plugin->{$plugintype}->{$pluginname})) {
-            $CFG->plugin->{$plugintype}->{$pluginname} = new stdClass();
-        }
 
+        $CFG->plugin->{$plugintype}->{$pluginname} = new stdClass();
         $CFG->plugin->{$plugintype}->{$pluginname}->{$key} = $value;
         return true;
     }
@@ -1064,108 +1021,6 @@ function set_config_plugin_instance($plugintype, $pluginname, $pluginid, $key, $
 }
 
 /**
- * Fetch an institution configuration (from either the "institution" or "institution_config" table)
- *
- * TODO: If needed, create a corresponding set_config_institution(). This would be most useful if there's
- * a situation where you need to manipulate individual institution configs. If you want to manipulate
- * them in batch, you can use the Institution class's __set() and commit() methods.
- *
- * @param string $institutionname
- * @param string $key
- * @return mixed The value of the key or NULL if the key is not valid
- */
-function get_config_institution($institutionname, $key) {
-    global $CFG;
-    require_once(get_config('docroot').'/lib/institution.php');
-
-    // First, check the cache for an Institution object with this name
-    if (isset($CFG->fetchedinst->{$institutionname})) {
-        $inst = $CFG->fetchedinst->{$institutionname};
-    }
-    else {
-        // No cache hit, so instatiate a new Institution object
-        try {
-            $inst = new Institution($institutionname);
-
-            // Cache it (in $CFG so if we ever write set_config_institution() we can make it update the cache)
-            if (!isset($CFG->fetchedinst)) {
-                $CFG->fetchedinst = new stdClass();
-            }
-            $CFG->fetchedinst->{$institutionname} = $inst;
-        }
-        catch (ParamOutOfRangeException $e) {
-            return null;
-        }
-    }
-
-    // Use the magical __get() function of the Institution class
-    return $inst->{$key};
-}
-
-
-/**
- * Fetch a config setting for the specified user's institutions (from either the "institution" or "institution_config" table)
- *
- * @param string $key
- * @param int $userid (Optional) If not supplied, fetch for the current user's institutions
- * @return array The results for the all the users' institutions, in the order
- *               supplied by load_user_institutions(). Array key is institution name.
- */
-function get_configs_user_institutions($key, $userid = null) {
-    global $USER, $CFG;
-    if ($userid === null) {
-        $userid = $USER->id;
-    }
-
-    // Check for the user and key in the cache (The cache is stored in $CFG so it can be cleared/updated
-    // if we ever write a set_config_institution() method)
-    $userobj = "user{$userid}";
-    if (isset($CFG->userinstconf->{$userobj}->{$key})) {
-        return $CFG->userinstconf->{$userobj}->{$key};
-    }
-
-    // We didn't hit the cache, so retrieve the config from their
-    // institution.
-
-    // First, get a list of their institution names
-    if (!$userid) {
-        // The logged-out user has no institutions.
-        $institutions = false;
-    }
-    else if ($userid == $USER->id) {
-        // Institutions for current logged-in user
-        $institutions = $USER->get('institutions');
-    }
-    else {
-        $institutions = load_user_institutions($userid);
-    }
-
-    // If the user belongs to no institution, check the Mahara institution
-    if (!$institutions) {
-        // For compatibility with $USER->get('institutions') and
-        // load_user_institutions(), we only really care about the
-        // array keys
-        $institutions = array('mahara' => 'mahara');
-    }
-    $results = array();
-    foreach ($institutions as $instname => $inst) {
-        $results[$instname] = get_config_institution($instname, $key);
-    }
-
-    // Cache the result
-    if (!isset($CFG->userinstconf)) {
-        $CFG->userinstconf = new stdClass();
-    }
-    if (!isset($CFG->userinstconf->{$userobj})) {
-        $CFG->userinstconf->{$userobj} = new stdClass();
-    }
-    $CFG->userinstconf->{$userobj}->{$key} = $results;
-
-    return $results;
-}
-
-
-/**
  * This function prints an array or object
  * wrapped inside <pre></pre>
  * 
@@ -1188,28 +1043,26 @@ function set_locale_for_language($lang) {
         return;
     }
 
-    if ($args = explode(',', get_string_location('locales', 'langconfig', array(), 'raw_langstring', $lang))) {
+    if ($args = split(',', get_string_location('locales', 'langconfig', array(), 'raw_langstring', $lang))) {
         array_unshift($args, LC_ALL);
         call_user_func_array('setlocale', $args);
     }
 }
 
 /**
- * This function returns the current language to use, either for a given user
- * or sitewide, or the default.
- *
- * This method is invoked in every call to get_string(), so make it performant!
+ * This function returns the current 
+ * language to use, either for a given user
+ * or sitewide, or the default
  *
  * @return string
  */
 function current_language() {
     global $USER, $CFG, $SESSION;
 
-    static $userlang, $lastlang, $instlang;
+    static $userlang, $lastlang;
 
     $loggedin = $USER instanceof User && $USER->is_logged_in();
 
-    // Retrieve & cache the user lang pref (if the user is logged in)
     if (!isset($userlang) && $loggedin) {
         $userlang = $USER->get_account_preference('lang');
         if ($userlang !== null && $userlang != 'default') {
@@ -1220,36 +1073,16 @@ function current_language() {
         }
     }
 
-    // Retrieve & cache the institution language (if the user is logged in)
-    if (!isset($instlang) && $loggedin) {
-        $instlang = get_user_institution_language();
-    }
-
-    // Retrieve the $SESSION lang (from the user selecting a language while logged-out)
-    // Note that if the user selected a language while logged out, and then logs in,
-    // we will have set their user account pref to match that lang, over in
-    // LiveUser->authenticate().
-    if (!$loggedin && is_a($SESSION, 'Session')) {
-        $sesslang = $SESSION->get('lang');
-    }
-    else {
-        $sesslang = null;
-    }
-
-    // Logged-in user's language preference
     if (!empty($userlang) && $userlang != 'default') {
         $lang = $userlang;
     }
-    // Logged-out user's language menu selection
-    else if (!empty($sesslang) && $sesslang != 'default') {
-        $lang = $sesslang;
-    }
-    // Logged-in user's institution language setting
-    else if (!empty($instlang) && $instlang != 'default') {
-        $lang = $instlang;
+    else if (!$loggedin && is_a($SESSION, 'Session')) {
+        $sesslang = $SESSION->get('lang');
+        if (!empty($sesslang) && $sesslang != 'default') {
+            $lang = $sesslang;
+        }
     }
 
-    // If there's no language from the user pref or the logged-out lang menu...
     if (empty($lang)) {
         $lang = !empty($CFG->lang) ? $CFG->lang : 'en.utf8';
     }
@@ -1262,41 +1095,6 @@ function current_language() {
 
     return $lastlang = $lang;
 }
-
-
-/**
- * Find out a user's institution language. If they belong to one institution that has specified
- * a language, then this will be that institution's language. If they belong to multiple
- * institutions that have specified languages, it will be the arbitrarily "first" institution.
- * If they belong to no institution that has specified a language, it will return null.
- *
- * @param int $userid Which user to check (defaults to $USER)
- * @param string $sourceinst If provided, the source institution for the language will be
- *     returned here by reference
- * @return string A language, or 'default'
- */
-function get_user_institution_language($userid = null, &$sourceinst = null) {
-    global $USER;
-    if ($userid == null) {
-        $userid = $USER->id;
-    }
-    $instlangs = get_configs_user_institutions('lang', $userid);
-    // Every user belongs to at least one institution
-    foreach ($instlangs as $name => $lang) {
-        $sourceinst = $name;
-        $instlang = $lang;
-        // If the user belongs to multiple institutions, arbitrarily use the language
-        // from the first one that has specified a language.
-        if (!empty($instlang) && $instlang != 'default' && language_installed($instlang)) {
-            break;
-        }
-    }
-    if (!$instlang) {
-        $instlang = 'default';
-    }
-    return $instlang;
-}
-
 
 /**
  * Helper function to sprintf language strings
@@ -1524,7 +1322,6 @@ function plugin_types_installed() {
  * for the given plugin type.
  * 
  * @param string $plugintype type of plugin
- * @return array of objects with fields (version (int), release (str), active (bool), name (str))
  */
 function plugins_installed($plugintype, $all=false) {
     static $records = array();
@@ -1630,21 +1427,12 @@ function blocktype_artefactplugin($blocktype) {
  * Fires an event which can be handled by different parts of the system
  */
 function handle_event($event, $data) {
-    global $USER;
     if (!$e = get_record('event_type', 'name', $event)) {
         throw new SystemException("Invalid event");
     }
 
-    if ($data instanceof ArtefactType) {
-        // leave $data alone, but convert for the event log
-        $logdata = $data->to_stdclass();
-    }
-    else if ($data instanceof BlockInstance) {
-        // leave $data alone, but convert for the event log
-        $logdata = array(
-            'id' => $data->get('id'),
-            'blocktype' => $data->get('blocktype'),
-        );
+    if ($data instanceof ArtefactType || $data instanceof BlockInstance) {
+        // leave it alone
     }
     else if (is_object($data)) {
         $data = (array)$data;
@@ -1652,21 +1440,6 @@ function handle_event($event, $data) {
     else if (is_numeric($data)) {
         $data = array('id' => $data);
     }
-
-    $parentuser = $USER->get('parentuser');
-    $eventloglevel = get_config('eventloglevel');
-    if ($eventloglevel === 'all'
-            or ($parentuser and $eventloglevel === 'masq')) {
-        $logentry = (object) array(
-            'usr'      => $USER->get('id'),
-            'realusr'  => $parentuser ? $parentuser->id : $USER->get('id'),
-            'event'    => $event,
-            'data'     => json_encode(isset($logdata) ? $logdata : $data),
-            'time'     => db_format_timestamp(time()),
-        );
-        insert_record('event_log', $logentry);
-    }
-
 
     if ($coreevents = get_records_array('event_subscription', 'event', $event)) {
         require_once('activity.php'); // core events can generate activity.
@@ -1883,7 +1656,6 @@ function pieform_configure() {
         'presubmitcallback'     => 'formStartProcessing',
         'postsubmitcallback'    => 'formStopProcessing',
         'jserrormessage' => get_string('errorprocessingform'),
-        'errormessage' => get_string('errorprocessingform'),
         'configdirs' => get_config('libroot') . 'form/',
         'helpcallback' => 'pieform_get_help',
         'elements'   => array(
@@ -1951,7 +1723,7 @@ function pieform_element_calendar_configure($element) {
     global $THEME;
     $element['jsroot'] = get_config('wwwroot') . 'js/jscalendar/';
     $element['themefile'] = $THEME->get_url('style/calendar.css');
-    $element['imagefile'] = $THEME->get_url('images/btn_calendar.png');
+    $element['imagefile'] = $THEME->get_url('images/calendar.gif');
     $language = substr(current_language(), 0, 2);
     $element['language'] = $language;
     return $element;
@@ -2023,13 +1795,13 @@ function can_view_view($view, $user_id=null) {
     $publicviews = get_config('allowpublicviews');
     $publicprofiles = get_config('allowpublicprofiles');
 
-    // If the user is logged out and the publicviews & publicprofiles sitewide configs are false,
-    // we can deny access without having to hit the database at all
     if (!$user_id && !$publicviews && !$publicprofiles) {
         return false;
     }
 
-    require_once(get_config('libroot') . 'view.php');
+    if (!class_exists('View')) {
+        require_once(get_config('libroot') . 'view.php');
+    }
     if ($view instanceof View) {
         $view_id = $view->get('id');
     }
@@ -2037,35 +1809,14 @@ function can_view_view($view, $user_id=null) {
         $view = new View($view_id = $view);
     }
 
-    // If the page belongs to an individual, check for individual-specific overrides
-    if ($view->get('owner')) {
-
-        $ownerobj = $view->get_owner_object();
-
-        // Suspended user
-        if ($ownerobj->suspendedctime) {
-            return false;
-        }
-
-        // Probationary user (no public pages or profiles)
-        // (setting these here instead of doing a return-false, so that we can do checks for
-        // logged-in users later)
-        require_once(get_config('libroot') . 'antispam.php');
-        $onprobation = is_probationary_user($ownerobj->id);
-        $publicviews = $publicviews && !$onprobation;
-        $publicprofiles = $publicprofiles && !$onprobation;
-
-        // Member of an institution that prohibits public pages
-        // (group views and logged in users are not affected by
-        // the institution level config for public views)
+    // group views and logged in users are not affected by
+    // the institution level config for public views
+    if (empty($user_id) && $ownerobj = $view->get_owner_object()) {
         $owner = new User();
         $owner->find_by_id($ownerobj->id);
-        $publicviews = $publicviews && $owner->institution_allows_public_views();
-    }
-
-    // Now that we've examined the page owner, check again for whether it can be viewed by a logged-out user
-    if (!$user_id && !$publicviews && !$publicprofiles) {
-        return false;
+        if (!$owner->institution_allows_public_views()) {
+            return false;
+        }
     }
 
     if ($user_id && $user->can_edit_view($view)) {
@@ -2216,6 +1967,22 @@ function get_view_from_token($token, $visible=true) {
         set_cookie('viewaccess:'.$viewid, $token, 0, true);
     }
     return $viewid;
+}
+
+/**
+ * Determine whether a view is accessible by a given token
+ */
+function view_has_token($view, $token) {
+    if (!$view || !$token) {
+        return false;
+    }
+    return record_exists_select(
+        'view_access',
+        'view = ? AND token = ? AND visible = ?
+         AND (startdate IS NULL OR startdate < current_timestamp)
+         AND (stopdate IS NULL OR stopdate > current_timestamp)',
+        array($view, $token, (int)$visible)
+    );
 }
 
 /**
@@ -2406,15 +2173,10 @@ function artefact_in_view($artefact, $view) {
             UNION
             SELECT c.parent 
             FROM {view_artefact} top JOIN {artefact_parent_cache} c
-              ON c.parent = top.artefact
-            WHERE top.view = ? AND c.artefact = ?
-            UNION
-            SELECT s.id
-            FROM {view} v INNER JOIN {skin} s ON v.skin = s.id
-            WHERE v.id = ? AND ? in (s.bodybgimg, s.viewbgimg)
-    ';
+              ON c.parent = top.artefact 
+            WHERE top.view = ? AND c.artefact = ?';
 
-    return record_exists_sql($sql, array($view, $artefact, $view, $artefact, $view, $artefact));
+    return record_exists_sql($sql, array($view, $artefact, $view, $artefact));
 }
 
 function get_dir_contents($directory) {
@@ -2576,37 +2338,6 @@ function raise_memory_limit ($newlimit) {
 }
 
 /**
- * Function to raise the max execution time to a new value.
- * Will respect the time limit if it is higher, thus allowing
- * settings in php.ini, apache conf or command line switches
- * to override it
- *
- * @param int $newlimit the new max execution time limit (in seconds)
- * @return bool Whether we were able to raise the limit or not
- */
-function raise_time_limit($newlimit) {
-    if (empty($newlimit)) {
-        return false;
-    }
-    $newlimit = intval($newlimit);
-    $cur = @ini_get('max_execution_time');
-    if (empty($cur)) {
-        $cur = 0;
-    }
-    // Currently set as umlimited so don't change
-    if ($cur == '0') {
-        return false;
-    }
-    if ($newlimit > $cur) {
-        // this won't work in safe mode - but we shouldn't be in safe mode
-        // as that has been checked for already
-        ini_set('max_execution_time', $newlimit);
-        return true;
-    }
-    return false;
-}
-
-/**
  * Converts numbers like 10M into bytes.
  *
  * @param string $size The size to be converted
@@ -2714,7 +2445,6 @@ function profile_sideblock() {
         'myname'      => display_name($USER, null, true),
         'username'    => $USER->get('username'),
         'url'         => profile_url($USER),
-        'profileiconurl' => get_config('wwwroot') . 'artefact/file/profileicons.php',
     );
 
     $authinstance = $SESSION->get('mnetuser') ? $SESSION->get('authinstance') : $USER->get('authinstance');
@@ -2864,14 +2594,10 @@ function get_my_tags($limit=null, $cloud=true, $sort='freq') {
            (SELECT vt.tag, v.id, 'view' AS type
             FROM {view_tag} vt JOIN {view} v ON v.id = vt.view
             WHERE v.owner = ?)
-           UNION
-           (SELECT ct.tag, c.id, 'collection' AS type
-            FROM {collection_tag} ct JOIN {collection} c ON c.id = ct.collection
-            WHERE c.owner = ?)
-    ) t
+        ) t
         GROUP BY t.tag
         ORDER BY " . $sort . (is_null($limit) ? '' : " LIMIT $limit"),
-        array($id, $id, $id)
+        array($id, $id)
     );
     if (!$tagrecords) {
         return false;
@@ -2909,212 +2635,6 @@ function tags_sideblock() {
         return array('tags' => $tagrecords);
     }
     return null;
-}
-
-/**
- * Get the string to display for a given progress bar item (in the sideblock).
- * eg: Upload 2 files
- * @param string $pluginname
- * @param string $artefacttype
- * @param int $target How many items need to be created
- * @param int $completed How many items have been created
- */
-function progressbar_artefact_task_label($pluginname, $artefacttype, $target, $completed) {
-    return call_user_func(generate_class_name('artefact', $pluginname) . '::progressbar_task_label', $artefacttype, $target, $completed);
-}
-
-/**
- * Get the link to link on a given progress bar item (in the sideblock)
- * @param string $pluginname
- * @param string $artefacttype
- */
-function progressbar_artefact_link($pluginname, $artefacttype) {
-    return call_user_func(generate_class_name('artefact', $pluginname) . '::progressbar_link', $artefacttype);
-}
-
-function progressbar_sideblock($preview=false) {
-    global $USER;
-
-    // TODO: Remove this URL param from here, and when previewing pass institution
-    // by function param instead
-    $institution = param_alphanum('i', null);
-    if (is_array($USER->institutions) && count($USER->institutions) > 0) {
-        // Get all institutions where user is member
-        $institutions = array();
-        foreach ($USER->institutions as $inst) {
-            $institutions = array_merge($institutions, array($inst->institution => $inst->displayname));
-        }
-        // Set user's first institution in case that institution isn't
-        // set yet or user is not member of currently set institution.
-        if (!$institution || !array_key_exists($institution, $institutions)) {
-            $institution = key(array_slice($institutions, 0, 1));
-        }
-    }
-    else {
-        $institutions = array();
-        $institution = 'mahara';
-    }
-
-    // Set appropriate preview according to institution, if the institutio is selected
-    // If the institution isn't selected then show preview for first institution, which
-    // is also selected as a default value in institution selection box
-    if ($preview) {
-        $default = get_column('institution', 'name');
-        // TODO: Remove this URL param from here, and when previewing pass institution
-        // by function param instead
-        $institution = param_alphanum('institution', $default[0]);
-    }
-
-    // Get artefacts that count towards profile completeness
-    if ($counting = get_records_select_assoc('institution_config', 'institution=? and field like \'progressbaritem_%\'', array($institution), 'field', 'field, value')) {
-        // Without locked ones (site locked and institution locked)
-        $sitelocked = (array) get_column('institution_locked_profile_field', 'profilefield', 'name', 'mahara');
-        $instlocked = (array) get_column('institution_locked_profile_field', 'profilefield', 'name', $institution);
-        $locked = $sitelocked + $instlocked;
-        foreach ($locked as $l) {
-            unset($counting["progressbaritem_internal_{$l}"]);
-        }
-
-        $totalcounting = 0;
-        foreach ($counting as $c) {
-            $totalcounting = $totalcounting + $c->value;
-        }
-
-        // Get all artefacts for progressbar and create data structure
-        $data = array();
-
-        // For the artefact_get_progressbar_items function, we want them indexed by plugin
-        // and then subindexed by artefact. For most other purposes, having them indexed
-        // by config name is sufficient
-        $onlytheseplugins = array();
-        foreach($counting as $key => $obj) {
-            // This one has no value. So remove it from the list.
-            if (!($obj->value)) {
-                unset($counting[$key]);
-                continue;
-            }
-            $parts = explode('_', $obj->field);
-            $plugin = $parts[1];
-            $item = $parts[2];
-            if (empty($onlytheseplugins[$plugin])) {
-                $onlytheseplugins[$plugin] = array();
-            }
-            $onlytheseplugins[$plugin][$item] = $item;
-        }
-        $progressbaritems = artefact_get_progressbar_items($onlytheseplugins);
-
-        // Get the data link about every item
-        foreach ($progressbaritems as $pluginname => $itemlist) {
-            foreach ($itemlist as $artefactname => $item) {
-                $itemname = "progressbaritem_{$pluginname}_{$artefactname}";
-                $c = $counting[$itemname];
-                $target = $c->value;
-                $completed = 0;
-                $data[$itemname] = array(
-                    'artefact'  => $artefactname,
-                    'link'      => progressbar_artefact_link($pluginname,  $artefactname),
-                    'counting'  => $target,
-                    'completed' => $completed,
-                    'display'   => ((bool) $c->value),
-                    'label'     => progressbar_artefact_task_label($pluginname, $artefactname, $target, $completed),
-                );
-            }
-        }
-
-        if ($preview) {
-            $percent = 0;
-        }
-        else {
-            // Since this is not a preview, gather data about the users' actual progress,
-            // and update the records we placed in $data.
-
-            // Get a list of all the basic artefact types in this progress bar.
-            $nonmeta = array();
-            foreach($progressbaritems as $plugin=>$pluginitems) {
-                foreach($pluginitems as $itemname=>$item) {
-                    if (!$item->ismeta) {
-                        $nonmeta[] = $itemname;
-                    }
-                }
-            }
-
-            if ($nonmeta) {
-                // To reduce the number of queries, we gather data about all the user's artefacts
-                // at once. (Metaartefacts are handled separately, below)
-                $insql = "'" . implode("','", $nonmeta) . "'";
-                $sql = "SELECT artefacttype, (select plugin from {artefact_installed_type} ait where ait.name=a.artefacttype) as plugin, COUNT(*) AS completed
-                        FROM {artefact} a
-                        WHERE owner = ?
-                        AND artefacttype in ({$insql})
-                        GROUP BY artefacttype";
-                $normalartefacts = get_records_sql_array($sql, array($USER->get('id')));
-                if (!$normalartefacts) {
-                    $normalartefacts = array();
-                }
-            }
-            else {
-                // No basic artefacts in this one, so we just use an empty array for this.
-                $normalartefacts = array();
-            }
-            $totalcompleted = 0;
-
-            $metaartefacts = array();
-            foreach ($progressbaritems as $plugin => $pluginitems) {
-                if (is_array($records = artefact_get_progressbar_metaartefacts($plugin, $pluginitems))) {
-                    foreach ($records as $record) {
-                        $record->plugin = $plugin;
-                        array_push($metaartefacts, $record);
-                    }
-                }
-            }
-
-            foreach (array_merge($normalartefacts, $metaartefacts) as $record) {
-                $itemname = "progressbaritem_{$record->plugin}_{$record->artefacttype}";
-
-                // It's not an item we're tracking, so skip it.
-                if (!array_key_exists($itemname, $counting)) {
-                    continue;
-                }
-                $target = $counting[$itemname]->value;
-                $remaining = max(0, $target - $record->completed);
-
-                // Override the data for this item
-                $data[$itemname]['completed'] = $record->completed;
-                $data[$itemname]['display'] = ($remaining > 0);
-                $data[$itemname]['label'] = $label = get_string('progress_' . $record->artefacttype, 'artefact.' . $record->plugin, $remaining);
-
-                if ($target > 0) {
-                    $totalcompleted = $totalcompleted + min($target, $record->completed);
-                }
-            }
-
-            $percent = round(($totalcompleted/$totalcounting)*100);
-            if ($percent > 100) {
-                $percent = 100;
-            }
-        }
-        return array(
-            'data' => $data,
-            'percent' => $percent,
-            'preview' => $preview,
-            'count' => ($preview ? 1 : count($institutions)),
-            // This is important if user is member
-            // of more than one institution ...
-            'institutions' => $institutions,
-            'institution' => $institution,
-            'totalcompleted' => !empty($totalcompleted) ? $totalcompleted : 0,
-            'totalcounting' => $totalcounting,
-        );
-    }
-
-    return array(
-        'data' => null,
-        'percent' => 0,
-        'preview' => $preview,
-        'count' => 1,
-        'institutions' => null,
-        'institution' => 'mahara',
-    );
 }
 
 
@@ -3446,68 +2966,40 @@ function cron_sitemap_daily() {
     $sitemap->generate();
 }
 
-/**
- * Cronjob to expire the event_log table.
- */
-function cron_event_log_expire() {
-    if ($expiry = get_config('eventlogexpiry')) {
-        delete_records_select(
-            'event_log',
-            'time < CURRENT_DATE - INTERVAL ' .
-                (is_postgres() ? "'" . $expiry . " seconds'" : $expiry . ' SECONDS')
-        );
-
-    }
-}
-
 function build_portfolio_search_html(&$data) {
     global $THEME;
     $artefacttypes = get_records_assoc('artefact_installed_type');
     require_once('view.php');
-    require_once('collection.php');
     foreach ($data->data as &$item) {
         $item->ctime = format_date($item->ctime);
         if ($item->type == 'view') {
             $item->typestr = get_string('view');
-            $item->icon    = $THEME->get_url('images/page.png');
+            $item->icon    = $THEME->get_url('images/view.gif');
             $v = new View(0, (array)$item);
             $v->set('dirty', false);
             $item->url = $v->get_url();
-        }
-        else if ($item->type == 'collection') {
-            $item->typestr = get_string('Collection', 'collection');
-            $item->icon    = $THEME->get_url('images/collection.png');
-            $c = new Collection(0, (array)$item);
-            $item->url = $c->get_url();
         }
         else { // artefact
             safe_require('artefact', $artefacttypes[$item->artefacttype]->plugin);
             $links = call_static_method(generate_artefact_class_name($item->artefacttype), 'get_links', $item->id);
             $item->url     = $links['_default'];
             $item->icon    = call_static_method(generate_artefact_class_name($item->artefacttype), 'get_icon', array('id' => $item->id));
-            if ($item->artefacttype == 'task') {
-                $item->typestr = get_string('Task', 'artefact.tests');
-            }
-            else {
-                $item->typestr = get_string($item->artefacttype, 'artefact.' . $artefacttypes[$item->artefacttype]->plugin);
-            }
+            $item->typestr = get_string($item->artefacttype, 'artefact.' . $artefacttypes[$item->artefacttype]->plugin);
         }
     }
 
     $data->baseurl = get_config('wwwroot') . 'tags.php' . (is_null($data->tag) ? '' : '?tag=' . urlencode($data->tag));
     $data->sortcols = array('name', 'date');
     $data->filtercols = array(
-        'all'        => get_string('tagfilter_all'),
-        'file'       => get_string('tagfilter_file'),
-        'image'      => get_string('tagfilter_image'),
-        'text'       => get_string('tagfilter_text'),
-        'view'       => get_string('tagfilter_view'),
-        'collection' => get_string('tagfilter_collection'),
+        'all'   => get_string('tagfilter_all'),
+        'file'  => get_string('tagfilter_file'),
+        'image' => get_string('tagfilter_image'),
+        'text'  => get_string('tagfilter_text'),
+        'view'  => get_string('tagfilter_view'),
     );
 
     $smarty = smarty_core();
     $smarty->assign_by_ref('data', $data->data);
-    $smarty->assign('owner', $data->owner->id);
     $data->tablerows = $smarty->fetch('portfoliosearchresults.tpl');
     $pagination = build_pagination(array(
         'id' => 'results_pagination',
@@ -3540,7 +3032,7 @@ function mahara_log($logname, $string) {
 
 function is_html_editor_enabled () {
     global $USER, $SESSION;
-    return ((!get_config('wysiwyg') && $USER->get_account_preference('wysiwyg')) ||
+    return ((!get_config('wysiwyg') && ($USER->get_account_preference('wysiwyg') || defined('PUBLIC'))) ||
         get_config('wysiwyg') == 'enable') && $SESSION->get('handheld_device') == false;
 }
 
@@ -3601,27 +3093,4 @@ function generate_csv($data, $csvfields) {
         $csv .= '"' . join('","', $u) . '"' . "\n";
     }
     return $csv;
-}
-
-/**
- * Check to make sure table is case sensitive (currently only for MySql)
- * If it is not then reduce supplied array to a case insensitive version
- * Preserving the first occurance of any duplicates.
- * E.g. 'Test,test,cat,TEST,CAT,Cat' will return 'Test,cat'
- *
- * @param array     Array of case senstive strings
- * @param string    Name of table
- *
- * @return array    Array of strings
- */
-function check_case_sensitive($a, $table) {
-    if (is_mysql()) {
-        $db = get_config('dbname');
-        $result = recordset_to_array(get_recordset_sql("SHOW TABLE STATUS IN `$db` WHERE Name = ?", array($table)));
-        if (preg_match('/_ci/', $result[0]->Collation)) {
-            $b = array_unique(array_map('strtolower', $a));
-            $a = array_intersect_key($a, array_flip(array_keys($b)));
-        }
-    }
-    return $a;
 }

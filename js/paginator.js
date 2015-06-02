@@ -1,9 +1,24 @@
 /**
  * Javascript side of the accessible pagination for Mahara.
  * @source: http://gitorious.org/mahara/mahara
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
  *
+ * @licstart
+ * Copyright (C) 2006-2010  Catalyst IT Ltd
+ *
+ * The JavaScript code in this page is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GNU GPL) as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.  The code is distributed WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+ *
+ * As additional permission under GNU GPL version 3 section 7, you
+ * may distribute non-source (e.g., minimized or compacted) forms of
+ * that code without the copy of the GNU GPL normally required by
+ * section 4, provided you include this license notice and a URL
+ * through which recipients can access the Corresponding Source.
+ * @licend
  */
 
 /**
@@ -16,34 +31,15 @@
  *                  pagination data
  * @param limit     Extra data to pass back in the ajax requests to the script
  */
-var Paginator = function(id, datatable, heading, script, extradata) {
+var Paginator = function(id, datatable, script, extradata) {
     var self = this;
 
-    this.init = function(id, datatable, heading, script, extradata) {
+    this.init = function(id, datatable, script, extradata) {
         self.id = id;
         if (script && script.length !== 0) {
             self.datatable = $(datatable);
-            self.heading = $(heading);
             self.jsonScript = config['wwwroot'] + script;
             self.extraData = extradata;
-
-            var index = location.href.indexOf('?');
-            if (index >= 0) {
-                var querystring = parseQueryString(location.href.substr(index));
-                self.params = querystring;
-            }
-            else if (Paginator.oldparams) {
-                // Set if the page has been changed and we're setting up the new pagination controls
-                self.params = Paginator.oldparams;
-            }
-            else {
-                self.params = {};
-            }
-
-            if (self.heading) {
-                addElementClass(self.heading, 'hidefocus');
-                setNodeAttribute(self.heading, 'tabIndex', -1);
-            }
 
             self.rewritePaginatorLinks();
             self.rewritePaginatorSelectForm();
@@ -81,11 +77,7 @@ var Paginator = function(id, datatable, heading, script, extradata) {
                     url += "?";
                 }
                 url += setlimitselect.name + "=" + setlimitselect.value;
-                var offsetvalue = currentoffset.value;
-                if ((offsetvalue % setlimitselect.value) !== 0) {
-                    offsetvalue = Math.floor(offsetvalue / setlimitselect.value) * setlimitselect.value;
-                }
-                url += "&" + currentoffset.name + "=" + offsetvalue;
+                url += "&" + currentoffset.name + "=" + currentoffset.value;
                 location.assign(url);
             });
         }
@@ -116,7 +108,7 @@ var Paginator = function(id, datatable, heading, script, extradata) {
         }
     };
 
-    this.updateResults = function (data, params, changedPage) {
+    this.updateResults = function (data) {
         var container = self.datatable;
         if (self.datatable.tagName == 'TABLE') {
             container = getFirstElementByTagAndClassName('tbody', null, self.datatable);
@@ -157,8 +149,6 @@ var Paginator = function(id, datatable, heading, script, extradata) {
             });
         }
 
-        var results;
-
         // Update the pagination
         if ($(self.id)) {
             var tmp = DIV();
@@ -166,51 +156,20 @@ var Paginator = function(id, datatable, heading, script, extradata) {
             swapDOM(self.id, tmp.firstChild);
 
             // Run the pagination js to make it live
-            Paginator.oldparams = params;
             eval(data['data']['pagination_js']);
 
             // Update the result count
-            results = getFirstElementByTagAndClassName('div', 'results', self.id);
+            var results = getFirstElementByTagAndClassName('div', 'results', self.id);
             if (results && data.data.results) {
                 results.innerHTML = data.data.results;
             }
         }
-
-        if (self.heading) {
-            removeElementClass(self.heading, 'hidden');
-        }
-
-        // Focus management based on whether the user searched for something or just changed the page
-        if (self.heading && !changedPage) {
-            self.heading.focus();
-        }
-        else if (container) {
-            var firstLink = getFirstElementByTagAndClassName('a', null, container);
-            if (firstLink) {
-                firstLink.focus();
-            }
-            else if (results) {
-                setNodeAttribute(results, 'tabindex', -1);
-                addElementClass(results, 'hidefocus');
-                results.focus();
-            }
-        }
-        self.params = params;
     };
 
-    this.sendQuery = function(params, changedPage) {
-        if (params) {
-            params = $j.extend({}, self.params, params);
-        }
-        else {
-            params = self.params;
-        }
+    this.sendQuery = function(params) {
         sendjsonrequest(self.jsonScript, params, 'GET', function(data) {
-            self.updateResults(data, params, changedPage);
-            var arg = data['data'];
-            arg.params = params;
-            arg.changedPage = changedPage;
-            self.alertProxy('pagechanged', arg);
+            self.updateResults(data);
+            self.alertProxy('pagechanged', data['data']);
         });
     };
 
@@ -225,7 +184,7 @@ var Paginator = function(id, datatable, heading, script, extradata) {
                 queryData.extradata = serializeJSON(self.extraData);
             }
 
-            self.sendQuery(queryData, true);
+            self.sendQuery(queryData);
         });
     };
 
@@ -235,7 +194,7 @@ var Paginator = function(id, datatable, heading, script, extradata) {
         }
     };
 
-    this.init(id, datatable, heading, script, extradata);
+    this.init(id, datatable, script, extradata);
 };
 
 /**

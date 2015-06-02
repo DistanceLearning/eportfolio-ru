@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -18,11 +34,7 @@ define('SECTION_PAGE', 'settings');
 require(dirname(dirname(dirname(dirname(__FILE__)))) . '/init.php');
 define('TITLE', get_string('blogsettings','artefact.blog'));
 require_once('pieforms/pieform.php');
-require_once('license.php');
 safe_require('artefact', 'blog');
-if (!PluginArtefactBlog::is_active()) {
-    throw new AccessDeniedException(get_string('plugindisableduser', 'mahara', get_string('blog','artefact.blog')));
-}
 
 $id = param_integer('id');
 $blog = new ArtefactTypeBlog($id);
@@ -71,8 +83,6 @@ $form = pieform(array(
             'description'  => get_string('tagsdescprofile'),
             'help' => true,
         ),
-        'license' => license_form_el_basic($blog),
-        'licensing_advanced' => license_form_el_advanced($blog),
         'submit' => array(
             'type'  => 'submitcancel',
             'value' => array(
@@ -104,7 +114,7 @@ function editblog_submit(Pieform $form, $values) {
     
     ArtefactTypeBlog::edit_blog($USER, $values);
 
-    redirect('/artefact/blog/view/index.php?id=' . $values['id']);
+    redirect('/artefact/blog/view/?id=' . $values['id']);
 }
 
 /**
@@ -113,5 +123,5 @@ function editblog_submit(Pieform $form, $values) {
  */
 function editblog_cancel_submit() {
     $id = param_integer('id');
-    redirect('/artefact/blog/view/index.php?id=' . $id);
+    redirect('/artefact/blog/view/?id=' . $id);
 }

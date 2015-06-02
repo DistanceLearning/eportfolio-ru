@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -22,9 +38,9 @@ safe_require('artefact', 'internal');
 
 $fieldset = param_alpha('fs', 'aboutme');
 
-$element_list = ArtefactTypeProfile::get_all_fields();
+$element_list = call_static_method('ArtefactTypeProfile', 'get_all_fields');
 $element_data = ArtefactTypeProfile::get_field_element_data();
-$element_required = ArtefactTypeProfile::get_mandatory_fields();
+$element_required = call_static_method('ArtefactTypeProfile', 'get_mandatory_fields');
 
 // load existing profile information
 $profilefields = array();
@@ -130,7 +146,7 @@ if ($items['firstname']) {
 
 
 $items['maildisabled']['ignore'] = !get_account_preference($USER->get('id'),'maildisabled');
-$items['maildisabled']['value'] = get_string('maildisableddescription', 'account', get_config('wwwroot') . 'account/index.php');
+$items['maildisabled']['value'] = get_string('maildisableddescription', 'account', get_config('wwwroot') . 'account/');
 
 // build form elements
 $elements = array(
@@ -174,7 +190,6 @@ $elements = array(
 
 $profileform = pieform(array(
     'name'       => 'profileform',
-    'class'      => 'jstabs',
     'plugintype' => 'artefact',
     'pluginname' => 'internal',
     // will be uncommented when js for tabbed interface is called again after form submit
@@ -188,11 +203,8 @@ $profileform = pieform(array(
 function get_desired_fields(&$allfields, $desiredfields, $section) {
     global $USER;
     if ($section == 'about') {
-        $r = get_record_select('view', 'type = ? AND owner = ?', array('profile', $USER->id), 'id');
-        $label = '<div id="profileicon"><a href="' . get_config('wwwroot') . 'artefact/file/profileicons.php"><img src="'
-            . profile_icon_url($USER, 100, 100) . '" alt="' . get_string("editprofileicon", "artefact.file") . '"></a></div>';
-        $descr = get_string('aboutprofilelinkdescription', 'artefact.internal', get_config('wwwroot') . 'view/blocks.php?id=' . $r->id);
-        $descr .= get_string('aboutdescription', 'artefact.internal');
+        $label = '<div id="profileicon"><a href="' . get_config('wwwroot') . 'artefact/file/profileicons.php"><img src="' . profile_icon_url($USER, 100, 100) . '" alt=""></a></div>';
+        $descr = get_string('aboutdescription', 'artefact.internal');
     }
     else {
         $label = '';
@@ -422,24 +434,22 @@ function profileform_reply($form, $code, $message) {
             $method = 'add_ok_msg';
         }
         $SESSION->$method($message);
-        redirect('/artefact/internal/index.php');
+        redirect('/artefact/internal/');
     }
     // Should never be replying with an array for an OK message
 }
 
 
-$smarty = smarty(array('tabs'), array(), array(
+$smarty = smarty(array('artefact/internal/js/profile.js'), array(), array(
     'mahara' => array(
         'cannotremovedefaultemail',
-        'emailtoolong',
-        'tabs',
-        'tab',
-        'selected',
+        'emailtoolong'
     ),
     'artefact.internal' => array(
         'loseyourchanges',
     ),
 ));
+
 
 $smarty->assign('profileform', $profileform);
 $smarty->assign('PAGEHEADING', TITLE);

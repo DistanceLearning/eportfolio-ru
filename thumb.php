@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -15,7 +31,6 @@ define('NOCHECKREQUIREDFIELDS', 1);
 require('init.php');
 require_once('file.php');
 require_once('user.php');
-require_once('layoutpreviewimage.php');
 
 $type = param_alpha('type');
 
@@ -61,21 +76,19 @@ switch ($type) {
                 if ($mimetype) {
                     header('Content-type: ' . $mimetype);
 
-                    if (!get_config('nocache')) {
-                        // We can't cache 'profileicon' for as long, because the
-                        // user can change it at any time. But we can cache
-                        // 'profileiconbyid' for quite a while, because it will
-                        // never change
-                        if ($type == 'profileiconbyid' and !$earlyexpiry) {
-                            $maxage = 604800; // 1 week
-                        }
-                        else {
-                            $maxage = 600; // 10 minutes
-                        }
-                        header('Expires: '. gmdate('D, d M Y H:i:s', time() + $maxage) .' GMT');
-                        header('Cache-Control: max-age=' . $maxage);
-                        header('Pragma: public');
+                    // We can't cache 'profileicon' for as long, because the 
+                    // user can change it at any time. But we can cache 
+                    // 'profileiconbyid' for quite a while, because it will 
+                    // never change
+                    if ($type == 'profileiconbyid' and !$earlyexpiry) {
+                        $maxage = 604800; // 1 week
                     }
+                    else {
+                        $maxage = 600; // 10 minutes
+                    }
+                    header('Expires: '. gmdate('D, d M Y H:i:s', time() + $maxage) .' GMT');
+                    header('Cache-Control: max-age=' . $maxage);
+                    header('Pragma: public');
 
                     readfile_exit($path);
                 }
@@ -90,16 +103,14 @@ switch ($type) {
         // We couldn't find an image for this user. Attempt to use the 'no user 
         // photo' image for the current theme
 
-        if (!get_config('nocache')) {
-            // We can cache such images
-            $maxage = 604800; // 1 week
-            if ($earlyexpiry) {
-                $maxage = 600; // 10 minutes
-            }
-            header('Expires: '. gmdate('D, d M Y H:i:s', time() + $maxage) .' GMT');
-            header('Cache-Control: max-age=' . $maxage);
-            header('Pragma: public');
+        // We can cache such images
+        $maxage = 604800; // 1 week
+        if ($earlyexpiry) {
+            $maxage = 600; // 10 minutes
         }
+        header('Expires: '. gmdate('D, d M Y H:i:s', time() + $maxage) .' GMT');
+        header('Cache-Control: max-age=' . $maxage);
+        header('Pragma: public');
 
         if ($path = get_dataroot_image_path('artefact/file/profileicons/no_userphoto/' . $THEME->basename, 0, $size)) {
             header('Content-type: ' . 'image/png');
@@ -131,12 +142,10 @@ switch ($type) {
         if ($path = get_dataroot_image_path('artefact/file/profileicons', $filedata->fileid, get_imagesize_parameters())) {
             if ($filedata->filetype) {
                 header('Content-type: ' . $filedata->filetype);
-                if (!get_config('nocache')) {
-                    $maxage = 604800;
-                    header('Expires: '. gmdate('D, d M Y H:i:s', time() + $maxage) .' GMT');
-                    header('Cache-Control: max-age=' . $maxage);
-                    header('Pragma: public');
-                }
+                $maxage = 604800;
+                header('Expires: '. gmdate('D, d M Y H:i:s', time() + $maxage) .' GMT');
+                header('Cache-Control: max-age=' . $maxage);
+                header('Pragma: public');
 
                 readfile_exit($path);
             }
@@ -155,12 +164,10 @@ switch ($type) {
             $basepath = 'artefact/' . $ap . '/' . $basepath;
         }
         header('Content-type: image/png');
-        if (!get_config('nocache')) {
-            $maxage = 604800;
-            header('Expires: '. gmdate('D, d M Y H:i:s', time() + $maxage) .' GMT');
-            header('Cache-Control: max-age=' . $maxage);
-            header('Pragma: public');
-        }
+        $maxage = 604800;
+        header('Expires: '. gmdate('D, d M Y H:i:s', time() + $maxage) .' GMT');
+        header('Cache-Control: max-age=' . $maxage);
+        header('Pragma: public');
         $path = $THEME->get_path('images/thumb.png', false, $basepath);
         if (is_readable($path)) {
             readfile_exit($path);
@@ -173,39 +180,11 @@ switch ($type) {
     case 'viewlayout':
         header('Content-type: image/png');
         $vl = param_integer('vl');
-        $rows = get_records_sql_assoc('
-                SELECT vlrc.row, vlc.widths
-                FROM {view_layout_rows_columns} vlrc
-                INNER JOIN {view_layout_columns} vlc ON (vlrc.columns = vlc.id)
-                WHERE vlrc.viewlayout = ?
-                ORDER BY vlrc.row ASC',
-                array($vl));
-
-        if ($rows) {
-                $filename = 'vl-';
-                foreach ($rows as $key => $row) {
-                    $filename .= str_replace(',', '-', $row->widths);
-                    $filename .= ($key == count($rows))? '.png' : '_';
-                }
-                if (($path = get_config('dataroot') . LayoutPreviewImage::$destinationfolder . '/' . $filename)
-                    && (is_readable($path))) {
-                        readfile_exit($path);
-                }
-                // look in theme folder for default layout thumbs, or dataroot folder for custom layout thumbs
-                else if (($path = $THEME->get_path('images/' . $filename))
-                        && (is_readable($path))) {
-                        readfile_exit($path);
-                }
+        if ($widths = get_field('view_layout', 'widths', 'id', $vl)) {
+            if ($path = $THEME->get_path('images/vl-' . str_replace(',', '-', $widths) . '.png')) {
+                readfile_exit($path);
+            }
         }
-        readfile_exit($THEME->get_path('images/no_thumbnail.png'));
-    case 'customviewlayout':
-           header('Content-type: image/png');
-           $cvl = param_variable('cvl');
-           // dataroot folder for custom layout thumbs
-           if (($path = get_config('dataroot') . LayoutPreviewImage::$destinationfolder . '/' . $cvl . '.png')
-               && (is_readable($path))) {
-                   readfile_exit($path);
-           }
         readfile_exit($THEME->get_path('images/no_thumbnail.png'));
 }
 

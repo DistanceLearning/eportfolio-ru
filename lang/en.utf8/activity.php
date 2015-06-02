@@ -1,139 +1,60 @@
 <?php
-/**
- *
- * @package    mahara
- * @subpackage notification-internal
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- *
- */
 
 defined('INTERNAL') || die();
 
-$string['typemaharamessage'] = 'System message';
-$string['typeusermessage'] = 'Message from other users';
-$string['typefeedback'] = 'Feedback';
-$string['typewatchlist'] = 'Watchlist';
-$string['typeviewaccess'] = 'New page access';
-$string['typecontactus'] = 'Contact us';
-$string['typeobjectionable'] = 'Objectionable content';
-$string['typevirusrepeat'] = 'Repeat virus upload';
-$string['typevirusrelease'] = 'Virus flag release';
-$string['typeadminmessages'] = 'Administration messages';
-$string['typeinstitutionmessage'] = 'Institution message';
-$string['typegroupmessage'] = 'Group message';
-$string['typenewpost'] = 'Forum post';
-
-$string['type'] = 'Activity type';
-$string['attime'] = 'at';
-$string['prefsdescr'] = 'If you select either of the email options, notifications will still arrive in your inbox, but they will be automatically marked as read.';
-
-$string['messagetype'] = 'Message type';
-$string['subject'] = 'Subject';
-$string['date'] = 'Date';
-$string['read'] = 'Read';
-$string['unread'] = 'Unread';
-
-$string['markasread'] = 'Mark as read';
-$string['selectall'] = 'Select all';
-$string['recurseall'] = 'Recurse all';
-$string['alltypes'] = 'All types';
-
-$string['markedasread'] = 'Marked your notifications as read';
-$string['failedtomarkasread'] = 'Failed to mark your notifications as read';
-
-$string['deletednotifications'] = 'Deleted %s notifications';
-$string['failedtodeletenotifications'] = 'Failed to delete your notifications';
-
-$string['stopmonitoring'] = 'Stop monitoring';
-$string['artefacts'] = 'Artefacts';
-$string['groups'] = 'Groups';
-$string['monitored'] = 'Monitored';
-
-$string['stopmonitoringsuccess'] = 'Stopped monitoring successfully';
-$string['stopmonitoringfailed'] = 'Failed to stop monitoring';
-
-$string['newwatchlistmessage'] = 'New activity on your watchlist';
-$string['newwatchlistmessageview1'] = 'The page "%s" belonging to %s has been changed';
-$string['blockinstancenotification'] = 'The block "%s" has been added or changed';
-$string['nonamegiven'] = 'no name given';
-
-$string['newviewsubject'] = 'New page created';
-$string['newviewmessage'] = '%s has created a new page "%s"';
-
-$string['newcontactusfrom'] = 'New contact us from';
-$string['newcontactus'] = 'New contact us';
-
-$string['newviewaccessmessage'] = 'You have been added to the access list for the page "%s" by %s';
-$string['newviewaccessmessagenoowner'] = 'You have been added to the access list for the page "%s"';
-$string['newviewaccesssubject'] = 'New page access';
-
-$string['viewmodified'] = 'has changed their page';
-$string['ongroup'] = 'on group';
-$string['ownedby'] = 'owned by';
-
-$string['objectionablecontentview'] = 'Objectionable content on page "%s" reported by %s';
-$string['objectionablecontentviewartefact'] = 'Objectionable content on page "%s" in "%s" reported by %s';
-
-$string['objectionablecontentviewhtml'] = '<div style="padding: 0.5em 0; border-bottom: 1px solid #999;">Objectionable content on "%s" reported by %s<br>%s</div>
-
-<div style="margin: 1em 0;">%s</div>
-
-<div style="font-size: smaller; border-top: 1px solid #999;">
-<p>Complaint relates to: <a href="%s">%s</a></p>
-<p>Reported by: <a href="%s">%s</a></p>
-</div>';
-$string['objectionablecontentviewtext'] = 'Objectionable content on "%s" reported by %s
-%s
-------------------------------------------------------------------------
-
-%s
-
-------------------------------------------------------------------------
-To see the page, follow this link:
-%s
-To see the reporter\'s profile, follow this link:
-%s';
-
-$string['objectionablecontentviewartefacthtml'] = '<div style="padding: 0.5em 0; border-bottom: 1px solid #999;">Objectionable content on "%s" in "%s" reported by %s<br>%s</div>
-
-<div style="margin: 1em 0;">%s</div>
-
-<div style="font-size: smaller; border-top: 1px solid #999;">
-<p>Complaint relates to: <a href="%s">%s</a></p>
-<p>Reported by: <a href="%s">%s</a></p>
-</div>';
-$string['objectionablecontentviewartefacttext'] = 'Objectionable content on "%s" in "%s" reported by %s
-%s
-------------------------------------------------------------------------
-
-%s
-
-------------------------------------------------------------------------
-To see the page, follow this link:
-%s
-To see the reporter\'s profile, follow this link:
-%s';
-
-$string['newgroupmembersubj'] = '%s is now a group member.';
-$string['removedgroupmembersubj'] = '%s is no longer a group member.';
-
-$string['addtowatchlist'] = 'Add to watchlist';
-$string['removefromwatchlist'] = 'Remove from watchlist';
-
-$string['missingparam'] = 'Required parameter %s was empty for activity type %s';
-
-$string['institutionrequestsubject'] = '%s has requested membership of %s.';
-$string['institutionrequestmessage'] = 'You can add users to institutions on the "Institution members" page:';
-
-$string['institutioninvitesubject'] = 'You have been invited to join the institution %s.';
-$string['institutioninvitemessage'] = 'You can confirm your membership of this institution on your "Institution settings" page:';
-
-$string['deleteallnotifications'] = 'Delete all notifications';
-$string['reallydeleteallnotifications'] = 'Are you sure you want to delete all your notifications of this activity type?';
-
-$string['viewsubmittedsubject1'] = 'Submission to %s';
-$string['viewsubmittedmessage1'] = '%s has submitted "%s" to %s';
-
-$string['adminnotificationerror'] = 'User notification error was probably caused by your server configuration.';
+$string['addtowatchlist'] = 'Добавить в список наблюдений';
+$string['alltypes'] = 'Все типы';
+$string['artefacts'] = 'Артефакты';
+$string['attime'] = 'в';
+$string['date'] = 'Дата';
+$string['deleteallnotifications'] = 'Удалить все уведомления';
+$string['deletednotifications'] = 'Удалить %s уведомления';
+$string['failedtodeletenotifications'] = 'Не удалось удалить ваши уведомления';
+$string['failedtomarkasread'] = 'Не удалось отметить ваши уведомления, как прочитанные';
+$string['groups'] = 'Группы';
+$string['institutioninvitemessage'] = 'Вы можете подтвердить свое участие в этом сообществе на вашей странице настройки сообщеста:';
+$string['institutioninvitesubject'] = 'Вы приглашены в сообщество %s.';
+$string['institutionrequestmessage'] = 'Вы можете добавлять пользователей в сообщества на странице участники сообщества:';
+$string['institutionrequestsubject'] = '%s запросил участие в %s.';
+$string['markasread'] = 'Отметить как прочитанное';
+$string['markedasread'] = 'Отметить ваши уведомления, как прочитанные';
+$string['missingparam'] = 'Обязательный параметр %s был пуст для деятельности %s';
+$string['monitored'] = 'Мониторинг';
+$string['newcontactus'] = 'Новый контакт';
+$string['newcontactusfrom'] = 'Новый контакт от';
+$string['newgroupmembersubj'] = '%s теперь участник группы!';
+$string['newviewaccessmessage'] = 'Вы добавлены в список доступа к виду "%s" от %s';
+$string['newviewaccessmessagenoowner'] = 'Вы добавлены в список доступа к виду "%s"';
+$string['newviewaccesssubject'] = 'Новый доступ к виду';
+$string['newviewmessage'] = '%s создал новый вид "%s"';
+$string['newviewsubject'] = 'Создан новый вид';
+$string['newwatchlistmessage'] = 'Новости на вашем списке наблюдений';
+$string['newwatchlistmessageview'] = '%s изменил свой вид "%s"';
+$string['objectionablecontentview'] = 'Нежелательное содержимое на виде "%s" доложенное %s';
+$string['ongroup'] = 'в группе';
+$string['ownedby'] = 'принадлежащей';
+$string['prefsdescr'] = 'Если вы выберите любой из вариантов письма, уведомления все равно будут вводится в журнале, но они автоматически будут помечаться как прочитанные.';
+$string['read'] = 'Прочитано';
+$string['reallydeleteallnotifications'] = 'Вы уверены, что хотите удалить все уведомления?';
+$string['recurseall'] = 'Рекурсировать все';
+$string['removedgroupmembersubj'] = '%s больше не является участником группы';
+$string['removefromwatchlist'] = 'Удалить из списка наблюдений';
+$string['selectall'] = 'Выбрать все';
+$string['stopmonitoring'] = 'Остановить мониторинг';
+$string['stopmonitoringfailed'] = 'Остановка мониторинга не удалась';
+$string['stopmonitoringsuccess'] = 'Остановка мониторинга произошла успешно';
+$string['subject'] = 'Тема';
+$string['type'] = 'Вид деятельности';
+$string['typeadminmessages'] = 'Сообщения администратора';
+$string['typecontactus'] = 'Контакты';
+$string['typegroupmessage'] = 'Сообщения группы';
+$string['typeinstitutionmessage'] = 'Сообщения сообщества';
+$string['typemaharamessage'] = 'Сообщения системы';
+$string['typeobjectionable'] = 'Нежелательное содержимое';
+$string['typeusermessage'] = 'Сообщения от других пользователей';
+$string['typeviewaccess'] = 'Новый вид доступа';
+$string['typevirusrelease'] = 'Сбросить флаг вируса';
+$string['typevirusrepeat'] = 'Повторить загрузку вируса';
+$string['typewatchlist'] = 'Список наблюдений';
+$string['unread'] = 'Не прочитано';
+$string['viewmodified'] = 'изменил свой вид';

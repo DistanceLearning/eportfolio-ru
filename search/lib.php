@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage search
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -16,42 +32,6 @@ defined('INTERNAL') || die();
  * carried out.
  */
 abstract class PluginSearch extends Plugin {
-
-    /**
-     * This function gets called when the sitewide search plugin is switched to
-     * this one. It's the chance for the plugin to do any post-configuration
-     * initialization it might need. (The same stuff you'd probably do after
-     * changing the plugin's configuration via its extension config page.)
-     */
-    public static function initialize_sitewide() {
-        return true;
-    }
-
-    /**
-     * This function gets called when the sitewide search plugin is switched AWAY
-     * from this one. It's the chance for the plugin to disable anything that would
-     * cause problems now that the search is no longer in use.
-     */
-    public static function cleanup_sitewide() {
-        return true;
-    }
-
-    /**
-     * This function determines whether the plugin is currently available to be chosen
-     * as the sitewide search plugin (i.e. get_config('searchplugin'))
-     */
-    public static function is_available_for_site_setting() {
-        return true;
-    }
-
-    /**
-     * This function determines whether the plugin allows a search box to display for
-     * non-logged in users - only useful if results returned by search are allowed to
-     * be seen by the public
-     */
-    public static function publicform_allowed() {
-        return false;
-    }
 
     /**
      * Given a query string and limits, return an array of matching users
@@ -128,26 +108,6 @@ abstract class PluginSearch extends Plugin {
      */
     public static abstract function search_group($query_string, $limit, $offset=0, $type='member');
 
-
-    /**
-     * Returns search results for users in a particular group
-     *
-     * It's called by and tightly coupled with get_group_user_search_results() in searchlib.php. Look there for
-     * the exact meaning of its parameters and expected return values.
-     */
-    public static abstract function group_search_user($group, $query_string, $constraints, $offset, $limit, $membershiptype, $order, $friendof, $orderbyoptionidx=null);
-
-    /**
-     * This function indicates whether the plugin should take the raw $query string
-     * when its group_search_user function is called, or whether it should get the
-     * parsed query string.
-     *
-     * @return boolean
-     */
-    public static function can_process_raw_group_search_user_queries() {
-        return false;
-    }
-
     /**
      * Given a query string and limits, return an array of matching objects
      * owned by the current user.  Possible return types are ...
@@ -163,7 +123,7 @@ abstract class PluginSearch extends Plugin {
      * @param integer How many results to return
      * @param integer What result to start at (0 == first result)
      * @param string  Type to search for (either 'all' or one of the types above).
-     *
+     * 
      */
     public static abstract function self_search($query_string, $limit, $offset, $type = 'all');
 
@@ -199,36 +159,5 @@ abstract class PluginSearch extends Plugin {
                 }
             }
         }
-    }
-
-
-    /**
-     * Generates the search form used in the page headers
-     * @return string
-     */
-    public static function header_search_form() {
-        require_once('pieforms/pieform.php');
-
-        return pieform(array(
-                'name'                => 'usf',
-                'action'              => get_config('wwwroot') . 'user/find.php',
-                'renderer'            => 'oneline',
-                'autofocus'           => false,
-                'validate'            => false,
-                'presubmitcallback'   => '',
-                'elements'            => array(
-                        'query' => array(
-                                'type'           => 'text',
-                                'defaultvalue'   => get_string('searchusers'),
-                                'title'          => get_string('searchusers'),
-                                'class'          => 'emptyonfocus',
-                                'hiddenlabel'    => true,
-                        ),
-                        'submit' => array(
-                                'type' => 'submit',
-                                'value' => get_string('go'),
-                        )
-                )
-        ));
     }
 }

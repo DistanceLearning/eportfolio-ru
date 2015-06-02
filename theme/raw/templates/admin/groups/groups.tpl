@@ -12,7 +12,7 @@
                                             <th>{str tag="groupcategory" section="group"}</th>
                                         {/if}
 					<th>{str tag="groupvisible" section="admin"}</th>
-                    <th><span class="accessible-hidden">{str tag=edit}</span></th>
+                    <th></th>
 				</tr>
 				</thead>
 				<tbody>

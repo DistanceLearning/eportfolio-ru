@@ -1,23 +1,13 @@
 <?php
-/**
- *
- * @package    mahara
- * @subpackage blocktype-profileinfo
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- *
- */
 
 defined('INTERNAL') || die();
 
-$string['title'] = 'Profile information';
-$string['description'] = 'Choose profile information to display';
-
-$string['aboutme'] = 'About me';
-$string['fieldstoshow'] = 'Fields to show';
-$string['introtext'] = 'Introduction text';
-$string['useintroductioninstead'] = 'You can use your introduction profile field instead by enabling that and leaving this field blank';
-$string['dontshowprofileicon'] = "Don't show a profile picture";
-$string['dontshowemail'] = "Don't show email address";
-$string['uploadaprofileicon'] = "You have no profile pictures. <a href=\"%sartefact/file/profileicons.php\" target=\"_blank\">Upload one</a>.";
+$string['aboutme'] = 'О себе';
+$string['description'] = 'Выбрать информацию о профиле для отображения';
+$string['dontshowemail'] = 'Не показывать адрес электронной почты';
+$string['dontshowprofileicon'] = 'Не показывать иконку профиля';
+$string['fieldstoshow'] = 'Отображаемые поля';
+$string['introtext'] = 'Вступительное слово';
+$string['title'] = 'Информация о профиле';
+$string['uploadaprofileicon'] = 'У вас нет иконок профиля. <a href="%sartefact/file/profileicons.php" target="_blank">Загрузить одну</a>';
+$string['useintroductioninstead'] = 'Вы может использовать поле для вступительного слова или оставить это поле пустым';

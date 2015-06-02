@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage form-renderer
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -37,22 +53,18 @@ function pieform_renderer_maharatable(Pieform $form, $element) {
         }
         $builtelement = substr($builtelement, 0, -12) . '</table></fieldset>';
 
-        $result = "\t<tr id=\"{$formname}_{$element['name']}_fieldset\"";
-        if (isset($element['class'])) {
-            $result .= ' class="' . Pieform::hsc($element['class']) . '"';
-        }
-        $result .= ">\n\t\t<td colspan=\"2\">";
+        $result = "\t<tr>\n\t\t<td colspan=\"2\">";
         $result .= $builtelement;
         $result .= "</td>\n\t</tr>";
         return $result;
     }
-
+    
     $result = '';
     if (isset($element['labelhtml']) && $element['labelhtml'] !== '') {
         $result .= "\t<tr";
         $result .= ' id="' . $formname . '_' . Pieform::hsc($element['name']) . '_header"';
         // Set the class of the enclosing <tr> to match that of the element
-        if (isset($element['class'])) {
+        if ($element['class']) {
             $result .= ' class="' . Pieform::hsc($element['class']) . '"';
         }
         $result .= ">\n\t\t";
@@ -81,8 +93,8 @@ function pieform_renderer_maharatable(Pieform $form, $element) {
 
     // Contextual help
     if (!empty($element['help'])) {
-        $result .= get_help_icon($form->get_property('plugintype'),
-                                 $form->get_property('pluginname'),
+        $result .= get_help_icon($form->get_property('plugintype'), 
+                                 $form->get_property('pluginname'), 
                                  $form->get_name(), $element['name']);
         if ($element['type'] == 'wysiwyg') {
             $result .= '</td></tr></table>';
@@ -92,20 +104,16 @@ function pieform_renderer_maharatable(Pieform $form, $element) {
     $result .= "</td>\n\t</tr>\n";
 
     // Description - optional description of the element, or other note that should be visible
-    // on the form itself (without the user having to hover over contextual help
-    if ((!$form->has_errors() || $form->get_property('showdescriptiononerror')) && !empty($element['descriptionhtml'])) {
-        $result .= "\t<tr";
-        if (isset($element['class'])) {
-            $result .= ' class="' . Pieform::hsc($element['class']) . '"';
-        }
-        $result .= ">\n\t\t<td class=\"description\">";
-        $result .= $element['descriptionhtml'];
+    // on the form itself (without the user having to hover over contextual help 
+    if ((!$form->has_errors() || $form->get_property('showdescriptiononerror')) && !empty($element['description'])) {
+        $result .= "\t<tr>\n\t\t<td class=\"description\">";
+        $result .= $element['description'];
         $result .= "</td>\n\t</tr>\n";
     }
 
-    if (!empty($element['errorhtml'])) {
+    if (!empty($element['error'])) {
         $result .= "\t<tr>\n\t\t<td class=\"errmsg\">";
-        $result .= hsc($element['errorhtml']);
+        $result .= hsc($element['error']);
         $result .= "</td>\n\t</tr>\n";
     }
 

@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage interaction-forum
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -43,12 +59,8 @@ else { // edit post
     $parentid = $post->parent;
 }
 
-if (!$parentid) {
-    throw new NotFoundException(get_string('cantfindpost', 'interaction.forum', $parentid));
-}
-
 $parent = get_record_sql(
-    'SELECT p.subject, p.body, p.topic, p.parent, p.poster, p.deleted, ' . db_format_tsfield('p.ctime', 'ctime') . ', m.user AS moderator, t.id AS topic, t.forum, t.closed AS topicclosed, p2.subject AS topicsubject, f.group AS "group", f.title AS forumtitle, g.name AS groupname, COUNT(p3.id)
+    'SELECT p.subject, p.body, p.topic, p.parent, p.poster, ' . db_format_tsfield('p.ctime', 'ctime') . ', m.user AS moderator, t.id AS topic, t.forum, t.closed AS topicclosed, p2.subject AS topicsubject, f.group AS "group", f.title AS forumtitle, g.name AS groupname, COUNT(p3.id)
     FROM {interaction_forum_post} p
     INNER JOIN {interaction_forum_topic} t ON (p.topic = t.id AND t.deleted != 1)
     INNER JOIN {interaction_forum_post} p2 ON (p2.topic = t.id AND p2.parent IS NULL)
@@ -59,25 +71,25 @@ $parent = get_record_sql(
         INNER JOIN {usr} u ON (m.user = u.id AND u.deleted = 0)
     ) m ON (m.forum = f.id AND m.user = p.poster)
     INNER JOIN {group} g ON (g.id = f.group AND g.deleted = ?)
-    INNER JOIN {interaction_forum_post} p3 ON (p.poster = p3.poster)
+    INNER JOIN {interaction_forum_post} p3 ON (p.poster = p3.poster AND p3.deleted != 1)
     INNER JOIN {interaction_forum_topic} t2 ON (t2.deleted != 1 AND p3.topic = t2.id)
     INNER JOIN {interaction_instance} f2 ON (t2.forum = f2.id AND f2.deleted != 1 AND f2.group = f.group)
     WHERE p.id = ?
-    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15',
+    AND p.deleted != 1
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14',
     array(0, $parentid)
 );
 
+if (!$parent) {
+    throw new NotFoundException(get_string('cantfindpost', 'interaction.forum', $parentid));
+}
 
 define('GROUP', $parent->group);
 
 $membership = user_can_access_forum((int)$parent->forum);
 $moderator = (bool)($membership & INTERACTION_FORUM_MOD);
-$admintutor = (bool) group_get_user_admintutor_groups();
 
 if (!isset($postid)) { // post reply
-    if ($parent->deleted) {
-        throw new NotFoundException(get_string('cantfindpost', 'interaction.forum', $parentid));
-    }
     if (!group_within_edit_window($parent->group)) {
         throw new AccessDeniedException(get_string('cantaddposttoforum', 'interaction.forum'));
     }
@@ -115,7 +127,7 @@ else { // edit post
 
 $parent->ctime = relative_date(get_string('strftimerecentfullrelative', 'interaction.forum'), get_string('strftimerecentfull'), $parent->ctime);
 
-$editform = array(
+$editform = pieform(array(
     'name'     => 'editpost',
     'successcallback' => isset($post) ? 'editpost_submit' : 'addpost_submit',
     'autofocus' => 'body',
@@ -141,12 +153,6 @@ $editform = array(
                 'maxlength' => 65536,
             ),
         ),
-        'sendnow' => array(
-            'type'         => 'checkbox',
-            'title'        => get_string('sendnow', 'interaction.forum'),
-            'description'  => get_string('sendnowdescription', 'interaction.forum', get_config_plugin('interaction', 'forum', 'postdelay')),
-            'defaultvalue' => false,
-        ),
         'submit'   => array(
             'type'  => 'submitcancel',
             'value'       => array(
@@ -164,21 +170,11 @@ $editform = array(
             'value' => isset($post) ? $post->editrecord : false
         )
     ),
-);
-
-if ((!$moderator && !$admintutor && !group_sendnow($parent->group)) || get_config_plugin('interaction', 'forum', 'postdelay') <= 0) {
-    unset($editform['elements']['sendnow']);
-}
-
-$editform = pieform($editform);
+));
 
 function editpost_validate(Pieform $form, $values) {
     if ($baddomain = get_first_blacklisted_domain($values['body'])) {
         $form->set_error('body', get_string('blacklisteddomaininurl', 'mahara', $baddomain));
-    }
-    $result = probation_validate_content($values['body']);
-    if ($result !== true) {
-        $form->set_error('body', get_string('newuserscantpostlinksorimages'));
     }
 }
 
@@ -220,7 +216,6 @@ function addpost_submit(Pieform $form, $values) {
         'body'    => $values['body'],
         'ctime'   =>  db_format_timestamp(time())
     );
-    $sendnow = isset($values['sendnow']) && $values['sendnow'] ? 1 : 0;
     // See if the same content has been submitted in the last 5 seconds. If so, don't add this post.
     $oldpost = get_record_select('interaction_forum_post', 'topic = ? AND poster = ? AND parent = ? AND subject = ? AND body = ? AND ctime > ?',
         array($post->topic, $post->poster, $post->parent, $post->subject, $post->body, db_format_timestamp(time() - 5)),
@@ -238,22 +233,12 @@ function addpost_submit(Pieform $form, $values) {
     if (!empty($newbody) && $newbody != $post->body) {
         set_field('interaction_forum_post', 'body', $newbody, 'id', $postid);
     }
-    if ($sendnow == 0) {
-      $delay = get_config_plugin('interaction', 'forum', 'postdelay');
-    }
-    else {
-      $delay = 0;
-    }
+
+    $delay = get_config_plugin('interaction', 'forum', 'postdelay');
     if (!is_null($delay) && $delay == 0) {
         PluginInteractionForum::interaction_forum_new_post(array($postid));
     }
     $SESSION->add_ok_msg(get_string('addpostsuccess', 'interaction.forum'));
-
-    if (is_using_probation() && $post->parent) {
-        $parentposter = get_field('interaction_forum_post', 'poster', 'id', $post->parent);
-        vouch_for_probationary_user($parentposter);
-    }
-
     redirect(get_config('wwwroot') . 'interaction/forum/topic.php?id=' . $values['topic'] . '&post=' . $postid);
 }
 

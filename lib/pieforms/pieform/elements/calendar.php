@@ -19,8 +19,8 @@
  * @package    pieform
  * @subpackage element
  * @author     Nigel McNie <nigel@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -48,38 +48,22 @@ function pieform_element_calendar(Pieform $form, $element) {/*{{{*/
     if (isset($element['imagefile'])) {
         $result .= '<a href="" id="'. $id . '_btn" onclick="return false;" class="pieform-calendar-toggle"'
             . ' tabindex="' . $element['tabindex'] . '">'
-            . '<img src="' . $element['imagefile'] . '" alt="' . get_string('element.calendar.opendatepicker', 'pieforms') . '"></a>';
+            . '<img src="' . $element['imagefile'] . '" alt=""></a>';
     }
     else {
-        $result .= '<button type="button" id="' . $id . '_btn" onclick="return false;" class="pieform-calendar-toggle"'
-            . ' tabindex="' . $element['tabindex'] . '">';
-        $result .= '<span class="accessible-hidden">' . get_string('element.calendar.opendatepicker', 'pieforms') . '</span>';
-        $result .= '...</button>';
+        $result .= '<input type="button" id="' . $id . '_btn" onclick="return false;" class="pieform-calendar-toggle"'
+            . ' value="..." tabindex="' . $element['tabindex'] . '">';
     }
 
     // Build the configuring javascript
     $options = array_merge($element['caloptions'], array('inputField' => $id, 'button' => $id . '_btn'));
 
-    // Update the formchangechecker when the user selects a date
-    $onselectfunction = 'updateFormChangerChecker_' . $id;
-    $options['onUpdate'] = empty($options['onUpdate']) ? $onselectfunction : $options['onUpdate'] . $onselectfunction;
-
     $encodedoptions = json_encode($options);
     // Some options are callbacks and need their quoting removed
     foreach (array('dateStatusFunc', 'flatCallback', 'onSelect', 'onClose', 'onUpdate') as $function) {
-        $encodedoptions = preg_replace('/("' . $function . '"):"([a-zA-Z0-9_$]+)"/', '\1:\2', $encodedoptions);
+        $encodedoptions = preg_replace('/("' . $function . '"):"([a-zA-Z0-9$]+)"/', '\1:\2', $encodedoptions);
     }
-    $result .= '<script type="text/javascript">
-        var updateFormChangerChecker_' . $id . ' = function () {
-            var input = jQuery("input#' . $id . '");
-            if (typeof formchangemanager !== \'undefined\') {
-                var form = input.closest(\'form\')[0];
-                formchangemanager.setFormState(form, FORM_CHANGED);
-            }
-            input.change();
-        }
-        Calendar.setup(' . $encodedoptions . ');
-    </script>';
+    $result .= '<script type="text/javascript">Calendar.setup(' . $encodedoptions . ');</script>';
 
     return $result;
 }/*}}}*/
@@ -119,10 +103,10 @@ function pieform_element_calendar_get_headdata($element) {/*{{{*/
     $langfile  = $element['jsroot'] . 'lang/calendar-' . $element['language'] . '.js';
     $setupfile = $element['jsroot'] . 'calendar-setup_stripped.js';
     $result = array(
-        '<link rel="stylesheet" type="text/css" media="all" href="' . $themefile . '?v=' . get_config('release'). '">',
-        '<script type="text/javascript" src="' . $libfile . '?v=' . get_config('release'). '"></script>',
-        '<script type="text/javascript" src="' . $langfile . '?v=' . get_config('release'). '"></script>',
-        '<script type="text/javascript" src="' . $setupfile . '?v=' . get_config('release'). '"></script>'
+        '<link rel="stylesheet" type="text/css" media="all" href="' . $themefile . '">',
+        '<script type="text/javascript" src="' . $libfile . '"></script>',
+        '<script type="text/javascript" src="' . $langfile . '"></script>',
+        '<script type="text/javascript" src="' . $setupfile . '"></script>'
     );
     return $result;
 }/*}}}*/

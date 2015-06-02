@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage auth
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -224,35 +240,26 @@ abstract class Auth {
     }
 
     /**
-     * Returns whether the authentication instance can automatically create a
+     * Returns whether the authentication instance can automatically create a 
      * user record.
      *
-     * Auto creating users means that the authentication plugin can say that
+     * Auto creating users means that the authentication plugin can say that 
      * users who don't exist yet in Mahara's usr table are allowed, and Mahara
      * should create a user account for them. Example: the first time a user logs
      * in, when authenticating against an ldap store or similar).
      *
-     * However, if a plugin says a user can be authenticated, then it must
-     * implement the get_user_info() method which will be called to find out
-     * information about the user so a record in the usr table _can_ be created
+     * However, if a plugin says a user can be authenticated, then it must 
+     * implement the get_user_info() method which will be called to find out 
+     * information about the user so a record in the usr table _can_ be created 
      * for the new user.
      *
-     * Authentication methods must implement this method. Some may choose to
-     * implement it by returning an instance config value that the admin user
+     * Authentication methods must implement this method. Some may choose to 
+     * implement it by returning an instance config value that the admin user 
      * can set.
      *
      * @return bool
      */
     public abstract function can_auto_create_users();
-
-    /**
-     * If this plugin allows new user's to self-register, this function will be
-     * called to check whether it is okay to display a captcha method on the new
-     * user self-registration form.
-     */
-    public static function can_use_registration_captcha() {
-        return true;
-    }
 
     /**
      * Given a username, returns a hash of information about a user from the
@@ -325,35 +332,6 @@ abstract class Auth {
     public function logout() {
     }
 
-    /**
-     * Indicates whether this auth instance is parent to another auth instance
-     * @return boolean (For backwards-compatibility reasons, it actually returns $this or null)
-     */
-    public function is_parent_authority() {
-        if (count_records('auth_instance_config', 'field', 'parent', 'value', $this->instanceid)) {
-            return $this;
-        }
-        else {
-            return null;
-        }
-    }
-
-    /**
-     * Returns the ID of this instance's parent authority; or FALSE if it has no parent authority
-     * @return int|false
-     */
-    public function get_parent_authority() {
-        return get_field('auth_instance_config', 'value', 'instance', $this->id, 'field', 'parent');
-    }
-
-
-    /**
-     * Indicates whether or not this auth instance uses the remote username. Most auth instances
-     * will only use it if they are the parent to another auth instance.
-     */
-    public function needs_remote_username() {
-        return (boolean) $this->is_parent_authority();
-    }
 }
 
 
@@ -518,7 +496,6 @@ function auth_setup () {
         // specify login data immediately
         require_once('pieforms/pieform.php');
         $form = new Pieform(auth_get_login_form());
-        $SESSION->loginform = $form;
         if ($USER->is_logged_in()) {
             return;
         }
@@ -871,17 +848,7 @@ function auth_check_required_fields() {
         }
 
         if ($field == 'email') {
-            // Check if a validation email has been sent
-            if (record_exists('artefact_internal_profile_email', 'owner', $USER->get('id'))) {
-                $elements['email']['type'] = 'html';
-                $elements['email']['value'] = get_string('validationprimaryemailsent', 'auth');
-                $elements['email']['disabled'] = true;
-                $elements['email']['rules'] = array('required' => false);
-            }
-            else {
-                $elements[$field]['rules']['email'] = true;
-                $elements[$field]['description'] = get_string('primaryemaildescription', 'auth');
-            }
+            $elements[$field]['rules']['email'] = true;
         }
     }
 
@@ -889,38 +856,23 @@ function auth_check_required_fields() {
         return;
     }
 
-    if ((count($elements) == 1) && isset($elements['email']) && ($elements['email']['type'] == 'html')) {
-        // Display a message if there is only 1 required field and this field is email whose validation has been sent
-        $elements['submit'] = array(
-                'type' => 'submit',
-                'value' => get_string('continue', 'admin')
-        );
-        $form = pieform(array(
-                'name'     => 'requiredfields',
-                'method'   => 'post',
-                'action'   => get_config('wwwroot') . '?logout',
-                'elements' => $elements
-        ));
-    }
-    else {
-        $elements['submit'] = array(
-            'type' => 'submit',
-            'value' => get_string('submit')
-        );
+    $elements['submit'] = array(
+        'type' => 'submit',
+        'value' => get_string('submit')
+    );
 
-        $form = pieform(array(
-            'name'     => 'requiredfields',
-            'method'   => 'post',
-            'action'   => '',
-            'elements' => $elements
-        ));
-    }
+    $form = pieform(array(
+        'name'     => 'requiredfields',
+        'method'   => 'post',
+        'action'   => '',
+        'elements' => $elements
+    ));
 
     $smarty = smarty();
     if ($USER->get('parentuser')) {
         $smarty->assign('loginasoverridepasswordchange',
             get_string('loginasoverridepasswordchange', 'admin',
-                       '<a class="btn" href="' . get_config('wwwroot') . '?loginanyway">', '</a>'));
+                       '<a href="' . get_config('wwwroot') . '?loginanyway">', '</a>'));
     }
     $smarty->assign('changepassword', $changepassword);
     $smarty->assign('changeusername', $SESSION->get('resetusername'));
@@ -931,39 +883,37 @@ function auth_check_required_fields() {
 
 function requiredfields_validate(Pieform $form, $values) {
     global $USER;
-    if (isset($values['password1'])) {
+    if (!isset($values['password1'])) {
+        return true;
+    }
 
-        // Get the authentication type for the user, and
-        // use the information to validate the password
-        $authobj = AuthFactory::create($USER->authinstance);
+    // Get the authentication type for the user, and
+    // use the information to validate the password
+    $authobj = AuthFactory::create($USER->authinstance);
 
-        // @todo this could be done by a custom form rule... 'password' => $user
-        password_validate($form, $values, $USER);
+    // @todo this could be done by a custom form rule... 'password' => $user
+    password_validate($form, $values, $USER);
 
-        // The password cannot be the same as the old one
-        try {
-            if (!$form->get_error('password1')
-                && $authobj->authenticate_user_account($USER, $values['password1'])) {
-                $form->set_error('password1', get_string('passwordnotchanged'));
-            }
-        }
-        // propagate error up as the collective error AuthUnknownUserException
-         catch  (AuthInstanceException $e) {
-            $form->set_error('password1', $e->getMessage());
-        }
-
-        if ($authobj->authname == 'internal' && isset($values['username']) && $values['username'] != $USER->get('username')) {
-            if (!AuthInternal::is_username_valid($values['username'])) {
-                $form->set_error('username', get_string('usernameinvalidform', 'auth.internal'));
-            }
-            if (!$form->get_error('username') && record_exists_select('usr', 'LOWER(username) = ?', strtolower($values['username']))) {
-                $form->set_error('username', get_string('usernamealreadytaken', 'auth.internal'));
-            }
+    // The password cannot be the same as the old one
+    try {
+        if (!$form->get_error('password1')
+            && $authobj->authenticate_user_account($USER, $values['password1'])) {
+            $form->set_error('password1', get_string('passwordnotchanged'));
         }
     }
-    // Check if email has been taken
-    if (isset($values['email']) && record_exists('artefact_internal_profile_email', 'email', $values['email'])) {
-            $form->set_error('email', get_string('unvalidatedemailalreadytaken', 'artefact.internal'));
+    // propagate error up as the collective error AuthUnknownUserException
+     catch  (AuthInstanceException $e) {
+        $form->set_error('password1', $e->getMessage());
+    }
+
+
+    if ($authobj->authname == 'internal' && isset($values['username']) && $values['username'] != $USER->get('username')) {
+        if (!AuthInternal::is_username_valid($values['username'])) {
+            $form->set_error('username', get_string('usernameinvalidform', 'auth.internal'));
+        }
+        if (!$form->get_error('username') && record_exists_select('usr', 'LOWER(username) = ?', strtolower($values['username']))) {
+            $form->set_error('username', get_string('usernamealreadytaken', 'auth.internal'));
+        }
     }
 }
 
@@ -998,78 +948,15 @@ function requiredfields_submit(Pieform $form, $values) {
             continue;
         }
         if ($field == 'email') {
-            $email = $values['email'];
-            // Need to update the admin email on installation
-            if ($USER->get('admin')) {
-                $oldemail = get_field('usr', 'email', 'id', $USER->get('id'));
-                if ($oldemail == 'admin@example.org') {
-                    // we are dealing with the dummy email that is set on install
-                    update_record('usr', array('email' => $email), array('id' => $USER->get('id')));
-                    update_record('artefact_internal_profile_email', array('email' => $email), array('owner' => $USER->get('id')));
-                }
-            }
-            // Check if a validation email has been sent, if not send one
-            if (!record_exists('artefact_internal_profile_email', 'owner', $USER->get('id'))) {
-                $key = get_random_key();
-                $key_url = get_config('wwwroot') . 'artefact/internal/validate.php?email=' . rawurlencode($email) . '&key=' . $key;
-                $key_url_decline = $key_url . '&decline=1';
-
-                try {
-                    $sitename = get_config('sitename');
-                    email_user(
-                        (object)array(
-                            'id'            => $USER->get('id'),
-                            'username'      => $USER->get('username'),
-                            'firstname'     => $USER->get('firstname'),
-                            'lastname'      => $USER->get('lastname'),
-                            'preferredname' => $USER->get('preferredname'),
-                            'admin'         => $USER->get('admin'),
-                            'staff'         => $USER->get('staff'),
-                            'email'         => $email,
-                        ),
-                        null,
-                        get_string('emailvalidation_subject', 'artefact.internal'),
-                        get_string('emailvalidation_body1', 'artefact.internal', $USER->get('firstname'), $email, $sitename, $key_url, $sitename, $key_url_decline)
-                    );
-                }
-                catch (EmailException $e) {
-                    $SESSION->add_error_msg($email);
-                }
-
-                insert_record(
-                    'artefact_internal_profile_email',
-                    (object) array(
-                        'owner'    => $USER->get('id'),
-                        'email'    => $email,
-                        'verified' => 0,
-                        'principal' => 1,
-                        'key'      => $key,
-                        'expiry'   => db_format_timestamp(time() + 86400),
-                    )
-                );
-                $SESSION->add_ok_msg(get_string('validationemailsent', 'artefact.internal'));
-            }
+            $USER->email = $values['email'];
+            $USER->commit();
         }
-        else {
-            set_profile_field($USER->get('id'), $field, $value);
-            $otherfield = true;
-        }
+        set_profile_field($USER->get('id'), $field, $value);
+        $otherfield = true;
     }
 
     if (isset($otherfield)) {
         $SESSION->add_ok_msg(get_string('requiredfieldsset', 'auth'));
-    }
-
-    // Update the title of user's first blog if first and/or last name have been changed
-    $updatedfields = array_keys($values);
-    if (in_array('firstname', $updatedfields) || in_array('lastname', $updatedfields)) {
-        safe_require('artefact', 'blog');
-        $userblogs = get_records_select_array('artefact', 'artefacttype = \'blog\' AND owner = ?', array($USER->get('id')));
-        if ($userblogs && count($userblogs) == 1) {
-            $defaultblog = new ArtefactTypeBlog($userblogs[0]->id);
-            $defaultblog->set('title', get_string('defaultblogtitle', 'artefact.blog', display_name($USER, null, true)));
-            $defaultblog->commit();
-        }
     }
 
     redirect();
@@ -1128,7 +1015,7 @@ function auth_draw_login_page($message=null, Pieform $form=null) {
 }
 
 /**
- * Returns the definition of the login form, for display on the transient login page.
+ * Returns the definition of the login form.
  *
  * @return array   The login form definition array.
  * @access private
@@ -1152,10 +1039,10 @@ function auth_get_login_form() {
         // clean url, treat get string differently
         $get = array();
         if (isset($getpart)) {
-            $getarr = explode('&', $getpart);
+            $getarr = split('&', $getpart);
             if ($getarr) {
                 foreach ($getarr as $data) {
-                    $arr = explode('=', $data);
+                    $arr = split('=', $data);
                     $get[$arr[0]] = isset($arr[1]) ? $arr[1] : null;
                 }
             }
@@ -1221,7 +1108,7 @@ function auth_get_login_form() {
 function auth_get_login_form_elements() {
     // See if user can register
     if (count_records('institution', 'registerallowed', 1, 'suspended', 0)) {
-        $registerlink = '<a href="' . get_config('wwwroot') . 'register.php">' . get_string('register') . '</a><br>';
+        $registerlink = '<a href="' . get_config('wwwroot') . 'register.php" tabindex="2">' . get_string('register') . '</a><br>';
     }
     else {
         $registerlink = '';
@@ -1253,7 +1140,7 @@ function auth_get_login_form_elements() {
         'register' => array(
             'type' => 'markup',
             'value' => '<div id="login-helplinks">' . $registerlink
-                . '<a href="' . get_config('wwwroot') . 'forgotpass.php">' . get_string('lostusernamepassword') . '</a></div>'
+                . '<a href="' . get_config('wwwroot') . 'forgotpass.php" tabindex="2">' . get_string('lostusernamepassword') . '</a></div>'
         ),
     );
     $elements = array(
@@ -1397,7 +1284,7 @@ class AuthFactory {
      * Take an instanceid and create an auth object for that instance. 
      * 
      * @param  int      $id     The id of the auth instance
-     * @return Auth            An intialised auth object or false, if the
+     * @return mixed            An intialised auth object or false, if the
      *                          instance doesn't exist (Should never happen)
      */
     public static function create($id) {
@@ -1535,7 +1422,7 @@ function login_submit(Pieform $form, $values) {
                 try {
                     // If this authinstance is a parent auth for some xmlrpc authinstance, pass it along to create_user
                     // so that this username also gets recorded as the username for sso from the remote sites.
-                    $remoteauth = $auth->is_parent_authority();
+                    $remoteauth = count_records('auth_instance_config', 'field', 'parent', 'value', $authinstance->id) ? $authinstance : null;
                     create_user($USER, $profilefields, $institution, $remoteauth);
                     $USER->reanimate($USER->id, $authinstance->id);
                 }
@@ -1562,9 +1449,6 @@ function login_submit(Pieform $form, $values) {
     }
 
     auth_check_admin_section();
-
-    // This is also checked in $USER->login(), but it's good to check it again here in case a buggy auth plugin
-    // lets a suspended user through somehow.
     ensure_user_account_is_active();
 
     // User is allowed to log in
@@ -1620,7 +1504,7 @@ function ensure_user_account_is_active($user=null) {
         if ($dologout) {
             $user->logout();
         }
-        die_info(get_string('accountdeleted', 'mahara', get_config('wwwroot')));
+        die_info(get_string('accountdeleted'));
     }
 
     // Check if the user's account has expired
@@ -1628,7 +1512,7 @@ function ensure_user_account_is_active($user=null) {
         if ($dologout) {
             $user->logout();
         }
-        die_info(get_string('accountexpired', 'mahara', get_config('wwwroot')));
+        die_info(get_string('accountexpired'));
     }
 
     // Check if the user's account has been suspended
@@ -1899,19 +1783,15 @@ function auth_remove_old_session_files() {
 }
 
 /**
- * Generates the login form for the sideblock.
+ * Generates the login form for the sideblock
  *
  * {@internal{Not sure why this form definition doesn't use 
  * auth_get_login_form, but keep that in mind when making changes.}}
  */
 function auth_generate_login_form() {
-    global $SESSION;
     require_once('pieforms/pieform.php');
     if (!get_config('installed')) {
         return;
-    }
-    else if ($SESSION->loginform) {
-        return get_login_form_js($SESSION->loginform->build());
     }
     $elements = auth_get_login_form_elements();
     $loginform = get_login_form_js(pieform(array(
@@ -1956,7 +1836,7 @@ function password_validate(Pieform $form, $values, $user) {
     $authobj = AuthFactory::create($user->authinstance);
 
     if (!$form->get_error('password1') && !$authobj->is_password_valid($values['password1'])) {
-        $form->set_error('password1', get_string('passwordinvalidform', "auth.$authobj->type"), false);
+        $form->set_error('password1', get_string('passwordinvalidform', "auth.$authobj->type"));
     }
 
     $suckypasswords = array(
@@ -2040,7 +1920,7 @@ function auth_generate_registration_form($formname, $authname='internal', $goto)
         $options = array();
         foreach ($institutions as $institution) {
             $options[$institution->name] = $institution->displayname;
-            if ($registerconfirm[$institution->name] = (get_config('requireregistrationconfirm') || $institution->registerconfirm)) {
+            if ($registerconfirm[$institution->name] = $institution->registerconfirm) {
                 if ($authname != 'internal') {
                     $authinstance = get_record('auth_instance', 'institution', $institution->name, 'authname', $authname);
                     $auth = AuthFactory::create($authinstance->id);
@@ -2094,12 +1974,6 @@ function auth_generate_registration_form($formname, $authname='internal', $goto)
                 'required' => true
             ),
             'separator' => ' &nbsp; '
-        );
-    }
-
-    if (call_static_method('Auth'.ucfirst($authname), 'can_use_registration_captcha')) {
-        $elements['captcha'] = array(
-                'type' => 'captcha',
         );
     }
 
@@ -2163,7 +2037,6 @@ function auth_generate_registration_form_js($aform, $registerconfirm) {
        ';
     }
     else {
-        $url = get_config('wwwroot') . 'json/termsandconditions.php';
         $js = '
         var registerconfirm = ' . json_encode($registerconfirm) . ';
         $j(function() {
@@ -2177,21 +2050,6 @@ function auth_generate_registration_form_js($aform, $registerconfirm) {
                     $j("#' . $reasonid . '_container").addClass("js-hidden");
                     $j("#' . $reasonid . '_container textarea").addClass("js-hidden");
                     $j("#' . $reasonid . '_container").next("tr.textarea").addClass("js-hidden");
-                }
-                // need to fetch the correct terms and conditions for the institution
-                if (this.value) {
-                    $j.ajax({
-                        type: "POST",
-                        dataType: "json",
-                        url: "' . $url . '",
-                        data: {
-                            "institution": this.value,
-                        }
-                    }).done(function (data) {
-                        if (data.content) {
-                            $j("#termscontainer").html(data.content);
-                        }
-                    });
                 }
             });
         });
@@ -2259,7 +2117,7 @@ function auth_register_validate(Pieform $form, $values) {
 
     // If the user hasn't agreed to the terms and conditions, don't bother
     if ($registerterms && $values['tandc'] != 'yes') {
-        $form->set_error('tandc', get_string('youmaynotregisterwithouttandc', 'auth.internal'), false);
+        $form->set_error('tandc', get_string('youmaynotregisterwithouttandc', 'auth.internal'));
     }
 
     $institution = get_record_sql('
@@ -2291,7 +2149,7 @@ function auth_register_submit(Pieform $form, $values) {
 
     // If the institution requires approval, mark the record as pending
     // @todo the expiry date should be configurable
-    if ($confirm = (get_config('requireregistrationconfirm') || get_field('institution', 'registerconfirm', 'name', $values['institution']))) {
+    if ($confirm = get_field('institution', 'registerconfirm', 'name', $values['institution'])) {
         if (isset($values['authtype']) && $values['authtype'] != 'internal') {
             $authinstance = get_record('auth_instance', 'institution', $values['institution'], 'authname', $values['authtype'] ? $values['authtype'] : 'internal');
             $auth = AuthFactory::create($authinstance->id);
@@ -2342,18 +2200,6 @@ function auth_register_submit(Pieform $form, $values) {
                 $admins = get_column('usr', 'id', 'admin', 1, 'deleted', 0);
             }
 
-            require_once(get_config('libroot') . 'pieforms/pieform/elements/expiry.php');
-            $expirytime = pieform_element_expiry_get_expiry_from_seconds(get_config('defaultregistrationexpirylifetime'));
-            if ($expirytime == null) {
-                $expirystring = get_config('defaultregistrationexpirylifetime') . ' ' . get_string('seconds', 'performance');
-            }
-            else if ($expirytime['units'] == 'noenddate') {
-                $expirystring = get_string('element.expiry.noenddate', 'pieforms');
-            }
-            else {
-                $expirystring = $expirytime['number'] . ' ' . get_string('element.expiry.' . $expirytime['units'], 'pieforms');
-            }
-
             // email each admin
             // @TODO Respect the notification preferences of the admins.
             foreach ($admins as $admin) {
@@ -2363,10 +2209,10 @@ function auth_register_submit(Pieform $form, $values) {
                     get_string('pendingregistrationadminemailsubject', 'auth.internal', $institution->displayname, get_config('sitename')),
                     get_string('pendingregistrationadminemailtext', 'auth.internal',
                         $adminuser->firstname, $institution->displayname, $pendingregistrationslink,
-                        $expirystring, $fullname, $values['email'], $values['reason'], get_config('sitename')),
+                        $fullname, $values['email'], $values['reason'], get_config('sitename')),
                     get_string('pendingregistrationadminemailhtml', 'auth.internal',
                         $adminuser->firstname, $institution->displayname, $pendingregistrationslink, $pendingregistrationslink,
-                        $expirystring, $fullname, $values['email'], $values['reason'], get_config('sitename'))
+                        $fullname, $values['email'], $values['reason'], get_config('sitename'))
                     );
             }
             email_user($user, null,

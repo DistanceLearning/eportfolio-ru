@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -85,8 +101,8 @@ if (empty($upgrades['core']->install)) {
 }
 
 $loadingicon = $THEME->get_url('images/loading.gif');
-$successicon = $THEME->get_url('images/success.png');
-$failureicon = $THEME->get_url('images/failure.png');
+$successicon = $THEME->get_url('images/success.gif');
+$failureicon = $THEME->get_url('images/failure.gif');
 
 // Remove all files in the smarty and dwoo caches
 // TODO post 1.2 remove the smarty part
@@ -121,8 +137,6 @@ $localsuccess  = json_encode(get_string('localdatasuccess', 'admin'));
 // Check if Mahara is being installed. An extra hook is required to insert core
 // data if so.
 if (!empty($upgrades['core']->install)) {
-    raise_time_limit(120);
-    raise_memory_limit('256M');
     $upgrades['firstcoredata'] = true;
     $upgrades['localpreinst'] = true;
     $upgrades['lastcoredata'] = true;
@@ -136,7 +150,6 @@ $js = <<< EOJS
 
                 if (!element) {
                     $('finished').style.visibility = 'visible';
-                    window.scrollTo(0, 5000000);
                     return; // done
                 }
 
@@ -156,14 +169,9 @@ $js = <<< EOJS
                                 message = {$installsuccessstring};
                             }
                             else {
-                                if (data.message) {
-                                    message = data.message;
-                                }
-                                else {
-                                    message = {$successstring};
-                                }
+                                message = {$successstring};
                             }
-                            message += data.newversion ? data.newversion : '';
+                            message += data.newversion ? data.newversion : '?';
                         }
                         $(data.key).innerHTML = '<img src="{$successicon}" alt=":)" />  ' + message;
                         if (data.feedback) {

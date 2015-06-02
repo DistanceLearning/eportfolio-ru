@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -70,7 +86,6 @@ if ($usertype == 'lastinstitution') {
 
 $usertypeselector = pieform(array(
     'name' => 'usertypeselect',
-    'checkdirtychange' => false,
     'elements' => $usertypeselectorelements,
 ));
 
@@ -129,6 +144,7 @@ else if ($usertype == 'invited') {
 }
 
 $userlistelement['type'] = 'userlist';
+$userlistelement['filter'] = false;
 $userlistelement['searchscript'] = 'admin/users/userinstitutionsearch.json.php';
 $userlistelement['defaultvalue'] = array();
 $userlistelement['searchparams']['limit'] = 100;
@@ -137,7 +153,6 @@ $userlistelement['searchparams']['institution'] = $institution;
 
 $userlistform = array(
     'name' => 'institutionusers',
-    'checkdirtychange' => false,
     'elements' => array(
         'institution' => $institutionelement,
         'users' => $userlistelement,
@@ -281,17 +296,13 @@ addLoadEvent(function() {
     if ($('institutionusers_institution')) {
         connect($('institutionusers_institution'), 'onchange', reloadUsers);
     }
-    formchangemanager.add('institutionusers');
-    // Unbind the handler for standard pieform input
-    // The JS code for updating the userlist will also update the formchangechecker state
-    formchangemanager.unbindForm('institutionusers');
 });
 EOF;
 
 $smarty = smarty();
 $smarty->assign('INLINEJAVASCRIPT', $js);
 $smarty->assign('usertypeselector', $usertypeselector);
-$smarty->assign('instructions', get_string('institutionusersinstructions' . $usertype . '1', 'admin', $userlistelement['lefttitle'], $userlistelement['righttitle']));
+$smarty->assign('instructions', get_string('institutionusersinstructions'.$usertype, 'admin'));
 $smarty->assign('institutionusersform', $userlistform);
 $smarty->assign('PAGEHEADING', TITLE);
 $smarty->display('admin/users/institutionusers.tpl');

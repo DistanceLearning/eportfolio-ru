@@ -1,50 +1,68 @@
 /**
  * CSS rules for the blog artefact plugin
  *
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
-
+ * Copyright (C) 2006-2012 Catalyst IT
  * This file is distributed under the same terms as Mahara itself
  */
  
  /* Blog list */
+#bloglist h4 {
+	margin: 0 0 3px 0;
+}
 #bloglist #blogdesc p {
-    margin: 5px 0;
+	margin: 0;
+	font-size: .9167em;
+	line-height: 1.25em;
 }
-#bloglist .buttonscell form,
-#postlist form {
-    display: inline;
-    vertical-align: top;
-    margin: 0 0 0 5px;
+#blogdescription {
+	margin: 0 0 10px 0;
 }
-#bloglist .buttonscell form div,
-#postlist form div {
-    display: inline;
-    vertical-align: top;
+#blogdescription p {
+	margin: 5px 0 0 0;
+}
+#bloglist .buttonscell form, #bloglist .buttonscell form div, #postlist form, #postlist form div {
+	display: inline;
+	vertical-align: top;
 }
 /* Post list */
-#blogdescription {
-    margin: 0 0 10px 0;
-}
-#postlist {
-    margin: 10px 0 0 0;
-}
 #postlist .poststatus {
-    vertical-align: top;
+	font-weight: bold;
+	font-style: italic;
+	white-space: nowrap;
+	margin: 1px 10px 0 10px;
+	display: block;
+	float: left;
 }
-#postlist input.publish {
-    vertical-align: top;
+#postlist .changepoststatus {
+	font-size: .9167em;
+	vertical-align: top;
 }
-#postlist .published,
+#postlist .changepoststatus input {
+	padding: 0 3px;
+	height: 16px;
+}
+#postlist .published {
+	padding: 10px;
+	margin-bottom: 15px;
+}
 #postlist .draft {
-    padding: 10px;
-    margin: 20px 0;
+	padding: 10px;
+	margin-bottom: 15px;
 }
-.attachments input.unselect {
-    font-size: .9167em;
+#postlist .postdescription h1, #postlist .postdescription h2, #postlist .postdescription h3, #postlist .postdescription h4, #postlist .postdescription h5, #postlist .postdescription h6 {
+	margin: 5px 0 0 0;
+}
+#postlist .postdescription p {
+	margin: 5px 0 15px 0;
+}
+#postlist .postdetails {
+	font-size: .9167em;
+	padding-top: 5px;
+}
+.attachments input.unselect, .filebrowser input.unselect {
+	font-size: .9167em;
 }
 /* Insert Image Dialog */
 #img_src[disabled=""] {
-    background-color: #F0F0EE;
+	background-color: #F0F0EE;
 }

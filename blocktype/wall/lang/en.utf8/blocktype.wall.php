@@ -1,39 +1,26 @@
 <?php
-/**
- *
- * @package    mahara
- * @subpackage blocktype-wall
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- *
- */
 
 defined('INTERNAL') || die();
 
-$string['title'] = 'Wall';
-$string['otherusertitle'] = "%s's wall";
-$string['description'] = 'Display an area where people can leave you comments';
-$string['noposts'] = 'No wall posts to display';
-$string['makeyourpostprivate'] = 'Make your post private';
-$string['viewwall'] = 'View wall';
-$string['backtoprofile'] = 'Back to profile';
-$string['wall'] = 'Wall';
-$string['wholewall'] = 'View whole wall';
-$string['reply'] = 'reply';
-$string['delete'] = 'delete post';
-$string['deletepost'] = 'Delete post';
-$string['Post'] = 'Post';
-$string['deletepostsure'] = 'Are you sure you want to do this? It cannot be undone.';
-$string['deletepostsuccess'] = 'Post deleted successfully';
-$string['addpostsuccess'] = 'Post added successfully';
-$string['maxcharacters'] = "Maximum %s characters per post.";
-$string['sorrymaxcharacters'] = "Sorry, your post cannot be more than %s characters long.";
-$string['posttextrequired'] = "This field is required.";
-
-// Config strings
-$string['postsizelimit'] = "Post size limit";
-$string['postsizelimitdescription'] = "You can limit the size of wall posts here. Existing posts will not be changed.";
-$string['postsizelimitmaxcharacters'] = "Maximum number of characters";
-$string['postsizelimitinvalid'] = "This is not a valid number.";
-$string['postsizelimittoosmall'] = "The limit cannot be lower than zero.";
+$string['Post'] = 'Сообщение';
+$string['backtoprofile'] = 'Вернуться к профилю';
+$string['delete'] = 'удалить сообщение';
+$string['deletepost'] = 'Удалить сообщение';
+$string['deletepostsuccess'] = 'Сообщение удалено успешно';
+$string['deletepostsure'] = 'Вы уверены, что хотите это сделать? Эта операция не сможет быть отменена.';
+$string['description'] = 'Показать область, в которой люди могут оставлять комментарии';
+$string['makeyourpostprivate'] = 'Сделать ваше сообщение приватным?';
+$string['maxcharacters'] = 'Максимум %s символов в сообщении.';
+$string['noposts'] = 'На стене нет сообщений';
+$string['otherusertitle'] = 'Стена %s';
+$string['postsizelimit'] = 'Максимальный размер сообщения';
+$string['postsizelimitdescription'] = 'Вы можете ограничить размер сообщений стены здесь. Существующие сообщения не будут изменены';
+$string['postsizelimitinvalid'] = 'Это не допустимое число.';
+$string['postsizelimitmaxcharacters'] = 'Максимальное количество символов';
+$string['postsizelimittoosmall'] = 'Этот лимит не может быть меньше нуля.';
+$string['reply'] = 'ответить';
+$string['sorrymaxcharacters'] = 'К сожалению, сообщение не может быть больше %s символов.';
+$string['title'] = 'Стена';
+$string['viewwall'] = 'Просмотр стены';
+$string['wall'] = 'Стена';
+$string['wholewall'] = 'Посмотреть всю стену';

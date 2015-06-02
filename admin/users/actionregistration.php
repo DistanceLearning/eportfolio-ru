@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2011 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Stacey Walker
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2011 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -26,7 +42,7 @@ if (!is_logged_in()) {
 }
 
 if (!$registration = get_record_select('usr_registration', '"id" = ? AND pending = 1', array($id))) {
-    die_info(get_string('registrationnosuchid', 'auth.internal'));
+    die_info(get_string('registrationnosuchkey', 'auth.internal'));
 }
 if (!$inst = get_record('institution', 'name', $registration->institution)) {
     die_info(get_string('nosuchinstitution', 'admin'));

@@ -1,10 +1,25 @@
 <?php // $Id: ddllib.php,v 1.42 2006/10/09 22:28:22 stronk7 Exp $
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package mahara
  * @subpackage core
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  * This file incorporates work covered by the following copyright and
  * permission notice:
@@ -104,7 +119,6 @@ function table_column($table, $oldfield, $field, $type='integer', $size='10',
 
         case 'mysql':
         case 'mysqlt':
-        case 'mysqli':
 
             switch (strtolower($type)) {
                 case 'text':
@@ -284,7 +298,7 @@ function table_exists($table) {
         $exists = false;
     }
 
-/// Re-set original debug
+/// Re-set original debug 
     $db->debug = $olddbdebug;
 
     return $exists;
@@ -331,7 +345,7 @@ function field_exists($table, $field) {
         $exists = false;
     }
 
-/// Re-set original debug
+/// Re-set original debug 
     $db->debug = $olddbdebug;
 
     return $exists;
@@ -360,190 +374,66 @@ function index_exists($table, $index) {
         $exists = false;
     }
 
-/// Re-set original debug
+/// Re-set original debug 
     $db->debug = $olddbdebug;
 
     return $exists;
 }
 
 /**
- * Given an XMLDBKey, check if it exists in the database (true/false).
- * NOTE: I wanted to call this key_exists() to keep the pattern of index_exists() et al,
- * but key_exists() is a PHP core alias for array_key_exists()
- * @param XMLDBTable $table
- * @param XMLDBKey $key
- */
-function db_key_exists(XMLDBTable $table, XMLDBKey $key) {
-    global $CFG, $db;
-    // If find_key_name returns boolean false, the key doesn't exist. Otherwise, it does exist.
-    return (false !== find_key_name($table, $key));
-}
-
-/**
- * Return the DB name of the key described in XMLDBKey, if it exists.
+ * This function IS NOT IMPLEMENTED. ONCE WE'LL BE USING RELATIONAL
+ * INTEGRITY IT WILL BECOME MORE USEFUL. FOR NOW, JUST CALCULATE "OFFICIAL"
+ * KEY NAMES WITHOUT ACCESSING TO DB AT ALL.
+ * Given one XMLDBKey, the function returns the name of the key in DB (if exists)
+ * of false if it doesn't exist
  *
  * @uses, $db
  * @param XMLDBTable the table to be searched
  * @param XMLDBKey the key to be searched
  * @return string key name of false
  */
-function find_key_name(XMLDBTable $table, XMLDBKey $key) {
-    /* @var $db ADOConnection */
+function find_key_name($table, $xmldb_key) {
+
     global $CFG, $db;
 
-    // Do this function silently to avoid output during the install/upgrade process
-    $olddbdebug = $db->debug;
-    $db->debug = false;
-    if (!table_exists($table)) {
-        $db->debug = $olddbdebug;
-        return false;
-    }
+/// Extract key columns
+    $keycolumns = $xmldb_key->getFields();
 
-    $tablename = get_config('dbprefix') . $table->getName();
-    $dbname = get_config('dbname');
+/// Get list of keys in table
+/// first primaries (we aren't going to use this now, because the MetaPrimaryKeys is awful)
+    ///TODO: To implement when we advance in relational integrity
+/// then uniques (note that Moodle, for now, shouldn't have any UNIQUE KEY for now, but unique indexes)
+    ///TODO: To implement when we advance in relational integrity (note that AdoDB hasn't any MetaXXX for this.
+/// then foreign (note that Moodle, for now, shouldn't have any FOREIGN KEY for now, but indexes)
+    ///TODO: To implement when we advance in relational integrity (note that AdoDB has one MetaForeignKeys()
+    ///but it's far from perfect.
+/// TODO: To create the proper functions inside each generator to retrieve all the needed KEY info (name
+///       columns, reftable and refcolumns
 
-    // TODO: upstream this to ADODB?
-    // Postgres puts the database name in the "catalog" field. Mysql puts it in "schema"
-    if (is_postgres()) {
-        $dbfield = 'catalog';
-        // The query to find all the columns for a foreign key constraint
-        $fkcolsql = "
-            SELECT
-                ku.column_name,
-                ccu.column_name AS refcolumn_name
-            FROM
-                information_schema.key_column_usage ku
-                INNER JOIN information_schema.constraint_column_usage ccu
-                    ON ku.constraint_name = ccu.constraint_name
-                    AND ccu.constraint_schema = ku.constraint_schema
-                    AND ccu.constraint_catalog = ku.constraint_catalog
-                    AND ccu.table_catalog = ku.constraint_catalog
-                    AND ccu.table_schema = ku.constraint_schema
-            WHERE
-                ku.constraint_catalog = ?
-                AND ku.constraint_name = ?
-                AND ku.table_name = ?
-                AND ku.table_catalog = ?
-                AND ccu.table_name = ?
-            ORDER BY ku.ordinal_position, ku.position_in_unique_constraint
-        ";
-    }
-    else {
-        $dbfield = 'schema';
-        // The query to find all the columns for a foreign key constraint
-        $fkcolsql = '
-            SELECT
-                ku.column_name,
-                ku.referenced_column_name AS refcolumn_name
-            FROM information_schema.key_column_usage ku
-            WHERE
-                ku.constraint_schema = ?
-                AND ku.constraint_name = ?
-                AND ku.table_name = ?
-                AND ku.table_schema = ?
-                AND ku.referenced_table_name = ?
-            ORDER BY ku.ordinal_position, ku.position_in_unique_constraint
-        ';
-    }
-    // Foreign keys have slightly different logic than primary and unique
-    $isfk = ($key->getType() == XMLDB_KEY_FOREIGN || $key->getType() == XMLDB_KEY_FOREIGN_UNIQUE);
-
-    $fields = $key->getFields();
-    if ($isfk) {
-        $reffields = $key->getRefFields();
-        $reftable = get_config('dbprefix') . $key->getRefTable();
-        // If the XMLDBKey is a foreign key without a ref table, or non-matching fields & ref fields,
-        // then it's an invalid XMLDBKey and we know it won't match
-        if (!$key->getRefTable() || count($fields) != count($reffields)) {
-            log_debug('Invalid XMLDBKey foreign key passed to find_key_name()');
-            $db->debug = $olddbdebug;
-            return false;
+/// So all we do is to return the official name of the requested key without any confirmation!)
+    $classname = 'XMLDB' . $CFG->dbtype;
+    $generator = new $classname();
+    $generator->setPrefix($CFG->prefix);
+/// One exception, harcoded primary constraint names
+    if ($generator->primary_key_name && $xmldb_key->getType() == XMLDB_KEY_PRIMARY) {
+        return $generator->primary_key_name;
+    } else {
+    /// Calculate the name suffix
+        switch ($xmldb_key->getType()) {
+            case XMLDB_KEY_PRIMARY:
+                $suffix = 'pk';
+                break;
+            case XMLDB_KEY_UNIQUE:
+                $suffix = 'uk';
+                break;
+            case XMLDB_KEY_FOREIGN_UNIQUE:
+            case XMLDB_KEY_FOREIGN:
+                $suffix = 'fk';
+                break;
         }
+    /// And simply, return the oficial name
+        return $generator->getNameForObject($table->getName(), implode(', ', $xmldb_key->getFields()), $suffix);
     }
-
-    // Get the main record for the constraint
-    $sql = "
-        SELECT tc.constraint_name
-        FROM
-            information_schema.table_constraints tc
-        WHERE
-            tc.table_name = ?
-            AND tc.table_{$dbfield} = ?
-            AND tc.constraint_{$dbfield} = ?
-            AND tc.constraint_type = ?
-    ";
-    $keytypes = array(
-        XMLDB_KEY_PRIMARY => 'PRIMARY KEY',
-        XMLDB_KEY_UNIQUE => 'UNIQUE',
-        XMLDB_KEY_FOREIGN => 'FOREIGN KEY',
-        XMLDB_KEY_FOREIGN_UNIQUE => 'FOREIGN KEY',
-    );
-    $params = array($tablename, $dbname, $dbname, $keytypes[$key->getType()]);
-
-    $constraintrec = get_records_sql_array($sql, $params);
-    // No constraints of the correct type on this table
-    if (!$constraintrec) {
-        $db->debug = $olddbdebug;
-        return false;
-    }
-
-    // Check each constraint to see if it has the right columns
-    foreach ($constraintrec as $c) {
-        if ($isfk) {
-            $colsql = $fkcolsql;
-            $colparams = array($dbname, $c->constraint_name, $tablename, $dbname, $reftable);
-        }
-        else {
-            $colsql = "SELECT ku.column_name
-                FROM information_schema.key_column_usage ku
-                WHERE
-                    ku.table_name = ?
-                    AND ku.table_{$dbfield} = ?
-                    AND ku.constraint_{$dbfield} = ?
-                    AND ku.constraint_name = ?
-                ORDER BY ku.ordinal_position, ku.position_in_unique_constraint
-            ";
-            $colparams = array($tablename, $dbname, $dbname, $c->constraint_name);
-        }
-        $colrecs = get_records_sql_array($colsql, $colparams);
-
-        // Make sure they've got the same number of columns
-        if (!$colrecs || count($fields) != count($colrecs)) {
-            // No match, try the next one
-            continue;
-        }
-
-        // Make sure the columns match.
-        reset($fields);
-        reset($colrecs);
-        if ($isfk) {
-            reset($reffields);
-        }
-        while (($field = current($fields)) && ($col = current($colrecs))) {
-            if (!$field == $col->column_name) {
-                // This constraint has a non-matching column; try the next constraint
-                continue 2;
-            }
-            if ($isfk) {
-                $reffield = current($reffields);
-                if (!$reffield == $col->refcolumn_name) {
-                    // This constraint has a non-matching column; try the next constraint
-                    continue 2;
-                }
-                next($reffields);
-            }
-            next($fields);
-            next($colrecs);
-        }
-
-        // If they made it this far, then it's a match!
-        $db->debug = $olddbdebug;
-        return $c->constraint_name;
-    }
-
-    // None matched, so return false
-    $db->debug = $olddbdebug;
-    return false;
 }
 
 /**
@@ -683,6 +573,11 @@ function uninstall_from_xmldb_file($file) {
     if ($tables = array_reverse($structure->getTables())) {
         foreach ($tables as $table) {
             if ($indexes = $table->getIndexes()) {
+                $sortindexes = array();
+                foreach ($indexes as $index) {
+                    $sortindexes[] = find_index_name($table, $index);
+                }
+                array_multisort($indexes, SORT_DESC, $sortindexes);
                 foreach ($indexes as $index) {
                     if ($index->getName() == 'usernameuk' && is_postgres()) {
                         // this is a giant hack, but adodb cannot handle resolving
@@ -697,9 +592,9 @@ function uninstall_from_xmldb_file($file) {
             if ($keys = $table->getKeys()) {
                 $sortkeys = array();
                 foreach ($keys as $key) {
-                    $sortkeys[] = $key->type;
+                    $sortkeys[] = find_key_name($table, $key);
                 }
-                array_multisort($sortkeys, SORT_DESC, $keys);
+                array_multisort($keys, SORT_DESC, $sortkeys);
                 foreach ($keys as $key) {
                     if (!is_postgres() && $key->type != XMLDB_KEY_FOREIGN && $key->type != XMLDB_KEY_FOREIGN_UNIQUE) {
                         // Skip keys for MySQL because these will be
@@ -820,55 +715,6 @@ function drop_table($table, $continue=true, $feedback=true) {
     }
 
     return execute_sql_arr($sqlarr, $continue, $feedback);
-}
-
-/**
- * This function will create the temporary table passed as argument with all its
- * fields/keys/indexes/sequences, everything based in the XMLDB object
- *
- * TRUNCATE the table immediately after creation. A previous process using
- * the same persistent connection may have created the temp table and failed to
- * drop it. In that case, the table will exist, and create_temp_table() will
- * will succeed.
- *
- * NOTE: The return value is the tablename - some DBs (MSSQL at least) use special
- * names for temp tables.
- *
- * @uses $CFG, $db
- * @param XMLDBTable table object (full specs are required)
- * @param boolean continue to specify if must continue on error (true) or stop (false)
- * @param boolean feedback to specify to show status info (true) or not (false)
- * @return string tablename on success, false on error
- */
-function create_temp_table($table, $continue=true, $feedback=true) {
-
-    global $CFG, $db;
-
-    $status = true;
-
-    if (strtolower(get_class($table)) != 'xmldbtable') {
-        return false;
-    }
-
-/// Check table doesn't exist
-    if (table_exists($table)) {
-        debugging('Table ' . $table->getName() .
-                  ' already exists. Create skipped', DEBUG_DEVELOPER);
-        return $table->getName(); //Table exists, nothing to do
-    }
-
-    if (!$sqlarr = $table->getCreateTableSQL($CFG->dbtype, $CFG->prefix, false)) {
-        return $table->getName(); //Empty array = nothing to do = no error
-    }
-
-    $sqlarr = preg_replace('/^CREATE/', "CREATE TEMPORARY", $sqlarr);
-
-    if (execute_sql_arr($sqlarr, $continue, $feedback)) {
-        return $table->getName();
-    }
-    else {
-        return false;
-    }
 }
 
 /**

@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -81,73 +97,16 @@ abstract class PluginArtefact extends Plugin {
         return array();
     }
 
+
     /**
      * When filtering searches, some artefact types are classified the same way
      * even when they come from different artefact plugins.  This function allows
-     * artefact plugins to declare which search filter content type each of their
+     * artefact plugins to declare which search filter content type each of their 
      * artefact types belong to.
      * @return array of artefacttype => array of filter content types
      */
     public static function get_artefact_type_content_types() {
         return array();
-    }
-
-
-    /**
-     * Indicates whether this particular plugin has any progress bar options. By default, any new plugin
-     * will have progress bar options, for creating at least one of the artefact.
-     *
-     * @return boolean
-     */
-    public static function has_progressbar_options() {
-        return true;
-    }
-
-    /**
-     * Returns the relative URL path to the place in mahara that relates
-     * to the artefact.
-     * E.g. For plan artefact the link will be 'artefact/tests/index.php'
-     * @param int The name of the artefact type (in case different ones need different links)
-     * @return string Url path to artefact.
-     */
-    public static function progressbar_link($artefacttype) {
-        return '';
-    }
-
-    public static function progressbar_task_label($artefacttype, $target, $completed) {
-        // By default we check to see if they provided a string called "progress_{$artefacttype}"
-        // in the plugin lang file (which takes one param with the count remaining)
-        $label = get_string('progress_' . $artefacttype, 'artefact.' . static::get_plugin_name(), ($target - $completed));
-
-        // Kind of a hack: if get_string() gave us a result indicating the string could not be found,
-        // try to construct one using the plugin and artefact name.
-        if (substr($label, 0, 2) == '[[') {
-            $artname = get_string($artefacttype, 'artefact.' . static::get_plugin_name());
-            if (substr($artname, 0, 2) == '[[') {
-                $artname = $artefacttype;
-            }
-            $label = get_string('progressbargenerictask', 'mahara', ($target - $completed), $artname);
-        }
-        return $label;
-    }
-
-    /**
-     * Add any special progress items that may not exist as an artefact type.
-     * @return array of objects each containing name, title, plugin, active, iscountable
-     */
-    public static function progressbar_additional_items() {
-        return array();
-    }
-
-    /**
-     * If this plugin provides some progress bar metaartefacts, then this method should
-     * provide the logic to count them.
-     * @param string $name The name of the meta-artefact to count
-     * @return object A record containing the count data to be displayed in the sidebar.
-     *                It should contain the fields "artefacttype" and "completion"
-     */
-    public static function progressbar_metaartefact_count($name) {
-        return false;
     }
 }
 
@@ -181,9 +140,6 @@ abstract class ArtefactType {
     protected $approvecomments;
     protected $rolepermissions;
     protected $mtimemanuallyset;
-    protected $license;
-    protected $licensor;
-    protected $licensorurl;
 
     protected $viewsinstances;
     protected $viewsmetadata;
@@ -237,7 +193,10 @@ abstract class ArtefactType {
 
         // load tags
         if ($this->id) {
-            $this->tags = ArtefactType::artefact_get_tags($this->id);
+            $tags = get_column('artefact_tag', 'tag', 'artefact', $this->id);
+            if (is_array($tags)) {
+                $this->tags = $tags;
+            }
         }
 
         // load group permissions
@@ -246,47 +205,6 @@ abstract class ArtefactType {
         }
 
         $this->atime = time();
-    }
-
-    /**
-     * returns duplicated artefacts which have the same value of the following fields:
-     *  - owner
-     *  - type
-     *  - content
-     *      - title
-     *      - description
-     *
-     * @param array $values
-     */
-    public static function get_duplicated_artefacts(array $values) {
-        if (!empty($values['content']['description'])) {
-            return get_column_sql('
-                SELECT id
-                FROM {artefact}
-                WHERE owner = ?
-                    AND artefacttype = ?
-                    AND title = ?
-                    AND description = ?',
-                array($values['owner'], $values['type'], $values['content']['title'], $values['content']['description'])
-            );
-        }
-        else {
-            return get_column('artefact', 'id',
-                'owner', $values['owner'],
-                'artefacttype', $values['type'],
-                'title', $values['content']['title']);
-        }
-    }
-
-    /**
-     * returns existing artefacts which have the same artefacttype and owner
-     *
-     * @param array $values
-     */
-    public static function get_existing_artefacts(array $values) {
-        return get_column('artefact', 'id',
-                        'owner', $values['owner'],
-                        'artefacttype', $values['type']);
     }
 
     /**
@@ -510,7 +428,6 @@ abstract class ArtefactType {
 
         delete_records('artefact_tag', 'artefact', $this->id);
         if (is_array($this->tags)) {
-            $this->tags = check_case_sensitive($this->tags, 'artefact_tag');
             foreach (array_unique($this->tags) as $tag) {
                 if (empty($tag)) {
                     continue;
@@ -774,15 +691,7 @@ abstract class ArtefactType {
     public function render_self($options) {
         $smarty = smarty_core();
         $smarty->assign('title', $this->get('title'));
-        $smarty->assign('owner', $this->get('owner'));
-        $smarty->assign('tags', $this->get('tags'));
         $smarty->assign('description', $this->get('description'));
-        if (!empty($options['details']) and get_config('licensemetadata')) {
-            $smarty->assign('license', render_license($this));
-        }
-        else {
-            $smarty->assign('license', false);
-        }
 
         return array(
             'html' => $smarty->fetch('artefact.tpl'),
@@ -1098,16 +1007,6 @@ abstract class ArtefactType {
         return array();
     }
 
-    public function attachment_id_list_with_item($itemid) {
-        // If artefact attachment table has 'item' column utilised.
-        if ($this->can_have_attachments()) {
-            if ($list = get_column('artefact_attachment', 'attachment', 'artefact', $this->get('id'), 'item', $itemid)) {
-                return $list;
-            }
-        }
-        return array();
-    }
-
     public function attachments_from_id_list($artefactids) {
         if (empty($artefactids)) {
             return array();
@@ -1173,7 +1072,7 @@ abstract class ArtefactType {
         return array_values($list);
     }
 
-    public function attach($attachmentid, $itemid=null) {
+    public function attach($attachmentid) {
         if (record_exists('artefact_attachment', 'artefact', $this->get('id'), 'attachment', $attachmentid)) {
             return;
         }
@@ -1183,7 +1082,6 @@ abstract class ArtefactType {
         $data = new StdClass;
         $data->artefact = $this->get('id');
         $data->attachment = $attachmentid;
-        $data->item = $itemid;
         insert_record('artefact_attachment', $data);
 
         $data = new StdClass;
@@ -1275,62 +1173,6 @@ abstract class ArtefactType {
         }
         set_field_select('artefact', 'locked', 0, $select, array($userid));
         db_commit();
-    }
-
-    /**
-     * Return an array of tags associated to an artefact
-     *
-     * @param int  ID of the artefact
-     *
-     * @return array of strings
-     */
-    public static function artefact_get_tags($id) {
-        if (empty($id)) {
-            return array();
-        }
-        $tags = get_column_sql('SELECT tag FROM {artefact_tag} WHERE artefact = ? ORDER BY tag', array($id));
-        if (!$tags) {
-            return array();
-        }
-        return $tags;
-    }
-
-    /**
-     * Checks to see if artefact type is allowed to be part of the progress bar.
-     * By default all artefacts are included in progress bar. To remove an artefact
-     * from being a progress bar option have your artefacttype return false for this.
-     * @return boolean
-     */
-    public static function is_allowed_in_progressbar() {
-        return true;
-    }
-
-    /**
-     * Checks to see if artefact for the progress bar is countable.
-     * By default all artefacts are counted as true/false (1 or 0). If you need to have
-     * more then one instance counting towards progress, say image upload, you can specify
-     * it to be countable. This will show a select box rather than a check box on the
-     * progress admin screen.
-     * @return boolean
-     */
-    public static function is_countable_progressbar() {
-        return false;
-    }
-
-    /**
-     * Check if artefacttype is meant to be handled as a meta artefact by progress bar
-     * @return boolean
-     */
-    public static function is_metaartefact() {
-        return false;
-    }
-
-    /**
-     * The (optional) custom title of this artefact on the profile completion progress bar config page
-     * @return mixed FALSE if it should just use the artefact type, a string otherwise
-     */
-    public static function get_title_progressbar() {
-        return false;
     }
 }
 
@@ -1593,32 +1435,6 @@ function artefact_instance_from_id($id) {
     safe_require('artefact', $data->plugin);
     return new $classname($id, $data);
 }
-/**
- * This function returns the current title of an artefact's blockinstance
- * if $viewid and $blockid are provided.
- *
- * @param int $artefactid the id of the artefact
- * @param int $viewid     the id of the view the artefact associated with
- * @param int $blockid    the id of the block instance the artefact is connected to
- *
- * @return str            the block instance title
- */
-function artefact_title_for_view_and_block($artefact, $viewid, $blockid) {
-    $sql = "SELECT bi.title AS blocktitle,
-            a.title AS artefacttitle
-            FROM {artefact} a
-            JOIN {view_artefact} va ON va.artefact = a.id
-            JOIN {block_instance} bi ON bi.id = va.block
-            WHERE va.artefact = ?
-            AND va.view = ? AND va.block = ?";
-    if (!$data = get_record_sql($sql, array($artefact->get('id'), $viewid, $blockid))) {
-        // if we are traversing folders where the subfolders/files are not directly connected
-        // to the blockinstance we just return their title
-        return $artefact->display_title();
-    }
-    $currenttitle = (!empty($data->blocktitle)) ? $data->blocktitle : $data->artefacttitle;
-    return $currenttitle;
-}
 
 /**
  * This function will return an instance of any "0 or 1" artefact. That is any
@@ -1675,8 +1491,13 @@ function artefact_instance_from_type($artefact_type, $user_id=null) {
 }
 
 function artefact_watchlist_notification($artefactids) {
-    // the notification will be handled by plugin watchlistnotification
-    // responding to the event saveartefact
+    // gets all the views containing this artefact or a parent of this artefact and creates a watchlist activity for each view
+    if ($views = get_column_sql('SELECT DISTINCT "view" FROM {view_artefact} WHERE artefact IN (' . implode(',', array_merge(array_keys(artefact_get_parents_for_cache($artefactids)), array_map('intval', $artefactids))) . ')')) {
+        require_once('activity.php');
+        foreach ($views as $view) {
+            activity_occurred('watchlist', (object)array('view' => $view));
+        }
+    }
 }
 
 function artefact_get_descendants($new) {
@@ -1854,160 +1675,4 @@ function artefact_get_owner_info($ids) {
         $d = (object) array('name' => $name, 'url' => $url);
     }
     return $data;
-}
-
-
-/**
- * Returns any artefact options allowed to be included in the progress_bar
- * @param array $onlythese (optional) An array of institution_config options indicating which items to include
- * @return array of objects each containing name, title, plugin, active, iscountable
- */
-function artefact_get_progressbar_items($onlythese = false) {
-    if ($onlythese === false) {
-        $onlytheseplugins = array();
-    }
-    else {
-        $onlytheseplugins = $onlythese;
-    }
-    $options = array();
-    foreach(plugins_installed('artefact') as $plugin) {
-        if ($onlythese !== false && empty($onlytheseplugins[$plugin->name])) {
-            continue;
-        }
-        safe_require('artefact', $plugin->name);
-        $pluginclassname = generate_class_name('artefact', $plugin->name);
-        if (!call_static_method($pluginclassname, 'has_progressbar_options')) {
-            continue;
-        }
-
-        $artefactoptions = array();
-        $names = call_static_method($pluginclassname, 'get_artefact_types');
-        foreach ($names as $name) {
-            if ($onlythese !== false && empty($onlytheseplugins[$plugin->name][$name])) {
-                continue;
-            }
-            // check if any of the artefact types want to opt out
-            if (call_static_method('ArtefactType' . ucfirst($name), 'is_allowed_in_progressbar') == false) {
-                continue;
-            }
-            $record = new stdClass();
-            $record->name = $name;
-            $record->title = call_static_method('ArtefactType' . ucfirst($name), 'get_title_progressbar');
-            if (!$record->title) {
-                $record->title = ucfirst(get_string($name, 'artefact.' . $plugin->name));
-            }
-            $record->plugin = call_static_method($pluginclassname, 'get_plugin_name');
-            $record->active = (method_exists($pluginclassname, 'is_active')) ? call_static_method($pluginclassname, 'is_active') : true;
-            $record->iscountable = call_static_method('ArtefactType' . ucfirst($name), 'is_countable_progressbar');
-            $record->ismeta = call_static_method('ArtefactType' . ucfirst($name), 'is_metaartefact');
-            $artefactoptions[$name] = $record;
-        }
-        // add any special cases
-        if (is_array($specials = call_static_method($pluginclassname, 'progressbar_additional_items'))) {
-            foreach ($specials as $special) {
-                if ($onlythese !== false && empty($onlytheseplugins[$plugin->name][$special->name])) {
-                    continue;
-                }
-                $special->ismeta = true;
-                $artefactoptions[$special->name] = $special;
-            }
-        }
-
-        if ($artefactoptions) {
-            $options[$plugin->name] = $artefactoptions;
-        }
-    }
-
-    // Put the core artefact types into the order that makes the most sense.
-    // 3rd party ones will be placed at the end of the list in alphabetical order
-    uksort($options, function($item1, $item2) {
-        static $expectedorder = array(
-                'internal',
-                'resume',
-                'tests',
-                'blog',
-                'file',
-                'social'
-        );
-
-        $val1 = array_search($item1, $expectedorder);
-        $val2 = array_search($item2, $expectedorder);
-        if ($val1 === false) {
-            if ($val2 === false) {
-                // Neither one is core, sort alphabetically
-                return strcmp($item1, $item2);
-            }
-            else {
-                return 1;
-            }
-        }
-        else {
-            if ($val2 === false) {
-                return -1;
-            }
-            else {
-                return ($val1 - $val2);
-            }
-        }
-    });
-
-    // An opportunity for users to override this sort order (and maybe accomodate 3rd party plugins)
-    if (function_exists('local_progressbar_sortorder')) {
-        $options = local_progressbar_sortorder($options);
-    }
-
-    return $options;
-}
-
-/**
- * Dealing with things to count in progressbar that are not true artefacts
- * and therefore are not countable by adding up how many instances exist in
- * the artefact table. Or if you want to count an artefact differently.
- * For example: Social -> Make a friend
- *
- * @param string $plugin name of artefact plugin
- * @param array $onlythese (optional) An array of items from artefact_get_progressbar_items, indicating which to include
- * @return array of objects each containing artefacttype, completed
- * (where completed represents the number completed)
- */
-function artefact_get_progressbar_metaartefacts($plugin, $onlythese = false) {
-
-    $results = array();
-    $classname = generate_class_name('artefact', $plugin);
-
-    // Check the artefacttypes to see if they have a special metaartefact count
-    $names = call_static_method($classname, 'get_artefact_types');
-    foreach ($names as $name) {
-        if (!array_key_exists($name, $onlythese)) {
-            continue;
-        }
-        $is_metaartefact = call_static_method('ArtefactType' . ucfirst($name), 'is_metaartefact');
-        if ($is_metaartefact) {
-            $meta = call_user_func($classname . '::progressbar_metaartefact_count', $name);
-            if (is_object($meta)) {
-                array_push($results, $meta);
-            }
-        }
-    }
-
-    // Also check the special artefacts
-    if (is_array($specials = call_static_method($classname, 'progressbar_additional_items'))) {
-        foreach ($specials as $special) {
-            if (!array_key_exists($special->name, $onlythese)) {
-                continue;
-            }
-            if (empty($special->is_metaartefact)) {
-                // check to see if it can have mataartefact count
-                $special->is_metaartefact = call_static_method('ArtefactType' . ucfirst($special->name), 'is_metaartefact');
-            }
-            if (!empty($special->is_metaartefact)) {
-                // Now check if they have a special metaartefact count
-                $meta = call_user_func($classname . '::progressbar_metaartefact_count', $special->name);
-                if (is_object($meta)) {
-                    array_push($results, $meta);
-                }
-            }
-        }
-    }
-    return $results;
 }

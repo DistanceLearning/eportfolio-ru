@@ -1,12 +1,28 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype-gallery
  * @author     Catalyst IT Ltd
  * @author     Gregor Anzelj (External Galleries, e.g. Flickr, Picasa)
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  * @copyright  (C) 2011 Gregor Anzelj <gregor.anzelj@gmail.com>
  *
  */
@@ -40,10 +56,7 @@ class PluginBlocktypeGallery extends PluginBlocktype {
     }
 
     public static function get_instance_config_javascript() {
-        return array(
-            'js/configform.js',
-            'js/slideshow.js',
-        );
+        return array('js/configform.js');
     }
 
     public static function render_instance(BlockInstance $instance, $editing=false) {
@@ -388,9 +401,7 @@ class PluginBlocktypeGallery extends PluginBlocktype {
         $smarty->assign('instanceid', $instance->get('id'));
         $smarty->assign('count', count($images));
         $smarty->assign('images', $images);
-        $smarty->assign('showdescription', (!empty($configdata['showdescription'])) ? $configdata['showdescription'] : false);
         $smarty->assign('width', $width);
-        $smarty->assign('captionwidth', (get_config_plugin('blocktype', 'gallery', 'photoframe') ? $width + 8 : $width));
         if (isset($height)) {
             $smarty->assign('height', $height);
         }
@@ -554,12 +565,6 @@ class PluginBlocktypeGallery extends PluginBlocktype {
                 'defaultvalue' => (isset($configdata['style'])) ? $configdata['style'] : 2, // Square thumbnails should be default...
                 'separator' => '<br>',
             ),
-            'showdescription' => array(
-                'type'  => 'checkbox',
-                'title' => get_string('showdescriptions', 'blocktype.file/gallery'),
-                'description' => get_string('showdescriptionsdescription', 'blocktype.file/gallery'),
-                'defaultvalue' => !empty($configdata['showdescription']) ? true : false,
-            ),
             'width' => array(
                 'type' => 'text',
                 'title' => get_string('width', 'blocktype.file/gallery'),
@@ -572,30 +577,6 @@ class PluginBlocktypeGallery extends PluginBlocktype {
                 'defaultvalue' => (isset($configdata['width'])) ? $configdata['width'] : '75',
             ),
         );
-    }
-
-    public static function instance_config_validate($form, $values) {
-        global $USER;
-
-        if (!empty($values['images'])) {
-            foreach ($values['images'] as $id) {
-                $image = new ArtefactTypeImage($id);
-                if (!($image instanceof ArtefactTypeImage) || !$USER->can_view_artefact($image)) {
-                    $result['message'] = get_string('unrecoverableerror', 'error');
-                    $form->set_error(null, $result['message']);
-                    $form->reply(PIEFORM_ERR, $result);
-                }
-            }
-        }
-
-        if (!empty($values['folder'])) {
-            $folder = artefact_instance_from_id($values['folder']);
-            if (!($folder instanceof ArtefactTypeFolder) || !$USER->can_view_artefact($folder)) {
-                $result['message'] = get_string('unrecoverableerror', 'error');
-                $form->set_error(null, $result['message']);
-                $form->reply(PIEFORM_ERR, $result);
-            }
-        }
     }
 
     public static function instance_config_save($values) {

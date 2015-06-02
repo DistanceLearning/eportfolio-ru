@@ -1,36 +1,116 @@
-/**
- * Views stylesheet - for Mahara's Aqua theme.
- *
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- */
-/******************** Collection navigation ********************/
-#collectionnavwrap {
-    background: #F4F7F9;
+/*  Views  */
+#page #bottom-pane {
+    background-color: #FFFFFF;
+	padding: 20px 0 10px 0;
+	border-width: 0 10px 10px 10px;
+	border-style: solid;
+	border-color: #1D499F;
 }
-ul.colnav li a,
-ul.colnav li a:link,
-ul.colnav li a:visited,
-ul.colnav li a:active {
-    background: #00084F;
+#top-pane {
+    padding: 10px 10px 0 10px;
+    background: #1D499F;
+}
+/* The tabs that allow you to select a blocktype category */
+#category-list li {
+    margin: 0;
+    color: #1E6297;
+}
+#category-list li a,
+#category-list li a:link,
+#category-list li a:visited,
+#category-list li a:active {
+    background: none;
+	color: #FFF;
+}
+#category-list li a:hover {
+	text-decoration: underline;
+}
+#category-list li.current a,
+#category-list li.current a:link,
+#category-list li.current a:visited,
+#category-list li.current a:active {
+    background-color: #f4f7f9;
+	color: #1e6297;
+}
+
+/* The panel that contains the blocktype icons */
+#blocktype-list {
+    color: #1D499F !important;
+    background-color: #f4f7f9;
+    border: 0;
+}
+#middle-pane {
+    background: #e1ecf4;
+    border-left: 10px solid #1D499F;
+    border-right: 10px solid #1D499F;
+}
+#current_bt_description {
+    color: #333;
+}
+
+
+/********************** Blockinstance ***********************************/
+/* header*/
+.blockinstance-header h4 {
+    border-bottom: 2px solid #d2d2d2;
+    color: #1E6297;
+}
+
+/* Wall */
+.wallpost {
+    background-color: #F4F7F9;
+}
+/* tabs for the artefact chooser */
+ul.artefactchooser-tabs {
+    font-weight: bold;
+    padding-left: 1em;
+    background: none;
+}
+ul.artefactchooser-tabs li {
+    color: #FFF;
+}
+ul.artefactchooser-tabs li a,
+ul.artefactchooser-tabs li a:link,
+ul.artefactchooser-tabs li a:visited,
+ul.artefactchooser-tabs li a:active {
+    color: #FFF;
+    background: #1D499F;
+    margin: 0 3px 0 0;
+}
+ul.artefactchooser-tabs li.current a,
+ul.artefactchooser-tabs li.current a:link,
+ul.artefactchooser-tabs li.current a:visited
+ul.artefactchooser-tabs li.current a:active {
+    color: #000;
+    background: #F5F9FC;
+}
+#artefactchooser-body {
+    background: #F5F9FC;
+    border: 0;
+}
+.submissionform {
+	background: #F4F7F9;
+}
+
+
+
+/* table */
+.maharatable thead th {
+    color: #186194;
+}
+#artefactchooser-body th label {
+	color: #14336F;
+}
+.maharatable td label {
+	color: #14336F;
+}
+#collection .collection-title {
     color: #FFFFFF;
 }
-/******************** Blocktype icons panel ********************/
-#editcontent-sidebar {
-    background-color: #afbbd2;
+#collection {
+	color: #FFF;
 }
-#block-category-general,
-#block-category-internal,
-#block-category-fileimagevideo,
-#block-category-external,
-#block-category-blog,
-#blog,
-#internal,
-#general,
-#fileimagevideo,
-#external,
-#select-theme {
-    background-color: #d8deea;
-    border-color: #c6cedd;
+ul.colnav li a {
+	background: #00084F;
+    color: #FFF;
 }

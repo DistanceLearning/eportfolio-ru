@@ -1,11 +1,26 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2011 Catalyst IT Ltd and others; see:
+ *                    http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
  */
 
 define('INTERNAL', 1);
@@ -85,8 +100,7 @@ if ($data) {
             JOIN {view_artefact} va ON bi.id = va.block
             JOIN {view} v ON va.view = v.id
         WHERE
-            va.artefact IN (' . join(',', array_fill(0, count($data), '?')) . ')
-        ORDER BY va.view, bi.title',
+            va.artefact IN (' . join(',', array_fill(0, count($data), '?')) . ')',
         array_keys($data)
     );
     if ($blocks) {
@@ -143,36 +157,12 @@ if ($data) {
                 $data[$b->artefact]->blocks = array();
             }
             if (!isset($data[$b->artefact]->blocks[$b->block])) {
-                $data[$b->artefact]->blocks[$b->block] = (array)$b;
-                (!isset($data[$b->artefact]->views[$b->view]['extrablocks'])) ? $data[$b->artefact]->views[$b->view]['extrablocks'] = 0 : $data[$b->artefact]->views[$b->view]['extrablocks'] ++;
-            }
-            if (!isset($data[$b->artefact]->tags)) {
-                $data[$b->artefact]->tags = ArtefactType::artefact_get_tags($b->artefact);
+                $data[$b->artefact]->blocks[$b->block] = $b;
             }
         }
     }
     foreach ($data as $id => $n) {
         $n->deleteform = pieform(deletenote_form($id, $n));
-    }
-}
-
-// Get the attached files.
-$noteids = array();
-if ($data) {
-    $noteids = array_keys($data);
-}
-$files = ArtefactType::attachments_from_id_list($noteids);
-if ($files) {
-    safe_require('artefact', 'file');
-    foreach ($files as $file) {
-        $file->icon = call_static_method(generate_artefact_class_name($file->artefacttype), 'get_icon', array('id' => $file->attachment));
-        $data[$file->artefact]->files[] = $file;
-    }
-}
-// Add Attachments count for each Note
-if ($data) {
-    foreach ($data as $item) {
-        $item->count = isset($item->files) ? count($item->files) : 0;
     }
 }
 
@@ -187,13 +177,13 @@ $pagination = build_pagination(array(
 
 $js = '
 $j(function() {
-    $j("a.notetitle").click(function(e) {
+    $j(".notetitle").click(function(e) {
         e.preventDefault();
         $j("#" + this.id + "_desc").toggleClass("hidden");
     });
 });';
 
-$smarty = smarty(array('expandable'));
+$smarty = smarty();
 $smarty->assign('PAGEHEADING', $pageheading);
 $smarty->assign('INLINEJAVASCRIPT', $js);
 $smarty->assign_by_ref('data', $data);
@@ -214,8 +204,7 @@ function deletenote_form($id, $notedata) {
             ),
             'submit' => array(
                 'type'         => 'image',
-                'src'          => $THEME->get_url('images/btn_deleteremove.png'),
-                'alt' => get_string('deletespecific', 'mahara', $notedata->title),
+                'src'          => $THEME->get_url('images/icon_close.gif'),
                 'elementtitle' => get_string('delete'),
             ),
         ),

@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -15,10 +31,10 @@ defined('INTERNAL') || die();
 // Set session settings
 //
 session_name(get_config('cookieprefix') . 'mahara');
-$sessionpath = get_config('sessionpath');
-ini_set('session.save_path', '3;' . $sessionpath);
+ini_set('session.save_path', '3;' . get_config('dataroot') . 'sessions');
 ini_set('session.gc_divisor', 1000);
-ini_set('session.gc_maxlifetime', get_config('session_timeout'));
+// Session timeout is stored in minutes in the database
+ini_set('session.gc_maxlifetime', get_config('session_timeout') * 60);
 ini_set('session.use_only_cookies', true);
 if ($domain = get_config('cookiedomain')) {
     ini_set('session.cookie_domain', $domain);
@@ -32,6 +48,7 @@ if (is_https()) {
 }
 
 // Attempt to create session directories
+$sessionpath = get_config('dataroot') . 'sessions';
 if (!is_dir("$sessionpath/0")) {
     // Create three levels of directories, named 0-9, a-f
     $characters = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
@@ -130,15 +147,13 @@ class Session {
      *
      * @param string $message The message to add
      * @param boolean $escape Whether to HTML escape the message
-     * @param string $placement Place for messages to appear on page (See render_messages()
-     *     for information about placement options)
      */
-    public function add_ok_msg($message, $escape=true, $placement='messages') {
+    public function add_ok_msg($message, $escape=true) {
         $this->ensure_session();
         if ($escape) {
             $message = self::escape_message($message);
         }
-        $_SESSION['messages'][] = array('type' => 'ok', 'msg' => $message, 'placement' => $placement);
+        $_SESSION['messages'][] = array('type' => 'ok', 'msg' => $message);
     }
 
     /**
@@ -146,15 +161,13 @@ class Session {
      *
      * @param string $message The message to add
      * @param boolean $escape Whether to HTML escape the message
-     * @param string $placement Place for messages to appear on page (See render_messages()
-     *     for information about placement options)
      */
-    public function add_info_msg($message, $escape=true, $placement='messages') {
+    public function add_info_msg($message, $escape=true) {
         $this->ensure_session();
         if ($escape) {
             $message = self::escape_message($message);
         }
-        $_SESSION['messages'][] = array('type' => 'info', 'msg' => $message, 'placement' => $placement);
+        $_SESSION['messages'][] = array('type' => 'info', 'msg' => $message);
     }
 
     /**
@@ -162,15 +175,13 @@ class Session {
      *
      * @param string $message The message to add
      * @param boolean $escape Whether to HTML escape the message
-     * @param string $placement Place for messages to appear on page (See render_messages()
-     *     for information about placement options)
      */
-    public function add_error_msg($message, $escape=true, $placement='messages') {
+    public function add_error_msg($message, $escape=true) {
         $this->ensure_session();
         if ($escape) {
             $message = self::escape_message($message);
         }
-        $_SESSION['messages'][] = array('type' => 'error', 'msg' => $message, 'placement' => $placement);
+        $_SESSION['messages'][] = array('type' => 'error', 'msg' => $message);
     }
 
     /**
@@ -179,37 +190,19 @@ class Session {
      * This is designed to let smarty templates hook in any session messages.
      *
      * Calling this function will destroy the session messages that were
-     * assigned to the $placement, so they do not inadvertently get
-     * displayed again.
+     * rendered, so they do not inadvertently get displayed again.
      *
-     * To define where the messages for a particular $placement value should be displayed,
-     * add this code to a page template:
-     *
-     *   {dynamic}{insert_messages placement='your_placement_name_here'}{/dynamic}
-     *
-     * The default 'messages' placement is shown on every page, and is suitable for most purposes.
-     * Alternative placements should only be needed in special situations, such as showing a login-related
-     * error in the login box. Note that messages will hang around in the $SESSION until a page template
-     * with their "placement" in it is loaded. So, they should only be used in situations where you're
-     * certain their placement zone will be present on the next page load, or else the user may be
-     * confused by their appearance several page loads later.
-     *
-     * @param string $placement Render only messages for this placement
-     *
-     * @return string The HTML representing all of the session messages assigned
-     * to $placement.
+     * @return string The HTML representing all of the session messages.
      */
-    public function render_messages($placement = 'messages') {
+    public function render_messages() {
         global $THEME;
-        $result = '<div id="' . $placement . '" role="alert" aria-live="assertive">';
+        $result = '<div id="messages">';
         if (isset($_SESSION['messages'])) {
-            foreach ($_SESSION['messages'] as $key => $data) {
-                if ($data['placement'] == $placement) {
-                    $result .= '<div class="' . $data['type'] . '"><div>';
-                    $result .= $data['msg'] . '</div></div>';
-                    unset($_SESSION['messages'][$key]);
-                }
+            foreach ($_SESSION['messages'] as $data) {
+                $result .= '<div class="' . $data['type'] . '"><div>';
+                $result .= $data['msg'] . '</div></div>';
             }
+            $_SESSION['messages'] = array();
         }
         $result .= '</div>';
         return $result;
@@ -259,7 +252,7 @@ class Session {
 
     /**
      * Escape a message for HTML output
-     *
+     * 
      * @param string $message The message to escape
      * @return string         The message, escaped for output as HTML
      */
@@ -276,9 +269,9 @@ class Session {
  *
  * @return string The HTML represening all of the session messages.
  */
-function insert_messages($placement='messages') {
+function insert_messages() {
     global $SESSION;
-    return $SESSION->render_messages($placement);
+    return $SESSION->render_messages();
 }
 
 
@@ -286,7 +279,7 @@ function insert_messages($placement='messages') {
  * Delete all sessions belonging to a given user except for the current one
  */
 function remove_user_sessions($userid) {
-    global $sessionpath, $USER, $SESSION;
+    global $sessionpath, $USER;
 
     $sessionids = get_column('usr_session', 'session', 'usr', (int) $userid);
 
@@ -296,16 +289,7 @@ function remove_user_sessions($userid) {
 
     $alive = array();
     $dead = array();
-
-    // Keep track of the current session id so we can return to it at the end
-    if ($SESSION->is_live()) {
-        $sid = $USER->get('sessionid');
-    }
-    else {
-        // The user has no session (this function is being called by a CLI script)
-        $sid = false;
-    }
-
+    $sid = $USER->get('sessionid');
     foreach ($sessionids as $sessionid) {
         if ($sessionid == $sid) {
             continue;
@@ -341,10 +325,8 @@ function remove_user_sessions($userid) {
         }
     }
 
-    if ($sid !== false) {
-        session_id($sid);
-        session_start();
-    }
+    session_id($sid);
+    session_start();
 
     delete_records_select('usr_session', 'session IN (' . join(',', array_map('db_quote', $alive)) . ')');
 }

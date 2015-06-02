@@ -2,7 +2,7 @@
   {{foreach from=$validated item=email}}
     <div class="validated">
       <label>
-        <input disabled {{if $email == $default}} checked{{/if}}{{if $describedby}} aria-describedby="{{$describedby}}"{{/if}} type="radio" name="{{$name}}_locked" value="{{$email}}">
+        <input disabled {{if $email == $default}} checked{{/if}} type="radio" name="{{$name}}_locked" value="{{$email}}">
         {{$email}}
       </label>
     </div>
@@ -27,18 +27,13 @@
                 alert(get_string('emailtoolong'));
             }
             else {
-                var email = {{$name}}_newrefinput.value;
                 appendChildNodes('{{$name}}_list', DIV({'class': 'unsent'},
-                    INPUT({'type': 'hidden', 'name': '{{$name}}_unsent[]'       , 'value': email}),
+                    INPUT({'type': 'hidden', 'name': '{{$name}}_unsent[]'       , 'value': {{$name}}_newrefinput.value}),
                     ' ',
-                    email,
-                    A({'href': '', 'onclick': '{{$name}}_remove(this); return false'}, IMG({'class':'inline-button', 'alt': '{{str tag=delete}}', 'src':'{{theme_url filename="images/btn_deleteremove.png"}}'})),
+                    {{$name}}_newrefinput.value,
+                    A({'href': '', 'onclick': '{{$name}}_remove(this); return false'}, '[x]'),
                     ' ' + {{$validationemailstr|safe}}
                 ));
-                if (typeof formchangemanager !== 'undefined') {
-                    var form = jQuery(this).closest('form')[0];
-                    formchangemanager.setFormState(form, FORM_CHANGED);
-                }
             }
         }
         {{$name}}_newrefinput = null;
@@ -52,19 +47,12 @@
         }
 
         {{$name}}_newrefinput = INPUT({'type': 'text'});
-        {{$name}}_newrefsubmit = INPUT({'type': 'submit', 'class': 'btn', 'value': '{{$addbuttonstr}}'});
-        {{$name}}_newref = DIV(null,{{$name}}_newrefinput,' ',{{$name}}_newrefsubmit);
+        {{$name}}_newrefsubmit = INPUT({'type': 'submit', 'value': '{{$addbuttonstr}}'});
+        {{$name}}_newref = DIV(null,{{$name}}_newrefinput,{{$name}}_newrefsubmit);
 
         appendChildNodes('{{$name}}_list', {{$name}}_newref);
 
         {{$name}}_newrefinput.focus();
-
-        connect({{$name}}_newrefinput, 'onchange', function(k) {
-            if (typeof formchangemanager !== 'undefined') {
-                var form = jQuery(this).closest('form')[0];
-                formchangemanager.setFormState(form, FORM_CHANGED);
-            }
-        });
 
         connect({{$name}}_newrefsubmit, 'onclick', function(k) {
             {{$name}}_addedemail();
@@ -85,30 +73,23 @@
             return;
         }
 
-        if (typeof formchangemanager !== 'undefined') {
-            var form = jQuery(div).closest('form')[0];
-            formchangemanager.setFormState(form, FORM_CHANGED);
-        }
-
         removeElement(x.parentNode);
     }
 </script>
 <div id="{{$name}}_list">
-{{foreach from=$validated key=i item=email}}
+{{foreach from=$validated item=email}}
     <div class="validated">
-        <input{{if $email == $default}} checked{{/if}} type="radio" id="{{$name}}_radio_{{$i}}" name="{{$name}}_selected" value="{{$email}}">
+        <label><input{{if $email == $default}} checked{{/if}} type="radio" name="{{$name}}_selected" value="{{$email}}">
         <input type="hidden" name="{{$name}}_valid[]" value="{{$email}}">
-        <label for="{{$name}}_radio_{{$i}}">
-            <span class="accessible-hidden">{{$title}}: </span>{{$email}}
-        </label>
-        <a href="" onclick="{{$name}}_remove(this); return false;"><img class="inline-button"alt="{{str tag=delete}}" src="{{theme_url filename="images/btn_deleteremove.png"}}" /></a>
+        {{$email}}</label>
+        <a href="" onclick="{{$name}}_remove(this); return false;">[x]</a>
     </div>
 {{/foreach}}
 {{foreach from=$unvalidated item=email}}
     <div class="unvalidated">
         <input type="hidden" name="{{$name}}_invalid[]" value="{{$email}}">
         {{$email}}
-        <a href="" onclick="{{$name}}_remove(this); return false;"><img class="inline-button" alt="{{str tag=delete}}" src="{{theme_url filename="images/btn_deleteremove.png"}}" /></a>
+        <a href="" onclick="{{$name}}_remove(this); return false;">[x]</a>
         <span>{{str tag=validationemailsent section=artefact.internal}}</span>
     </div>
 {{/foreach}}

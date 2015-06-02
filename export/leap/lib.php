@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage export-leap
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -107,15 +123,11 @@ class PluginExportLeap extends PluginExport {
     * main export routine
     */
     public function export() {
-        global $SESSION;
         // the xml stuff
         $this->export_header();
         $this->setup_links();
         $this->notify_progress_callback(10, get_string('exportingviews', 'export'));
-        if ($this->viewexportmode == PluginExport::EXPORT_COLLECTIONS
-            || $this->viewexportmode == PluginExport::EXPORT_ALL_VIEWS) {
-            $this->export_collections();
-        }
+        $this->export_collections();
         $this->export_views();
         $this->notify_progress_callback(50, get_string('exportingartefacts', 'export'));
         $this->export_artefacts();
@@ -143,16 +155,14 @@ class PluginExportLeap extends PluginExport {
 
         // write out xml to a file
         if (!file_put_contents($this->exportdir . $this->leapfile, $this->xml)) {
-            $SESSION->add_error_msg(get_string('couldnotwriteLEAPdata', 'export'));
+            throw new SystemException("Couldn't write LEAP data to the file");
         }
 
         // copy attachments over
         foreach ($this->attachments as $id => $fileinfo) {
             $existingfile = $fileinfo->file;
             $desiredname  = $fileinfo->name;
-            if (!is_file($existingfile) || !copy($existingfile, $this->exportdir . $this->filedir . $id . '-' . $desiredname)) {
-                $SESSION->add_error_msg(get_string('couldnotcopyattachment', 'export', $desiredname));
-            }
+            copy($existingfile, $this->exportdir . $this->filedir . $id . '-' . $desiredname);
         }
         $this->notify_progress_callback(95, get_string('creatingzipfile', 'export'));
 
@@ -210,20 +220,12 @@ class PluginExportLeap extends PluginExport {
             $this->smarty->assign('content',     $collection->get('description'));
             $this->smarty->assign('leaptype',    'selection');
 
-            $tags = $collection->get('tags');
-            if ($tags) {
-                $tags = array_map(function ($a) {
-                    return array(
-                        'term'  => LeapExportElement::normalise_tag($a),
-                        'label' => $a
-                    );}, $tags);
-            }
-            $this->smarty->assign('categories', array_merge(array(
-                    array(
-                        'scheme' => 'selection_type',
-                        'term'   => 'Website',
-                    )
-            ), $tags));
+            $this->smarty->assign('categories', array(
+                array(
+                    'scheme' => 'selection_type',
+                    'term' => 'Website',
+                )
+            ));
 
             $links = array();
             if (!empty($this->links->collectionview[$id])) {
@@ -244,6 +246,8 @@ class PluginExportLeap extends PluginExport {
      * Export the views
      */
     private function export_views() {
+        $layouts = get_records_assoc('view_layout');
+
         $progressstart = 10;
         $progressend   = 50;
         $views = $this->get('views');
@@ -267,17 +271,11 @@ class PluginExportLeap extends PluginExport {
                 $this->smarty->assign('summary',     $content);
             }
             $this->smarty->assign('contenttype', 'xhtml');
-            if ($viewcontent = self::parse_xhtmlish_content($view->build_rows(), $view->get('id'))) {
+            if ($viewcontent = self::parse_xhtmlish_content($view->build_columns(), $view->get('id'))) {
                 $this->smarty->assign('content', $viewcontent);
             }
-            $this->smarty->assign('viewdata',    $config['rows']);
-            $layout = $view->get_layout();
-            $widths = '';
-            foreach ($layout->rows as $row){
-                $widths .= $row['widths'] . '-';
-            }
-            $widths = substr($widths, 0, -1);
-            $this->smarty->assign('layout',      $widths);
+            $this->smarty->assign('viewdata',    $config['columns']);
+            $this->smarty->assign('layout',      $view->get_layout()->widths);
             $this->smarty->assign('type',        $config['type']);
             $ownerformat = ($config['ownerformat']) ? $config['ownerformat'] : FORMAT_NAME_DISPLAYNAME;
             $this->smarty->assign('ownerformat', $ownerformat);
@@ -285,11 +283,11 @@ class PluginExportLeap extends PluginExport {
 
             $tags = array();
             if ($config['tags']) {
-                $tags = array_map(function ($a) {
-                    return array(
-                        'term' => LeapExportElement::normalise_tag($a),
-                        'label' => $a
-                    );}, $config['tags']);
+                $tags = array_map(create_function('$a',
+                    'return array(
+                        \'term\' => LeapExportElement::normalise_tag($a),
+                        \'label\' => $a
+                    );'), $config['tags']);
             }
             $this->smarty->assign('categories', array_merge(array(
                 array(
@@ -437,25 +435,23 @@ class PluginExportLeap extends PluginExport {
      * this limitation later.
      */
     private function rewrite_artefact_ids($config) {
-        foreach ($config['rows'] as &$row) {
-            foreach ($row['columns'] as &$column) {
-                foreach ($column as &$blockinstance) {
-                    if (isset($blockinstance['config']['artefactid'])) {
-                        $id = json_decode($blockinstance['config']['artefactid']);
-                        if ($id[0] != null) {
-                            $blockinstance['config']['artefactid'] = json_encode(array('portfolio:artefact' . $id[0]));
-                        }
-                        else {
-                            $blockinstance['config']['artefactid'] = null;
-                        }
+        foreach ($config['columns'] as &$column) {
+            foreach ($column as &$blockinstance) {
+                if (isset($blockinstance['config']['artefactid'])) {
+                    $id = json_decode($blockinstance['config']['artefactid']);
+                    if ($id[0] != null) {
+                        $blockinstance['config']['artefactid'] = json_encode(array('portfolio:artefact' . $id[0]));
                     }
-                    else if (isset($blockinstance['config']['artefactids'])) {
-                        $ids = json_decode($blockinstance['config']['artefactids']);
-                        $blockinstance['config']['artefactids'] = json_encode(array(array_map(array($this, 'prepend_artefact_identifier'), $ids[0])));
+                    else {
+                        $blockinstance['config']['artefactid'] = null;
                     }
                 }
-            } // cols
-        } //rows
+                else if (isset($blockinstance['config']['artefactids'])) {
+                    $ids = json_decode($blockinstance['config']['artefactids']);
+                    $blockinstance['config']['artefactids'] = json_encode(array(array_map(array($this, 'prepend_artefact_identifier'), $ids[0])));
+                }
+            }
+        }
         return $config;
     }
 
@@ -575,9 +571,8 @@ class PluginExportLeap extends PluginExport {
     * @return filename string use this to pass to add_enclosure_link
     */
     public function add_attachment($filepath, $newname) {
-        global $SESSION;
         if (!file_exists($filepath) || empty($newname)) {
-            $SESSION->add_error_msg(get_string('nonexistentfile', 'export', $newname));
+            throw new FileNotFoundException(get_string('nonexistentfile', 'export', $newname));
         }
         $newname = substr(str_replace('/', '_', $newname), 0, 245);
         $this->attachments[] = (object)array('file' => $filepath, 'name' => $newname);
@@ -727,11 +722,11 @@ class LeapExportElement {
         $this->smarty->assign('dates', $this->get_dates());
 
         if ($tags = $this->artefact->get('tags')) {
-            $tags = array_map(function ($a) {
-                return array(
-                    'term' => LeapExportElement::normalise_tag($a),
-                    'label' => $a
-                );}, $tags);
+            $tags = array_map(create_function('$a',
+                'return array(
+                    \'term\' => LeapExportElement::normalise_tag($a),
+                    \'label\' => $a
+                );'), $tags);
         }
         if (!$categories = $this->get_categories()) {
             $categories = array();

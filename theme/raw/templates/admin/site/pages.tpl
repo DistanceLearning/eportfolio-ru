@@ -1,10 +1,5 @@
 {include file="header.tpl"}
-            {if $noinstitutionsadmin}<p>{$noinstitutionsadmin|safe}</p>{/if}
-            {if $noinstitutions}
-                <p>{$noinstitutions}</p>
-            {else}
-                <p>{str tag=staticpagespagedescription section=admin}</p>
-            {/if}
-            {$pageeditform|safe}
+            <p>{str tag=editsitepagespagedescription section=admin}</p>
+			{$pageeditform|safe}
 {include file="footer.tpl"}
 

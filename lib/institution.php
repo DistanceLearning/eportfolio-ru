@@ -1,19 +1,33 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage auth-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
 // TODO : lib
 
 defined('INTERNAL') || die();
-
-require_once(get_config('libroot') . 'license.php');
 
 class Institution {
 
@@ -22,59 +36,16 @@ class Institution {
     const   PERSISTENT     = 2;
 
     protected $initialized = self::UNINITIALIZED;
-
-    /**
-     * The institution properties stored in the institution table, and their default values. The
-     * actual instance values will be in this->fields;
-     *
-     * Note that there's a dual system for institution properties. All required values and several
-     * older ones are stored in the institution table itself. Optional and/or newer values are
-     * stored in the institution_config table and go in $this->configs
-     *
-     * TODO: If we have problems with future developers adding columns and forgetting to add them
-     * here, perhaps replace this with a system that determines the DB columns of the institution
-     * table dynamically, by the same method as insert_record().
-     *
-     * @var unknown_type
-     */
-    static $dbfields = array(
+    protected $members = array(
         'name' => '',
         'displayname' => '',
-        'registerallowed' => 0,
-        'registerconfirm' => 1,
-        'theme' => null,
+        'registerallowed' => 1,
+        'theme' => 'default',
         'defaultmembershipperiod' => 0,
-        'maxuseraccounts' => null,
-        'expiry' => null,
-        'expirymailsent' => 0,
-        'suspended' => 0,
-        'priority' => 1,
-        'defaultquota' => null,
-        'showonlineusers' => 2,
-        'allowinstitutionpublicviews' => 1,
-        'logo' => null,
-        'style' => null,
-        'licensedefault' => null,
-        'licensemandatory' => 0,
-        'dropdownmenu' => 0,
-        'skins' => true
-    );
+        'maxuseraccounts' => null
+        ); 
 
-    // This institution's config settings
-    protected $configs = array();
-
-    // Configs that have been updated and need to be saved on commit
-    protected $dirtyconfigs = array();
-
-    // This institution's properties
-    protected $fields = array();
-
-    // Fields that have been updated and need to be saved on commit
-    protected $dirtyfields = array();
-
-    public function __construct($name = null) {
-        $this->fields = self::$dbfields;
-
+    function __construct($name = null) {
         if (is_null($name)) {
             return $this;
         }
@@ -84,84 +55,46 @@ class Institution {
         }
     }
 
-    public function __get($name) {
-
-        // If it's an institution DB field, use the setting from $this->fields or null if that's empty for whatever reason
-        if (array_key_exists($name, self::$dbfields)) {
-            if (array_key_exists($name, $this->fields)) {
-                return $this->fields[$name];
-            }
-            else {
-                return null;
-            }
+    function __get($name) {
+        if (array_key_exists($name, $this->members)) {
+            return $this->members[$name];
         }
-
-        // If there's a config setting for it, use that
-        if (array_key_exists($name, $this->configs)) {
-            return $this->configs[$name];
-        }
-
         return null;
     }
 
-
     public function __set($name, $value) {
-        if (!is_string($name)) {
+        if (!is_string($name) | !array_key_exists($name, $this->members)) {
             throw new ParamOutOfRangeException();
         }
-
-        // Validate the DB fields
-        switch ($name) {
-            // char 255
-            case 'name':
-            case 'displayname':
-                if (!is_string($value) || empty($value) || strlen($value) > 255) {
-                    throw new ParamOutOfRangeException("'{$name}' should be a string between 1 and 255 characters in length");
-                }
-                break;
-
-            // int 1 (i.e. true/false)
-            case 'registerallowed':
-            case 'skins':
-            case 'suspended':
-            case 'licensemandatory':
-            case 'expirymailsent':
-                $value = $value ? 1 : 0;
-                break;
-
-            case 'defaultmembershipperiod':
-            case 'maxuseraccounts':
-            case 'showonlineusers':
-                $value = (int) $value;
-                break;
-        }
-
-        if (array_key_exists($name, self::$dbfields)) {
-            if ($this->fields[$name] !== $value) {
-                $this->fields[$name] = $value;
-                $this->dirtyfields[$name] = true;
+        if ($name == 'name') {
+            if (!is_string($value) || empty($value) || strlen($value) > 255) {
+                throw new ParamOutOfRangeException("'name' should be a string between 1 and 255 characters in length");
+            }
+        } elseif ($name == 'displayname') {
+            if (!is_string($value) || empty($value) || strlen($value) > 255) {
+                throw new ParamOutOfRangeException("'displayname' ($value) should be a string between 1 and 255 characters in length");
+            }
+        } elseif ($name == 'registerallowed') {
+            if (!is_numeric($value) || $value < 0 || $value > 1) {
+                throw new ParamOutOfRangeException("'registerallowed' should be zero or one");
+            }
+        } elseif ($name == 'theme') {
+            if (!empty($value) && is_string($value) && strlen($value) > 255) {
+                throw new ParamOutOfRangeException("'theme' ($value) should be less than 255 characters in length");
+            }
+        } elseif ($name == 'defaultmembershipperiod') {
+            if (!empty($value) && (!is_numeric($value) || $value < 0 || $value > 9999999999)) {
+                throw new ParamOutOfRangeException("'defaultmembershipperiod' should be a number between 1 and 9,999,999,999");
+            }
+        } elseif ($name == 'maxuseraccounts') {
+            if (!empty($value) && (!is_numeric($value) || $value < 0 || $value > 9999999999)) {
+                throw new ParamOutOfRangeException("'maxuseraccounts' should be a number between 1 and 9,999,999,999");
             }
         }
-        else {
-            // Anything else goes in institution_config.
-            // Since it's a DB field, the value must be a number, string, or NULL.
-            if (is_bool($value)) {
-                $value = $value ? 1 : 0;
-            }
-            if ($value !== NULL && !is_float($value) && !is_int($value) && !is_string($value)) {
-                throw new ParameterException("Attempting to set institution config field \"{$name}\" to a non-scalar value.");
-            }
-
-            // A NULL here means you should drop the config from the DB
-            $existingvalue = array_key_exists($name, $this->configs) ? $this->configs[$name] : NULL;
-            if ($value != $existingvalue) {
-                $this->configs[$name] = $value;
-                $this->dirtyconfigs[$name] = true;
-            }
-        }
+        $this->members[$name] = $value;
     }
 
-    public function findByName($name) {
+    function findByName($name) {
 
         if (!is_string($name) || strlen($name) < 1 || strlen($name) > 255) {
             throw new ParamOutOfRangeException("'name' must be a string.");
@@ -179,103 +112,60 @@ class Institution {
         return $this;
     }
 
-    public function initialise($name, $displayname) {
-        if (!is_string($name)) {
-            return false;
-        }
-        $name = strtolower($name);
-        if (empty($name)) {
+    function initialise($name, $displayname) {
+        if (empty($name) || !is_string($name)) {
             return false;
         }
 
         $this->name = $name;
-
         if (empty($displayname) || !is_string($displayname)) {
             return false;
         }
 
         $this->displayname = $displayname;
         $this->initialized = max(self::INITIALIZED, $this->initialized);
-        $this->dirtyfields = self::$dbfields;
         return true;
     }
 
-    public function verifyReady() {
-        if (empty($this->fields['name']) || !is_string($this->fields['name'])) {
+    function verifyReady() {
+        if (empty($this->members['name']) || !is_string($this->members['name'])) {
             return false;
         }
-        if (empty($this->fields['displayname']) || !is_string($this->fields['displayname'])) {
+        if (empty($this->members['displayname']) || !is_string($this->members['displayname'])) {
             return false;
         }
         $this->initialized = max(self::INITIALIZED, $this->initialized);
         return true;
     }
 
-    public function commit() {
+    function commit() {
         if (!$this->verifyReady()) {
             throw new SystemException('Commit failed');
         }
 
-        $result = true;
-        if (count($this->dirtyfields)) {
-            $record = new stdClass();
-            foreach (array_keys($this->dirtyfields) as $fieldname) {
-                $record->{$fieldname} = $this->{$fieldname};
-            }
+        $record = new stdClass();
+        $record->name                         = $this->name;
+        $record->displayname                  = $this->displayname;
+        $record->theme                        = $this->theme;
+        $record->defaultmembershipperiod      = $this->defaultmembershipperiod;
+        $record->maxuseraccounts              = $this->maxuseraccounts;
 
-            if ($this->initialized == self::INITIALIZED) {
-                $result = insert_record('institution', $record);
-            }
-            else if ($this->initialized == self::PERSISTENT) {
-                $result = update_record('institution', $record, array('name' => $this->name));
-            }
+        if ($this->initialized == self::INITIALIZED) {
+            return insert_record('institution', $record);
+        } elseif ($this->initialized == self::PERSISTENT) {
+            return update_record('institution', $record, array('name' => $this->name));
         }
-        if ($result) {
-            return $this->_commit_configs();
-        }
-        else {
-            // Shouldn't happen but who noes?
-            return false;
-        }
-    }
-
-    /**
-     * Commit the config values for this institution. Called as part of commit();
-     */
-    protected function _commit_configs() {
-        $result = true;
-        foreach (array_keys($this->dirtyconfigs) as $confkey) {
-            $newvalue = $this->configs[$confkey];
-
-            if ($newvalue === NULL) {
-                delete_records('institution_config', 'institution', $this->name, 'field', $confkey);
-            }
-            else {
-
-                $todb = new stdClass();
-                $todb->institution = $this->name;
-                $todb->field = $confkey;
-                $todb->value = $this->configs[$confkey];
-
-                if (!record_exists('institution_config', 'institution', $this->name, 'field', $confkey)) {
-                    $result = $result && insert_record('institution_config', $todb);
-                }
-                else {
-                    $result = $result && update_record('institution_config', $todb, array('institution', 'field'));
-                }
-            }
-        }
-        return $result;
+        // Shouldn't happen but who noes?
+        return false;
     }
 
     protected function populate($result) {
-        foreach (array_keys(self::$dbfields) as $fieldname) {
-            $this->{$fieldname} = $result->{$fieldname};
-        }
-        $this->configs = get_records_menu('institution_config', 'institution', $result->name, 'field', 'field, value');
-        if (!$this->configs) {
-            $this->configs = array();
-        }
+        $this->name                         = $result->name;
+        $this->displayname                  = $result->displayname;
+        $this->registerallowed              = $result->registerallowed;
+        $this->theme                        = $result->theme;
+        $this->defaultmembershipperiod      = $result->defaultmembershipperiod;
+        $this->maxuseraccounts              = $result->maxuseraccounts;
         $this->verifyReady();
     }
 
@@ -287,16 +177,18 @@ class Institution {
         if (is_numeric($user)) {
             $user = get_record('usr', 'id', $user);
         }
-        // The user hasn't been added yet, so we have to manually use this institution's lang
-        if ($this->lang != 'default') {
-            $lang = $this->lang;
+        if ($user instanceof User) {
+            $lang = $user->get_account_preference('lang');
+            if (empty($lang) || $lang == 'default') {
+                $lang = get_config('lang');
+            }
         }
-        else {
+        else { // stdclass object
             $lang = get_user_language($user->id);
         }
         $userinst = new StdClass;
         $userinst->institution = $this->name;
-        $studentid = get_field('usr_institution_request', 'studentid', 'usr', $user->id,
+        $studentid = get_field('usr_institution_request', 'studentid', 'usr', $user->id, 
                                'institution', $this->name);
         if (!empty($studentid)) {
             $userinst->studentid = $studentid;
@@ -332,7 +224,7 @@ class Institution {
         $checkviewaccess = empty($user->newuser) && !$USER->get('admin');
         $userobj = new User();
         $userobj->find_by_id($user->id);
-        $userobj->copy_institution_views_collections_to_new_member($this->name);
+        $userobj->copy_institution_views_collections_to_new_member($this->name, $checkviewaccess);
         require_once('activity.php');
         activity_occurred('maharamessage', $message);
         handle_event('updateuser', $userinst->usr);
@@ -385,10 +277,6 @@ class Institution {
             $this->addUserAsMember($user);
         }
         db_commit();
-
-        foreach ($users as $user) {
-            remove_user_sessions($user->id);
-        }
     }
 
     public function addRequestFromUser($user, $studentid = null) {
@@ -415,36 +303,9 @@ class Institution {
             require_once('activity.php');
             activity_occurred('institutionmessage', $message);
             handle_event('updateuser', $user->id);
-            // If the total number of accounts has been reached, send an email to the institution
-            // and site administrators notifying them of the fact.
-            if ($this->isFull()) {
-                $this->send_admin_institution_is_full_message();
-            }
             db_commit();
         } else if ($request->confirmedinstitution) {
             $this->addUserAsMember($user);
-        }
-    }
-
-    public function send_admin_institution_is_full_message(){
-        // get the site admin and institution admin user records.
-        $admins = $this->institution_and_site_admins();
-        // check if there are admins - otherwise there are no site admins?!?!?
-        if (count($admins) > 0) {
-            require_once('activity.php');
-            // send an email/message to each amdininistrator based on their specific language.
-            foreach ($admins as $index => $id) {
-                $lang = get_user_language($id);
-                $user = new User();
-                $user->find_by_id($id);
-                $message = (object) array(
-                    'users'   => array($id),
-                    'subject' => get_string_from_language($lang, 'institutionmembershipfullsubject'),
-                    'message' => get_string_from_language($lang, 'institutionmembershipfullmessagetext', 'mahara',
-                            $user->firstname, $this->displayname, get_config('sitename'), get_config('sitename')),
-                );
-                activity_occurred('maharamessage', $message);
-            }
         }
     }
 
@@ -625,9 +486,6 @@ class Institution {
             )
         );
 
-        // If the user's license default is set to "institution default", remove the pref
-        delete_records('usr_account_preference', 'usr', $user->id, 'field', 'licensedefault', 'value', LICENSE_INSTITUTION_DEFAULT);
-
         delete_records('usr_institution', 'usr', $user->id, 'institution', $this->name);
         handle_event('updateuser', $user->id);
         db_commit();
@@ -689,30 +547,13 @@ class Institution {
     /**
      * Returns the current institution admin member records
      *
-     * @return array  A data structure containing site admins
+     * @return array  A data structure containing admins
      */
     public function admins() {
         if ($results = get_records_sql_array('
             SELECT u.id FROM {usr} u INNER JOIN {usr_institution} i ON u.id = i.usr
             WHERE i.institution = ? AND u.deleted = 0 AND i.admin = 1', array($this->name))) {
-            return array_map('extract_institution_user_id', $results);
-        }
-        return array();
-    }
-
-    /**
-     * Returns the current institution and site admin records
-     *
-     * @return array  A data structure containing site and institution admins
-     */
-    public function institution_and_site_admins() {
-        if ($results = get_records_sql_array('
-            SELECT u.id FROM {usr} u INNER JOIN {usr_institution} i ON u.id = i.usr
-            WHERE i.institution = ? AND u.deleted = 0 AND i.admin = 1
-            UNION
-            SELECT u.id FROM {usr} u
-            WHERE u.deleted = 0 AND u.admin = 1', array($this->name))) {
-            return array_map('extract_institution_user_id', $results);
+            return array_map(create_function('$a', 'return $a->id;'), $results);
         }
         return array();
     }
@@ -726,7 +567,7 @@ class Institution {
         if ($results = get_records_sql_array('
             SELECT u.id FROM {usr} u INNER JOIN {usr_institution} i ON u.id = i.usr
             WHERE i.institution = ? AND u.deleted = 0 AND i.staff = 1', array($this->name))) {
-            return array_map('extract_institution_user_id', $results);
+            return array_map(create_function('$a', 'return $a->id;'), $results);
         }
         return array();
     }
@@ -762,7 +603,7 @@ class Institution {
             $where = '';
         }
 
-        $querydata = explode(' ', preg_replace('/\s\s+/', ' ', strtolower(trim($query))));
+        $querydata = split(' ', preg_replace('/\s\s+/', ' ', strtolower(trim($query))));
         $namesql = '(
                 ii.name ' . db_ilike() . ' \'%\' || ? || \'%\'
             )
@@ -809,17 +650,13 @@ class Institution {
                         ii.name = \'mahara\', ii.displayname', $queryvalues, $offset, $limit);
 
         if ($showdefault && $institutions && array_key_exists('mahara', $institutions)) {
-            $defaultinstarray = get_records_sql_assoc('
-                SELECT COUNT(u.id) AS members, COALESCE(SUM(u.staff), 0) AS staff, COALESCE(SUM(u.admin), 0) AS admins
-                FROM {usr} u LEFT OUTER JOIN {usr_institution} i ON u.id = i.usr
+            $defaultinstmembers = count_records_sql('
+                SELECT COUNT(u.id) FROM {usr} u LEFT OUTER JOIN {usr_institution} i ON u.id = i.usr
                 WHERE u.deleted = 0 AND i.usr IS NULL AND u.id != 0
-            ', array());
-            $defaultinst = current($defaultinstarray);
-            $institutions['mahara']->members = $defaultinst->members;
-            $institutions['mahara']->staff   = $defaultinst->staff;
-            $institutions['mahara']->admins  = $defaultinst->admins;
-            $institutions['mahara']->site = true;
-            $institutions['mahara']->maxuseraccounts = 0;
+            ');
+            $institutions['mahara']->members = $defaultinstmembers;
+            $institutions['mahara']->staff   = '';
+            $institutions['mahara']->admins  = '';
         }
         return $institutions;
     }
@@ -835,17 +672,7 @@ function get_institution_selector($includedefault = true, $assumesiteadmin=false
         else {
             $institutions = get_records_select_array('institution', "name != 'mahara'", null, 'displayname');
         }
-    }
-    else if ($USER->is_institutional_admin() && ($USER->is_institutional_staff() && $includeinstitutionstaff)) {
-        // if a user is both an admin for some institution and is a staff member for others
-        $institutions = get_records_select_array(
-            'institution',
-            'name IN (' . join(',', array_map('db_quote',$USER->get('admininstitutions'))) .
-                      ',' . join(',', array_map('db_quote',$USER->get('staffinstitutions'))) . ')',
-            null, 'displayname'
-        );
-    }
-    else if ($USER->is_institutional_admin()) {
+    } else if ($USER->is_institutional_admin()) {
         $institutions = get_records_select_array(
             'institution',
             'name IN (' . join(',', array_map('db_quote',$USER->get('admininstitutions'))) . ')',
@@ -858,8 +685,7 @@ function get_institution_selector($includedefault = true, $assumesiteadmin=false
             'name IN (' . join(',', array_map('db_quote',$USER->get('staffinstitutions'))) . ')',
             null, 'displayname'
         );
-    }
-    else {
+    } else {
         return null;
     }
 
@@ -956,7 +782,7 @@ function build_institutions_html($filter, $showdefault, $query, $limit, $offset,
     $pagination = build_pagination(array(
                 'id' => 'adminstitutionslist_pagination',
                 'datatable' => 'adminstitutionslist',
-                'url' => get_config('wwwroot') . 'admin/users/institutions.php' . (($query != '') ? '?query=' . urlencode($query) : ''),
+                'url' => get_config('wwwroot') . 'admin/users/institutions.php' . (!empty($query) ? '?query=' . urlencode($query) : ''),
                 'jsonscript' => 'admin/users/institutions.json.php',
                 'count' => $count,
                 'limit' => $limit,
@@ -974,12 +800,4 @@ function build_institutions_html($filter, $showdefault, $query, $limit, $offset,
 
 function institution_display_name($name) {
     return get_field('institution', 'displayname', 'name', $name);
-}
-
-/**
- * Callback function to extract user ID from an object.
- * @param object $input
- */
-function extract_institution_user_id($input) {
-    return $input->id;
 }

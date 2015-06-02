@@ -1,107 +1,84 @@
 <?php
-/**
- *
- * @package    mahara
- * @subpackage lang
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- *
- */
 
 defined('INTERNAL') || die();
 
-$string['pluginname'] = 'Comment';
-$string['Comment'] = 'Comment';
-$string['Comments'] = 'Comments';
-$string['comment'] = 'comment';
-$string['comments'] = 'comments';
+$string['Allow'] = 'Разрешить';
+$string['Attachments'] = 'Прикрепленные файлы';
+$string['Comment'] = 'Комментарий';
+$string['Comments'] = 'Комментарии';
+$string['Moderate'] = 'Модерировать';
+$string['allowcomments'] = 'Разрешить комментарии';
+$string['artefactdefaultpermissions'] = 'Разрешения для комментариев по умолчанию';
+$string['attachfile'] = 'Прикрепить файл';
+$string['cantedithasreplies'] = 'Вы можете редактировать только последний комментарий';
+$string['canteditnotauthor'] = 'Вы не автор данного комментария';
+$string['cantedittooold'] = 'Вы можете редактировать только комментарии, добавленные менее %d минут назад';
+$string['comment'] = 'комментарий';
+$string['commentdeletedauthornotification'] = 'Ваш комментарий на %s был удален:
+%s';
+$string['commentdeletednotificationsubject'] = 'Комментарий на %s был удален';
+$string['commentmadepublic'] = 'Сделать комментарий доступным для всех';
+$string['commentnotinview'] = 'Комментарий %d отсутствует на странице %d';
+$string['commentratings'] = 'Разрешить оценивать комментарии';
+$string['commentremoved'] = 'Комментарий удален';
+$string['commentremovedbyadmin'] = 'Комментарий удален администратором';
+$string['commentremovedbyauthor'] = 'Комментарий удален автором';
+$string['commentremovedbyowner'] = 'Комментарий удален владельцем';
+$string['comments'] = 'комментарии';
+$string['commentupdated'] = 'Комментарий обновлен';
+$string['feedback'] = 'Обратная связь';
+$string['feedbackattachdirdesc'] = 'Файлы прикрепленные к комментариям в Вашем портфолио';
+$string['feedbackattachdirname'] = 'файлы комментария';
+$string['feedbackattachmessage'] = 'Прикрепленные файлы были добавлены в папку %s';
+$string['feedbackdeletedhtml'] = '<div style="padding: 0.5em 0; border-bottom: 1px solid #999;"><strong>Комментарий от %s был удален</strong><br>%s</div>
 
-$string['Allow'] = 'Allow';
-$string['allowcomments'] = 'Allow comments';
-$string['approvalrequired'] = 'Comments are moderated. If you choose to make this comment public, it will not be visible to others until it is approved by the owner.';
-$string['attachfile'] = "Attach file";
-$string['Attachments'] = "Attachments";
-$string['cantedithasreplies'] = 'You can only edit the most recent comment';
-$string['canteditnotauthor'] = 'You are not the author of this comment';
-$string['cantedittooold'] = 'You can only edit comments that are less than %d minutes old';
-$string['commentmadepublic'] = "Comment made public";
-$string['commentdeletedauthornotification'] = "Your comment on %s was deleted:\n%s";
-$string['commentdeletednotificationsubject'] = 'Comment on %s deleted';
-$string['commentnotinview'] = 'Comment %d not in page %d';
-$string['commentratings'] = 'Enable comment ratings';
-$string['commentremoved'] = 'Comment removed';
-$string['commentremovedbyauthor'] = 'Comment removed by the author';
-$string['commentremovedbyowner'] = 'Comment removed by the owner';
-$string['commentremovedbyadmin'] = 'Comment removed by an administrator';
-$string['commentupdated'] = 'Comment updated';
-$string['editcomment'] = 'Edit comment';
-$string['editcommentdescription'] = 'You can update your comments if they are less than %d minutes old and have had no newer replies added. After this time you may still be able to delete your comments and add new ones.';
-$string['entriesimportedfromleapexport'] = 'Entries imported from a LEAP export that were not able to be imported elsewhere';
-$string['feedback'] = 'Feedback';
-$string['feedbackattachdirname'] = 'commentfiles';
-$string['feedbackattachdirdesc'] = 'Files attached to comments on your portfolio';
-$string['feedbackattachmessage'] = 'The attached file(s) have been added to your %s folder';
-$string['feedbackonviewbyuser'] = 'Feedback on %s by %s';
-$string['feedbacksubmitted'] = 'Feedback submitted';
-$string['feedbacksubmittedmoderatedanon'] = 'Feedback submitted, awaiting moderation';
-$string['feedbacksubmittedprivateanon'] = 'Private feedback submitted';
-$string['lastcomment'] = 'Last comment';
-$string['makepublic'] = 'Make public';
-$string['makepublicnotallowed'] = 'You are not allowed to make this comment public';
-$string['makepublicrequestsubject'] = 'Request to change private comment to public';
-$string['makepublicrequestbyauthormessage'] = '%s has requested that you make their comment public.';
-$string['makepublicrequestbyownermessage'] = '%s has requested that you make your comment public.';
-$string['makepublicrequestsent'] = 'A message has been sent to %s to request that the comment be made public.';
-$string['messageempty'] = 'Your message is empty. Please enter a message or attach a file.';
-$string['Moderate'] = 'Moderate';
-$string['moderatecomments'] = 'Moderate comments';
-$string['moderatecommentsdescription'] = 'Comments will remain private until they are approved by you.';
-$string['newfeedbacknotificationsubject'] = 'New feedback on %s';
-$string['placefeedback'] = 'Place feedback';
-$string['progress_feedback'] = array(
-    'Comment on another user\'s page',
-    'Comment on %s other users\' pages',
-);
-$string['rating'] = 'Rating';
-$string['reallydeletethiscomment'] = 'Are you sure you want to delete this comment?';
-$string['thiscommentisprivate'] = 'This comment is private';
-$string['typefeedback'] = 'Feedback';
-$string['viewcomment'] = 'View comment';
-$string['youhaverequestedpublic'] = 'You have requested that this comment be made public.';
+<div style="margin: 1em 0;">%s</div>
 
-$string['feedbacknotificationhtml'] = "<div style=\"padding: 0.5em 0; border-bottom: 1px solid #999;\"><strong>%s commented on %s</strong><br>%s</div>
-
-<div style=\"margin: 1em 0;\">%s</div>
-
-<div style=\"font-size: smaller; border-top: 1px solid #999;\">
-<p><a href=\"%s\">Reply to this comment online</a></p>
-</div>";
-$string['feedbacknotificationtext'] = "%s commented on %s
+<div style="font-size: smaller; border-top: 1px solid #999;">
+<p><a href="%s">%s</a></p>
+</div>';
+$string['feedbackdeletedtext'] = 'Комментарий от %s был удален
 %s
 ------------------------------------------------------------------------
 
 %s
 
 ------------------------------------------------------------------------
-To see and reply to the comment online, follow this link:
-%s";
-$string['feedbackdeletedhtml'] = "<div style=\"padding: 0.5em 0; border-bottom: 1px solid #999;\"><strong>A comment on %s was removed</strong><br>%s</div>
+Чтобы увидеть %s онлайн, перейдите по следующей ссылке:
+%s';
+$string['feedbacknotificationhtml'] = '<div style="padding: 0.5em 0; border-bottom: 1px solid #999;"><strong>%s комментировано %s</strong><br>%s</div>
 
-<div style=\"margin: 1em 0;\">%s</div>
+<div style="margin: 1em 0;">%s</div>
 
-<div style=\"font-size: smaller; border-top: 1px solid #999;\">
-<p><a href=\"%s\">%s</a></p>
-</div>";
-$string['feedbackdeletedtext'] = "A comment on %s was removed
+<div style="font-size: smaller; border-top: 1px solid #999;">
+<p><a href="%s">ответить на этот комментарий онлайн</a></p>
+</div>';
+$string['feedbacknotificationtext'] = '%s комментировано %s
 %s
 ------------------------------------------------------------------------
 
 %s
 
 ------------------------------------------------------------------------
-To see %s online, follow this link:
-%s";
-
-$string['artefactdefaultpermissions'] = 'Default comment permission';
-$string['artefactdefaultpermissionsdescription'] = 'The selected artefact types will have comments enabled on creation. Users can override these settings for individual artefacts.';
+Для того, чтоб увидеть и ответить на этот комментарий онлайн, перейдите по следующей ссылке:
+%s';
+$string['feedbackonviewbyuser'] = 'Отзыв %s от %s';
+$string['feedbacksubmitted'] = 'Отзыв отправлен';
+$string['makepublic'] = 'Сделать публичным';
+$string['makepublicnotallowed'] = 'Вам не разрешено сделать этот комментарий публичным';
+$string['makepublicrequestbyauthormessage'] = '%s просит сделать его комментарий публичным';
+$string['makepublicrequestbyownermessage'] = '%s просит сделать ваш комментарий публичным';
+$string['makepublicrequestsent'] = 'Просьба сделать комментарий публичным отправлена %s.';
+$string['makepublicrequestsubject'] = 'Запрос для изменения частного комментария в публичный';
+$string['messageempty'] = 'Ваше сообщение пустое. Пожалуйста введите сообщение или прикрепите файл.';
+$string['moderatecomments'] = 'Модерировать комментарии';
+$string['moderatecommentsdescription'] = 'Комментарии будут оставаться частными, пока не будет подтверждено изменение.';
+$string['newfeedbacknotificationsubject'] = 'Новый отзыв от %s';
+$string['placefeedback'] = 'Разместить отзыв';
+$string['pluginname'] = 'Комментарий';
+$string['rating'] = 'Оценка';
+$string['reallydeletethiscomment'] = 'Вы уверены, что хотите удалить данный комментарий?';
+$string['thiscommentisprivate'] = 'Этот комментарий частный';
+$string['typefeedback'] = 'Обратная связь';
+$string['viewcomment'] = 'Просмотреть комментарий';
+$string['youhaverequestedpublic'] = 'Вы отправили запрос на то, чтобы данный комментарий стал публичным.';

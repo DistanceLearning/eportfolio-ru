@@ -19,8 +19,8 @@
  * @package    pieforms
  * @subpackage element
  * @author     Nigel McNie <nigel@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -121,13 +121,9 @@ function pieform_update_legends(element) {
         if (legend.firstChild.tagName == 'A') {
             connect(legend.firstChild, 'onclick', function(e) {
                 toggleElementClass('collapsed', fieldset);
-                var isCollapsed = hasElementClass(fieldset, 'collapsed');
-                if (!isCollapsed) {
-                    jQuery(fieldset).find(':input').not('.open-fieldset-input').first().focus();
-                }
                 var input = getFirstElementByTagAndClassName('input', 'open-fieldset-input', legend);
                 if (input) {
-                    input.value = !isCollapsed;
+                    input.value = !hasElementClass(fieldset, 'collapsed');
                 }
                 e.stop();
             });
@@ -155,8 +151,8 @@ function pieform_element_fieldset_get_headdata() {/*{{{*/
 
 
 /**
- * Extension by Mahara. This api function returns the javascript required to
- * set up the element, assuming the element has been placed in the page using
+ * Extension by Mahara. This api function returns the javascript required to 
+ * set up the element, assuming the element has been placed in the page using 
  * javascript. This feature is used in the views interface.
  *
  * In theory, this could go upstream to pieforms itself
@@ -172,13 +168,6 @@ function pieform_element_fieldset_views_js(Pieform $form, $element) {
         $result .= pieform_element_fieldset_js();
     }
     $result .= "pieform_update_legends('instconf');";
-
-    foreach ($element['elements'] as $subelement) {
-        $function = 'pieform_element_' . $subelement['type'] . '_views_js';
-        if (is_callable($function)) {
-            $result .= "\n" . call_user_func_array($function, array($form, $subelement));
-        }
-    }
 
     return $result;
 }

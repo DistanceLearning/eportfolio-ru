@@ -1,12 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2007 Catalyst IT Ltd (http://www.catalyst.net.nz)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Martin Dougiamas <martin@moodle.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
  * @copyright  (C) 2001-3001 Martin Dougiamas http://dougiamas.com
+ * @copyright  additional modifications (c) Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -86,7 +101,7 @@ function serve_file($path, $filename, $mimetype, $options=array()) {
         header('Content-Disposition: inline; filename="' . $filename . '"');
     }
 
-    if ($options['lifetime'] > 0 && !get_config('nocache')) {
+    if ($options['lifetime'] > 0) {
         header('Cache-Control: max-age=' . $options['lifetime']);
         header('Expires: '. gmdate('D, d M Y H:i:s', time() + $options['lifetime']) .' GMT');
         header('Pragma: ');
@@ -255,27 +270,94 @@ function byteserving_send_file($filename, $mimetype, $ranges) {
 
 
 /**
+ * Given a file path, retrieves the mime type of the file using the
+ * unix 'file' program.
+ *
+ * This is only implemented for non-windows based operating systems. Mahara
+ * does not support windows at this time.
+ *
+ * Sometimes file will be unable to detect the mimetype, in which case
+ * it will return the empty string.
+ *
+ *
+ * This function should no longer be required.  Mime types are now
+ * stored along with files in the artefact tables, and passed directly
+ * to serve_file.  Left in place for the upgrade to initially populate
+ * the mime type of existing files.
+ * See htdocs/artefact/file/db/upgrade.php.
+ *
+ *
+ * @param string $file The file to check
+ * @return string      The mime type of the file, or false if file is not available.
+ */
+function get_mime_type($file) {
+    switch (strtolower(PHP_OS)) {
+    case 'win' :
+        throw new SystemException('retrieving filetype not supported in windows');
+    default : 
+        $filepath = get_config('pathtofile');
+        if (!empty($filepath)) {
+            list($output,) = preg_split('/[\s;]/', exec($filepath . ' -ib ' . escapeshellarg($file)));
+            return $output;
+        }
+        return false;
+    }
+}
+
+
+/**
  * Given a file path, guesses the mime type of the file using the
  * php functions finfo_file, mime_content_type, or looking for the
  * file extension in the artefact_file_mime_types table
  *
  * @param string $file The file to check
- * @param string $originalfilename The original name of the file (so we can check its extension)
  * @return string      The mime type of the file
  */
-function file_mime_type($file, $originalfilename=false) {
+function file_mime_type($file) {
     static $mimetypes = null;
+
+    if (class_exists('finfo')) {
+        // upstream bug in php #54714
+        // http://bugs.php.net/bug.php?id=54714
+        //
+        // according to manual (http://www.php.net/manual/en/function.finfo-open.php)
+        // default option is /usr/share/misc/magic, then /usr/share/misc/magic.mgc
+        //
+        // if /usr/share/misc/magic is a directory then finfo still succeeds and 
+        // doesn't fall back onto the .mcg magic_file
+        // force /usr/share/misc/magic.mgc instead in this case
+        $MAGICPATH = '/usr/share/misc/magic';
+        $magicfile = null;
+        if (is_dir($MAGICPATH) or is_link($MAGICPATH)) {
+            $magicfile = '/usr/share/misc/magic.mgc';
+        }
+
+        if (defined('FILEINFO_MIME_TYPE')) {
+            if ($finfo = @new finfo(FILEINFO_MIME_TYPE, $magicfile)) {
+                $type = @$finfo->file($file);
+            }
+        }
+        else if ($finfo = @new finfo(FILEINFO_MIME, $magicfile)) {
+            if ($typecharset = @$finfo->file($file)) {
+                if ($bits = explode(';', $typecharset)) {
+                    $type = $bits[0];
+                }
+            }
+        }
+    }
+    else if (function_exists('mime_content_type')) {
+        $type = mime_content_type($file);
+    }
+
+    if (!empty($type) && $type != 'application/octet-stream') {
+        return $type;
+    }
 
     // Try the filename extension in case it's a file that Mahara
     // cares about.  For now, use the artefact_file_mime_types table,
     // even though it's in a plugin and the description column doesn't
     // really contain filename extensions.
-    if ($originalfilename) {
-        $basename = $originalfilename;
-    }
-    else {
-        $basename = basename($file);
-    }
+    $basename = basename($file);
     if (strpos($basename, '.', 1)) {
         if (is_null($mimetypes)) {
             $mimetypes = get_records_assoc('artefact_file_mime_types', '', '', '', 'description,mimetype');
@@ -286,101 +368,9 @@ function file_mime_type($file, $originalfilename=false) {
         }
     }
 
-    // Try detecting it with the magic.mgc file
-    if (get_config('pathtomagicdb') !== null) {
-        // Manually specified magicdb path in config.php
-        $magicfile = get_config('pathtomagicdb');
-    }
-    else {
-        // Using one of the system presets (or if no matching system preset, this
-        // will return false, indicating we shouldn't bother with fileinfo
-        $magicfile = standard_magic_paths(get_config('defaultmagicdb'));
-    }
-
-    if ($magicfile !== false && class_exists('finfo') ) {
-        if ($finfo = @new finfo(FILEINFO_MIME_TYPE, $magicfile)) {
-            $type = @$finfo->file($file);
-        }
-    }
-    else if (function_exists('mime_content_type')) {
-        $type = mime_content_type($file);
-    }
-
-    if (!empty($type)) {
-        return $type;
-    }
-
     return 'application/octet-stream';
 }
 
-
-/**
- * The standard locations we would expect the magicdb to be. The keys of the array returned
- * by this value, are the values stored in the config
- * @param int $key (optional)
- * @return multitype:string If a key is supplied, return the path matching that key. If no
- * key is supplied, return the full array of possible magic locations.
- */
-function standard_magic_paths($key = 'fullarray') {
-    static $standardmagicpaths = array(
-        1=>'',
-        2=>'/usr/share/misc/magic',
-        3=>'/usr/share/misc/magic.mgc',
-    );
-
-    if ($key === 'fullarray') {
-        return $standardmagicpaths;
-    }
-
-    if (array_key_exists($key, $standardmagicpaths)) {
-        return $standardmagicpaths[$key];
-    }
-    else {
-        return false;
-    }
-}
-
-
-/**
- * Try a few different likely possibilities for the magicdb and see which of them returns
- * the correct response. Then store that configuration option for later use, in the config
- * setting 'defaultmagicdb'. Because this is a DB-settable setting, we don't store the file
- * path directly in it, but instead just store a key corresponding to a path specified in
- * standard_magic_paths().
- */
-function update_magicdb_path() {
-    // Determine where the server's "magic" db is\
-    if (class_exists('finfo')) {
-        $file = get_config('docroot') . 'theme/raw/static/images/powered_by_mahara.png';
-
-        $magicpathstotry = standard_magic_paths();
-        $workingpath = false;
-        foreach ($magicpathstotry as $i=>$magicfile) {
-            $type = false;
-            if (defined('FILEINFO_MIME_TYPE')) {
-                if ($finfo = @new finfo(FILEINFO_MIME_TYPE, $magicfile)) {
-                    $type = @$finfo->file($file);
-                }
-            }
-            else if ($finfo = @new finfo(FILEINFO_MIME, $magicfile)) {
-                if ($typecharset = @$finfo->file($file)) {
-                    if ($bits = explode(';', $typecharset)) {
-                        $type = $bits[0];
-                    }
-                }
-            }
-            if ($type == 'image/png') {
-                $workingpath = $i;
-                break;
-            }
-        }
-        if (!$workingpath) {
-            log_debug('Could not locate the path to your fileinfo magic db. Please set it manually using $cfg->pathtomagicdb.');
-            $workingpath = 0;
-        }
-        set_config('defaultmagicdb', $workingpath);
-    }
-}
 
 /**
  * Given a mimetype (perhaps returned by {@link get_mime_type}, returns whether

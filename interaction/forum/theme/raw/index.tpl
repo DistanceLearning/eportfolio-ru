@@ -4,24 +4,22 @@
 <a href="{$WWWROOT}interaction/edit.php?group={$groupid}&amp;plugin=forum" class="btn newforum">{str tag="newforum" section=interaction.forum}</a>
 </div>
 {/if}
-<h2>{str tag="nameplural" section=interaction.forum}{if $publicgroup}<a href="{$feedlink}"><img class="feedicon" src="{theme_url filename='images/feed.png'}"></a>{/if}</h2>
+<h2>{str tag="nameplural" section=interaction.forum}{if $publicgroup}<a href="{$feedlink}"><img class="feedicon" src="{theme_url filename='images/rss.gif'}"></a>{/if}</h2>
 {if $forums}
 <div id="viewforum"><table id="forumslist" class="fullwidth nohead">
 	<tr>
 		<th>{str tag="name" section="interaction.forum"}</th>
 		<th class="center">{str tag="Topics" section="interaction.forum"}</th>
-		<th class="subscribeth">
-            <span class="accessible-hidden">{str tag=Subscribe section=interaction.forum}</span>
-        </th>
-		<th class="right btns2">
-            <span class="accessible-hidden">{str tag=edit}</span>
-        </th>
+		<th class="subscribeth"></th>
+		<th class="right btns2"></th>
 	</tr>
     {foreach from=$forums item=forum}
     <tr class="{cycle values='r0,r1'}">
         <td>
-            <h3 class="title"><a href="{$WWWROOT}interaction/forum/view.php?id={$forum->id}">{$forum->title}</a>{if $publicgroup}<a href="{$forum->feedlink}"><img class="feedicon" src="{theme_url filename='images/feed.png'}"></a>{/if}</h3>
-            <div class="detail">{$forum->description|str_shorten_html:1000:true|safe}</div>
+            <div class="nowrap">
+                <strong><a href="{$WWWROOT}interaction/forum/view.php?id={$forum->id}">{$forum->title}</a>{if $publicgroup}<a href="{$forum->feedlink}"><img class="feedicon" src="{theme_url filename='images/rss_small.gif'}"></a>{/if}</strong>
+            </div>
+            <div class="s">{$forum->description|str_shorten_html:1000:true|safe}</div>
             {if $forum->moderators}
             <div class="inlinelist">
                 <span>{str tag="Moderators" section="interaction.forum"}:</span>
@@ -36,12 +34,8 @@
         <td class="nowrap s subscribetd">{if $forum->subscribe}{$forum->subscribe|safe}{/if}</td>
         <td class="right btns2">
         {if $admin}
-            <a href="{$WWWROOT}interaction/edit.php?id={$forum->id}&amp;returnto=index" class="icon btn-big-edit" title="{str tag=edit}">
-                {str tag=editspecific arg1=$forum->title}
-            </a>
-            <a href="{$WWWROOT}interaction/delete.php?id={$forum->id}&amp;returnto=index" class="icon btn-big-del" title="{str tag=delete}">
-                {str tag=deletespecific arg1=$forum->title}
-            </a>
+                <a href="{$WWWROOT}interaction/edit.php?id={$forum->id}&amp;returnto=index" class="icon btn-big-edit" title="{str tag=edit}"></a>
+                <a href="{$WWWROOT}interaction/delete.php?id={$forum->id}&amp;returnto=index" class="icon btn-big-del" title="{str tag=delete}"></a>
         {/if}
         </td>
 	</tr>
@@ -54,7 +48,7 @@
 	<label>{str tag="groupadminlist" section="interaction.forum"}</label>
 	{foreach from=$groupadmins item=groupadmin}
     <span class="inlinelist">
-        <a href="{profile_url($groupadmin)}" class="groupadmin"><img src="{profile_icon_url user=$groupadmin maxheight=20 maxwidth=20}" alt="{str tag=profileimagetext arg1=$groupadmin|display_default_name}"> {$groupadmin|display_name}</a>
+        <a href="{profile_url($groupadmin)}" class="groupadmin"><img src="{profile_icon_url user=$groupadmin maxheight=20 maxwidth=20}" alt=""> {$groupadmin|display_name}</a>
     </span>
     {/foreach}
 </div>

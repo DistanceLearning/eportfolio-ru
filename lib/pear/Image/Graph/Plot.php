@@ -44,7 +44,7 @@ require_once 'Image/Graph/Plotarea/Element.php';
  * @author     Stefan Neufeind <pear.neufeind@speedpartner.de>
  * @copyright  2003-2009 The PHP Groupn
  * @license    http://www.gnu.org/copyleft/lesser.html  LGPL License 2.1
- * @version    Release: 0.8.0
+ * @version    Release: @package_version@
  * @link       http://pear.php.net/package/Image_Graph
  * @abstract
  */

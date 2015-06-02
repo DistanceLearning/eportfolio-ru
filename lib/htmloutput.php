@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2010 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage lib
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2010 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -24,13 +40,13 @@ function print_export_head($stylesheets) {
             html, body {
                 margin: 0;
                 padding: 0;
-                background-color: #d4d4d4;
+                background-color: #808080;
             }
         </style>
     </head>
     <body>
-    <div style="width: 100%; background-color: #d4d4d4;" class="progress-bar"></div>
-    <p class="progress-text" style="color: #000000;"><?php echo get_string('Starting', 'export'); ?></p>
+    <div style="width: 100%; background-color: #808080;" class="progress-bar"></div>
+    <p class="progress-text"><?php echo get_string('Starting', 'export'); ?></p>
 <?php
 }
 
@@ -44,31 +60,29 @@ function print_export_iframe_die($message, $link=null) {
 
 function print_iframe_progress_handler($percent, $status) {
     // "Erase" the current output with a new background div
-    echo '<div style="width: 100%; background-color: #d4d4d4;" class="progress-bar"></div>';
+    echo '<div style="width: 100%; background-color: #808080;" class="progress-bar"></div>';
     // The progress bar itself
-    echo '<div class="progress-bar-progress" style="width: ' . intval($percent) . '%; background-color: #cff253;"></div>' . "\n";
+    echo '<div class="progress-bar" style="width: ' . intval($percent) . '%;"></div>' . "\n";
     // The status text
-    echo '<p class="progress-text" style="color: #000000;">' . hsc($status) . "</p>\n";
+    echo '<p class="progress-text">' . hsc($status) . "</p>\n";
 }
 
-function print_export_footer($strexportgenerated, $continueurl, $continueurljs, $jsmessages=array(), $newlocation) {
+function print_export_footer($strexportgeneratedsuccessfully, $strexportgeneratedsuccessfullyjs, $jsmessages=array(), $newlocation) {
 ?>
         <script type="text/javascript">
-            document.write('<div class="progress-bar" style="width: 100%;"><p><?php echo $strexportgenerated . ' <a href="' . $continueurljs . '" target="_top">' . get_string('continue', 'export') . '</a>'; ?></p></div>');
+            document.write('<div class="progress-bar" style="width: 100%;"><p><?php echo $strexportgeneratedsuccessfullyjs; ?></p></div>');
             if (!window.opera) {
                 // Opera can't handle this for some reason - it vomits out the
                 // download inline in the iframe
                 document.location = '<?php echo $newlocation; ?>';
             }
-            var messages = <?php echo json_encode($jsmessages); ?>;
+            var messages = <?php echo json_encode(join('; ', $jsmessages)); ?>;
             if (messages) {
-                for (var i = 0; i < messages.length; i++) {
-                    parent.displayMessage(messages[i].msg, messages[i].type, false);
-                }
+                parent.displayMessage(messages);
             }
         </script>
         <div class="progress-bar" style="width: 100%;">
-            <p><?php echo $strexportgenerated . ' <a href="' . $continueurl . '" target="_top">' . get_string('clickheretodownload', 'export') . '</a>'; ?></p>
+            <p><?php echo $strexportgeneratedsuccessfully; ?></p>
         </div>
     </body>
 </html>
@@ -87,13 +101,13 @@ function print_extractprogress_head($stylesheets, $artefacts) {
             html, body {
                 margin: 0;
                 padding: 0;
-                background-color: #d4d4d4;
+                background-color: #808080;
             }
         </style>
     </head>
     <body>
-    <div style="width: 100%; background-color: #d4d4d4;" class="progress-bar"></div>
-    <p class="progress-text" style="color: #000000;"><?php echo get_string('unzipprogress', 'artefact.file', '0/' . $artefacts); ?></p>
+    <div style="width: 100%; background-color: #808080;" class="progress-bar"></div>
+    <p class="progress-text"><?php echo get_string('unzipprogress', 'artefact.file', '0/' . $artefacts); ?></p>
 <?php
 }
 

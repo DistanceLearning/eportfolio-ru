@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -434,8 +450,7 @@ function group_create($data) {
             'invitefriends'  => $data['invitefriends'],
             'suggestfriends' => $data['suggestfriends'],
             'editwindowstart' => $data['editwindowstart'],
-            'editwindowend'  => $data['editwindowend'],
-            'sendnow'        => $data['sendnow'],
+            'editwindowend'  => $data['editwindowend']
         ),
         'id',
         true
@@ -469,7 +484,7 @@ function group_create($data) {
                 'group'       => $id,
                 'title'       => $template->title,
                 'description' => $template->description,
-            ), $template->id, null, false);
+            ), $template->id);
             $view->set_access(array(array(
                 'type'      => 'group',
                 'id'        => $id,
@@ -490,7 +505,7 @@ function group_create($data) {
     if ($templates) {
         require_once('collection.php');
         foreach ($templates as $template) {
-            Collection::create_from_template(array('group' => $id), $template->id, null, false, true);
+            Collection::create_from_template(array('group' => $id), $template->id, null, null, true);
         }
     }
     $data['id'] = $id;
@@ -842,8 +857,6 @@ function group_add_user($groupid, $userid, $role=null, $method='internal') {
     delete_records('group_member_invite', 'group', $groupid, 'member', $userid);
     handle_event('userjoinsgroup', $gm);
     db_commit();
-    global $USER;
-    $USER->reset_grouproles();
 }
 
 /**
@@ -894,9 +907,6 @@ function group_remove_user($groupid, $userid=null, $force=false) {
         throw new AccessDeniedException(get_string('usercantleavegroup', 'group'));
     }
     delete_records('group_member', 'group', $groupid, 'member', $userid);
-
-    global $USER;
-    $USER->reset_grouproles();
 
     require_once(get_config('docroot') . 'interaction/lib.php');
     $interactions = get_column('interaction_instance', 'id', 'group', $groupid);
@@ -1543,7 +1553,7 @@ function build_grouplist_html($query, $limit, $offset, &$count=null) {
     $pagination = build_pagination(array(
                 'id' => 'admgroupslist_pagination',
                 'datatable' => 'admgroupslist',
-                'url' => get_config('wwwroot') . 'admin/groups/groups.php' . (($query != '') ? '?query=' . urlencode($query) : ''),
+                'url' => get_config('wwwroot') . 'admin/groups/groups.php' . (!empty($query) ? '?query=' . urlencode($query) : ''),
                 'jsonscript' => 'admin/groups/groups.json.php',
                 'count' => $count,
                 'limit' => $limit,
@@ -1560,20 +1570,17 @@ function build_grouplist_html($query, $limit, $offset, &$count=null) {
     return $data;
 }
 
-function group_get_membersearch_data($results, $group, $query, $membershiptype, $setlimit=false, $sortoption='') {
+function group_get_membersearch_data($results, $group, $query, $membershiptype, $setlimit=false) {
     global $USER;
 
     $params = array();
-    if ($query != '') {
-        $params['query'] = $query;
+    if (!empty($query)) {
+        $params[] = 'query=' . $query;
     }
     if (!empty($membershiptype)) {
-        $params['membershiptype'] = $membershiptype;
+        $params[] = 'membershiptype=' . $membershiptype;
     }
-    if (!empty($sortoption)) {
-        $params['sortoption'] = $sortoption;
-    }
-    $searchurl = get_config('wwwroot') . 'group/members.php?id=' . $group . (!empty($params) ? ('&' . http_build_query($params)) : '');
+    $searchurl = get_config('wwwroot') . 'group/members.php?id=' . $group . '&amp;' . join('&amp;', $params);
 
     $smarty = smarty_core();
 
@@ -1626,7 +1633,6 @@ function group_get_membersearch_data($results, $group, $query, $membershiptype, 
         'jumplinks' => 8,
         'numbersincludeprevnext' => 2,
         'datatable' => 'membersearchresults',
-        'searchresultsheading' => 'searchresultsheading',
         'jsonscript' => 'group/membersearchresults.json.php',
         'firsttext' => '',
         'previoustext' => '',
@@ -1729,14 +1735,14 @@ function group_get_menu_tabs() {
         );
     }
 
-    if ($interactionplugins = plugins_installed('interaction')) {
-        foreach ($interactionplugins as $plugin) {
-            safe_require('interaction', $plugin->name);
-            $plugin_menu = call_static_method(generate_class_name('interaction', $plugin->name), 'group_menu_items', $group);
-            $menu = array_merge($menu, $plugin_menu);
-        }
+    if ($group->public || $role) {
+        $menu['forums'] = array(  // @todo: get this from a function in the interaction plugin (or better, make forums an artefact plugin)
+            'path' => 'groups/forums',
+            'url' => 'interaction/forum/index.php?group='.$group->id,
+            'title' => get_string('nameplural', 'interaction.forum'),
+            'weight' => 40,
+        );
     }
-
     $menu['views'] = array(
         'path' => 'groups/views',
         'url' => 'view/groupviews.php?group='.$group->id,
@@ -1861,6 +1867,38 @@ function group_current_group() {
 
     return $group;
 }
+
+
+/**
+ * creates the group sideblock
+ */
+function group_sideblock() {
+    require_once('group.php');
+    $data['group'] = group_current_group();
+    if (!$data['group']) {
+        return null;
+    }
+    $data['menu'] = group_get_menu_tabs();
+    // @todo either: remove this if interactions become group
+    // artefacts, or: do this in interaction/lib.php if we leave them
+    // as interactions
+    $data['forums'] = get_records_select_array(
+        'interaction_instance',
+        '"group" = ? AND deleted = ? AND plugin = ?',
+        array(GROUP, 0, 'forum'),
+        'ctime',
+        'id, plugin, title'
+    );
+    if (!$data['forums']) {
+        $data['forums'] = array();
+    }
+    else {
+        safe_require('interaction', 'forum');
+        $data['forums'] = PluginInteractionForum::sideblock_sort($data['forums']);
+    }
+    return $data;
+}
+
 
 function group_get_associated_groups($userid, $filter='all', $limit=20, $offset=0, $category='') {
 
@@ -2152,44 +2190,45 @@ function install_system_grouphomepage_view() {
     $dbtime = db_format_timestamp(time());
     // create a system template for group homepage views
     require_once(get_config('libroot') . 'view.php');
-    $view = View::create(array(
+    $viewdata = (object) array(
         'type'        => 'grouphomepage',
         'owner'       => 0,
-        'numcolumns'  => 2,
-        'numrows'     => 1,
-        'columnsperrow' => array((object)array('row' => 1, 'columns' => 1)),
+        'numcolumns'  => 1,
         'template'    => 1,
         'title'       => get_string('grouphomepage', 'view'),
-    ));
-    $view->set_access(array(array(
-        'type' => 'loggedin'
-    )));
+        'ctime'       => $dbtime,
+        'atime'       => $dbtime,
+        'mtime'       => $dbtime,
+    );
+    $id = insert_record('view', $viewdata, 'id', true);
+    $accessdata = (object) array(
+        'view'       => $id,
+        'accesstype' => 'loggedin',
+        'ctime'      => db_format_timestamp(time()),
+    );
+    insert_record('view_access', $accessdata);
     $blocktypes = array(
         array(
             'blocktype' => 'groupinfo',
             'title' => '',
-            'row'    => 1,
             'column' => 1,
             'config' => null,
         ),
         array(
             'blocktype' => 'recentforumposts',
             'title' => '',
-            'row'    => 1,
             'column' => 1,
             'config' => null,
         ),
         array(
             'blocktype' => 'groupviews',
             'title' => '',
-            'row'    => 1,
             'column' => 1,
             'config' => array('showgroupviews' => 1, 'showsharedviews' => 1),
         ),
         array(
             'blocktype' => 'groupmembers',
             'title' => '',
-            'row'    => 1,
             'column' => 1,
             'config' => null,
         ),
@@ -2199,20 +2238,18 @@ function install_system_grouphomepage_view() {
     foreach ($blocktypes as $blocktype) {
         if (in_array($blocktype['blocktype'], $installed)) {
             $weights[$blocktype['column']]++;
-            $newblock = new BlockInstance(0, array(
-                    'blocktype'  => $blocktype['blocktype'],
-                    'title'      => $blocktype['title'],
-                    'view'       => $view->get('id'),
-                    'row'        => $blocktype['row'],
-                    'column'     => $blocktype['column'],
-                    'order'      => $weights[$blocktype['column']],
-                    'configdata' => $blocktype['config'],
+            insert_record('block_instance', (object) array(
+                'blocktype'  => $blocktype['blocktype'],
+                'title'      => $blocktype['title'],
+                'view'       => $id,
+                'column'     => $blocktype['column'],
+                'order'      => $weights[$blocktype['column']],
+                'configdata' => serialize($blocktype['config']),
             ));
-            $newblock->commit();
         }
     }
 
-    return $view->get('id');
+    return $id;
 }
 
 function get_forum_list($groupid, $userid = 0) {
@@ -2235,7 +2272,7 @@ function get_forum_list($groupid, $userid = 0) {
             WHERE f.group = ?
             AND f.deleted != 1
             GROUP BY 1, 2, 3, 4, 6, c.value
-            ORDER BY CHAR_LENGTH(c.value), c.value, m.user',
+            ORDER BY c.value, m.user',
             array($userid, $groupid)
         );
     }
@@ -2312,7 +2349,7 @@ function group_get_new_homepage_urlid($desired) {
  * @return string
  */
 function group_homepage_url($group, $full=true, $useid=false) {
-    if (!$useid && !empty($group->urlid) && get_config('cleanurls')) {
+    if (!$useid && !is_null($group->urlid) && get_config('cleanurls')) {
         $url = get_config('cleanurlgroupdefault') . '/' . $group->urlid;
     }
     else if ($group->id) {
@@ -2325,18 +2362,4 @@ function group_homepage_url($group, $full=true, $useid=false) {
         $url = get_config('wwwroot') . $url;
     }
     return $url;
-}
-
-/**
- * Returns whether 'send now' is set for all memebers or not
- * If not set only admins/tutors/moderators can use 'send now'
- *
- * @param string $groupid the id of the group
- * @return boolean
- */
-function group_sendnow($groupid) {
-    if (!$sendnow = get_field('group', 'sendnow', 'id', $groupid)) {
-        return false;
-    }
-    return !empty($sendnow);
 }

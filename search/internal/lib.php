@@ -1,33 +1,37 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage search-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
 defined('INTERNAL') || die();
-require_once(get_config('docroot') . 'search/lib.php');
 
 /**
  * The internal search plugin which searches against the
  * Mahara database.
  */
 class PluginSearchInternal extends PluginSearch {
-
-    /**
-     * This function indicates whether the plugin should take the raw $query string
-     * when its group_search_user function is called, or whether it should get the
-     * parsed query string.
-     *
-     * @return boolean
-     */
-    public static function can_process_raw_group_search_user_queries() {
-        return true;
-    }
 
     public static function can_be_disabled() {
         return false;
@@ -327,7 +331,7 @@ class PluginSearchInternal extends PluginSearch {
         }
         return $options;
     }
-
+    
 
     private static function match_expression($op, $string, &$values, $ilike) {
         switch ($op) {
@@ -335,29 +339,8 @@ class PluginSearchInternal extends PluginSearch {
             $values[] = $string;
             return ' ' . $ilike . ' ? || \'%\'';
         case 'equals':
-            if ($string === null) {
-                return ' IS NULL ';
-            }
             $values[] = $string;
             return ' = ? ';
-        case 'notequals':
-            if (is_null($string)) {
-                return ' IS NOT NULL ';
-            }
-            $values[] = $string;
-            return ' <> ? ';
-        case 'greaterthan':
-            $values[] = $string;
-            return ' > ? ';
-        case 'greaterthanequal':
-            $values[] = $string;
-            return ' >= ? ';
-        case 'lessthan':
-            $values[] = $string;
-            return ' < ? ';
-        case 'lessthanequal':
-            $values[] = $string;
-            return ' <= ? ';
         case 'contains':
             $values[] = $string;
             return ' ' . $ilike . ' \'%\' || ? || \'%\'';
@@ -367,33 +350,6 @@ class PluginSearchInternal extends PluginSearch {
     }
 
 
-    /**
-     * Returns a list of search results for the admin user search interface.
-     *
-     * The constraints parameter takes an array of arrays, like so:
-     * $params = array(
-     *     array(
-     *         'field' => 'institution'
-     *         'string' => 'mahara'
-     *         'type' => 'equals'
-     *     ),
-     *     ...
-     * )
-     *
-     * Each constraint should has these three keys:
-     * field: Should be a column in the usr table, or the special field "duplicateemails" (which indicates only users with a non-unique email).
-     *   also, for the field "institution", a string value of "mahara" indicates users with no institution
-     * string: The value to compare the contents of that field against
-     * type: The operation by which to compare "field" to "string". This can be any of the operations in PluginSearchInternal::match_expression
-     *   (starts, equals, notequals, greaterthan, greaterthanequal, lessthan, lessthanequal, contains, or in)
-     *
-     * @param string $query_string The string to search for
-     * @param array $constraints A list of constraints on the search results (see above for format)
-     * @param int $offset
-     * @param int $limit
-     * @param string $sortfield Which of the output columns to sort by
-     * @param string $sortdir DESC or ASC
-     */
     public static function admin_search_user($query_string, $constraints, $offset, $limit,
                                              $sortfield, $sortdir) {
         $sort = 'TRUE';
@@ -444,23 +400,8 @@ class PluginSearchInternal extends PluginSearch {
                             . PluginSearchInternal::match_expression($f['type'], $f['string'], $values, $ilike) . '
                             )';
                     }
-                }
-                else if ($f['field'] == 'duplicateemail') {
-                    if (!empty($f['string'])) {
-                        $where .= '
-                            AND u.id IN (
-                                SELECT owner
-                                FROM {artefact}
-                                WHERE id IN (' . join(',', array_map('db_quote', $f['string'])) . ')
-                            )';
-                    }
-                    else {
-                        // No duplicate email is found, return empty list
-                        $where .= ' AND FALSE';
-                    }
-                }
-                else {
-                    $where .= ' AND u.' . $f['field']
+                } else {
+                    $where .= ' AND u.' . $f['field'] 
                         . PluginSearchInternal::match_expression($f['type'], $f['string'], $values, $ilike);
                 }
             }
@@ -470,17 +411,17 @@ class PluginSearchInternal extends PluginSearch {
 
         if ($count > 0) {
             $data = get_records_sql_assoc('
-                SELECT
+                SELECT 
                     u.id, u.firstname, u.lastname, u.preferredname, u.username, u.email, u.staff, u.profileicon,
-                    u.lastlogin, u.active, NOT u.suspendedcusr IS NULL as suspended, au.instancename AS authname
-                FROM {usr} u INNER JOIN {auth_instance} au ON u.authinstance = au.id ' . $where . '
+                    u.active, NOT u.suspendedcusr IS NULL as suspended
+                FROM {usr} u ' . $where . '
                 ORDER BY ' . $sort . ', u.id',
                 $values,
                 $offset,
                 $limit);
 
             if ($data) {
-                $inst = get_records_select_array('usr_institution',
+                $inst = get_records_select_array('usr_institution', 
                                                  'usr IN (' . join(',', array_keys($data)) . ')',
                                                  null, '', 'usr,institution');
                 if ($inst) {
@@ -647,7 +588,7 @@ class PluginSearchInternal extends PluginSearch {
             WHERE u.id <> 0 AND u.deleted = 0 ';
 
         $values = array();
-        if ($query != '') {
+        if (!empty($query)) {
             $where .= 'AND (t.tag = LOWER(?) OR ';
             $values[] = $query;
             $query = preg_replace('/\s\s+/', ' ', $query);
@@ -698,8 +639,8 @@ class PluginSearchInternal extends PluginSearch {
 
         if ($count > 0) {
             $data = get_records_sql_array('
-                SELECT
-                    u.id, u.firstname, u.lastname, u.username, u.preferredname,
+                SELECT 
+                    u.id, u.firstname, u.lastname, u.username, u.preferredname, 
                     u.admin, u.staff' . $studentid . $sql . $where . '
                 GROUP BY u.id, u.firstname, u.lastname, u.username, u.preferredname, u.admin, u.staff' . $studentid . '
                 ORDER BY u.firstname ASC',
@@ -780,18 +721,16 @@ class PluginSearchInternal extends PluginSearch {
 
         $canseehidden = $USER->get('admin') || $USER->get('staff');
 
-        if ($type == 'member') {
+       if ($type == 'member') {
             $sql .=  'AND id IN (' . $grouproles . ')';
         }
         else if ($type == 'notmember') {
             $sql .= 'AND id NOT IN (' . $grouproles . ')';
+            if (!$canseehidden) {
+                $sql .= ' AND hidden = 0';
+            }
         }
-        else if ($type == 'canjoin') {
-            $sql .= 'AND (jointype != ? AND NOT (jointype = ? AND request = 0)) AND id NOT IN (' . $grouproles . ')';
-            $values = array_merge($values, array('controlled', 'approve'));
-        }
-
-        if (!$canseehidden) {
+        else if (!$canseehidden) {
             $sql .= ' AND (hidden = 0 OR id IN (' . $grouproles . '))';
         }
 
@@ -836,7 +775,7 @@ class PluginSearchInternal extends PluginSearch {
      * @param integer How many results to return
      * @param integer What result to start at (0 == first result)
      * @param string  Type to search for (either 'all' or one of the types above).
-     *
+     * 
      */
     public static function self_search($querystring, $limit, $offset, $type = 'all') {
         global $USER;
@@ -929,7 +868,6 @@ class PluginSearchInternal extends PluginSearch {
      */
     public static function portfolio_search_by_tag($tag, $owner, $limit, $offset, $sort, $types, $returntags) {
         $viewfilter = is_null($types) || $types['view'] == true ? 'AND TRUE' : 'AND FALSE';
-        $collectionfilter = is_null($types) || $types['collection'] == true ? 'AND TRUE' : 'AND FALSE';
 
         if (is_null($types)) {
             $artefacttypefilter = '';
@@ -944,15 +882,13 @@ class PluginSearchInternal extends PluginSearch {
         if (!is_null($tag)) {
             $artefacttypefilter .= ' AND at.tag = ?';
             $viewfilter .= ' AND vt.tag = ?';
-            $collectionfilter .= ' AND ct.tag = ?';
-            $values = array($owner->id, $tag, $owner->id, $tag, $owner->id, $tag);
+            $values = array($owner->id, $tag, $owner->id, $tag);
         }
         else {
-            $values = array($owner->id, $owner->id, $owner->id);
+            $values = array($owner->id, $owner->id);
         }
 
-        $from = "
-        FROM (
+        $from = "FROM (
            (SELECT a.id, a.title, a.description, 'artefact' AS type, a.artefacttype, " . db_format_tsfield('a.ctime', 'ctime') . ",
                 a.owner, a.group, a.institution, NULL AS urlid
             FROM {artefact} a JOIN {artefact_tag} at ON (a.id = at.artefact)
@@ -962,11 +898,6 @@ class PluginSearchInternal extends PluginSearch {
                 v.owner, v.group, v.institution, v.urlid
             FROM {view} v JOIN {view_tag} vt ON (v.id = vt.view)
             WHERE v.owner = ? " . $viewfilter . ")
-           UNION
-           (SELECT c.id, c.name, c.description, 'collection' AS type, NULL AS artefacttype, " . db_format_tsfield('c.ctime', 'ctime') . ",
-                c.owner, c.group, c.institution, NULL AS urlid
-            FROM {collection} c JOIN {collection_tag} ct ON (c.id = ct.collection)
-            WHERE c.owner = ? " . $collectionfilter . ")
         ) p";
 
         $result = (object) array(
@@ -984,7 +915,7 @@ class PluginSearchInternal extends PluginSearch {
             $sort = $sort == 'date' ? 'ctime DESC' : 'title ASC';
             if ($data = get_records_sql_assoc("SELECT type || ':' || id AS tid, p.* " . $from . ' ORDER BY ' . $sort, $values, $offset, $limit)) {
                 if ($returntags) {
-                    $ids = array('view' => array(), 'collection' => array(), 'artefact' => array());
+                    $ids = array('view' => array(), 'artefact' => array());
                     foreach ($data as &$d) {
                         $ids[$d->type][$d->id] = 1;
                     }
@@ -995,15 +926,8 @@ class PluginSearchInternal extends PluginSearch {
                             }
                         }
                     }
-                    if (!empty($ids['collection'])) {
-                        if ($collectiontags = get_records_select_array('collection_tag', 'collection IN (' . join(',', array_keys($ids['collection'])) . ')')) {
-                            foreach ($collectiontags as &$ct) {
-                                $data['collection:' . $ct->collection]->tags[] = $ct->tag;
-                            }
-                        }
-                    }
                     if (!empty($ids['artefact'])) {
-                        if ($artefacttags = get_records_select_array('artefact_tag', 'artefact IN (' . join(',', array_keys($ids['artefact'])) . ')', NULL, 'tag')) {
+                        if ($artefacttags = get_records_select_array('artefact_tag', 'artefact IN (' . join(',', array_keys($ids['artefact'])) . ')')) {
                             foreach ($artefacttags as &$at) {
                                 $data['artefact:' . $at->artefact]->tags[] = $at->tag;
                             }
@@ -1018,7 +942,7 @@ class PluginSearchInternal extends PluginSearch {
 
 
     /**
-     * Parses a query string into SQL fragments for searching. Supports
+     * Parses a query string into SQL fragments for searching. Supports 
      * phrases, AND/OR etc.
      *
      * Lifted from drupal 5.1, (C) 2007 Drupal
@@ -1082,7 +1006,7 @@ class PluginSearchInternal extends PluginSearch {
         //$query2 = array();
         $arguments = array();
         $arguments2 = array();
-        //$matches = 0;
+        //$matches = 0; 
         // Positive matches
         foreach ($keys['positive'] as $key) {
           // Group of ORed terms
@@ -1163,18 +1087,18 @@ class PluginSearchInternal extends PluginSearch {
     private static function search_simplify($text) {
       // Decode entities to UTF-8
       $text = self::decode_entities($text);
-
+    
       // Lowercase
       $text = strtolower($text);
-
+    
       // Call an external processor for word handling.
       //search_preprocess($text);
-
+    
       // Simple CJK handling
       //if (variable_get('overlap_cjk', TRUE)) {
       //  $text = preg_replace_callback('/['. PREG_CLASS_CJK .']+/u', 'search_expand_cjk', $text);
       //}
-
+    
       // To improve searching for numerical data such as dates, IP addresses
       // or version numbers, we consider a group of numerical characters
       // separated only by punctuation characters to be one piece.
@@ -1182,15 +1106,15 @@ class PluginSearchInternal extends PluginSearch {
       // results with '20-03-1984' in them.
       // Readable regexp: ([number]+)[punctuation]+(?=[number])
       $text = preg_replace('/(['. PREG_CLASS_NUMBERS .']+)['. PREG_CLASS_PUNCTUATION .']+(?=['. PREG_CLASS_NUMBERS .'])/u', '\1', $text);
-
+    
       // The dot, underscore and dash are simply removed. This allows meaningful
       // search behaviour with acronyms and URLs.
       $text = preg_replace('/[._-]+/', '', $text);
-
+    
       // With the exception of the rules above, we consider all punctuation,
       // marks, spacers, etc, to be a word boundary.
       $text = preg_replace('/['. PREG_CLASS_SEARCH_EXCLUDE . ']+/u', ' ', $text);
-
+    
       return $text;
     }
 
@@ -1200,15 +1124,15 @@ class PluginSearchInternal extends PluginSearch {
      *
      * @param $text
      *   The text to decode entities in.
-     * @param $exclude
+     * @param $exclude 
      *   An array of characters which should not be decoded. For example,
      *   array('<', '&', '"'). This affects both named and numerical entities.
      */
     function decode_entities($text, $exclude = array()) {
       static $table;
       // We store named entities in a table for quick processing.
-      if (!isset($table)) {
-        // Get all named HTML entities.
+      if (!isset($table)) { 
+        // Get all named HTML entities. 
         $table = array_flip(get_html_translation_table(HTML_ENTITIES));
         // PHP gives us ISO-8859-1 data, we need UTF-8.
         $table = array_map('utf8_encode', $table);
@@ -1232,12 +1156,12 @@ class PluginSearchInternal extends PluginSearch {
         }
         else {
           return $original;
-        }
-      }
+        } 
+      }   
       // Hexadecimal numerical entity
       if ($prefix == '#x') {
         $codepoint = base_convert($codepoint, 16, 10);
-      }
+      } 
       // Decimal numerical entity (strip leading zeros to avoid PHP octal notation)
       else {
         $codepoint = preg_replace('/^0+/', '', $codepoint);
@@ -1265,7 +1189,7 @@ class PluginSearchInternal extends PluginSearch {
       if (in_array($str, $exclude)) {
         return $original;
       }
-      else {
+      else { 
         return $str;
       }
     }
@@ -1308,11 +1232,11 @@ define('PREG_CLASS_SEARCH_EXCLUDE',
 '\x{2108}\x{2109}\x{2114}\x{2116}-\x{2118}\x{211e}-\x{2123}\x{2125}\x{2127}'.
 '\x{2129}\x{212e}\x{2132}\x{213a}\x{213b}\x{2140}-\x{2144}\x{214a}-\x{2b13}'.
 '\x{2ce5}-\x{2cff}\x{2d6f}\x{2e00}-\x{3005}\x{3007}-\x{303b}\x{303d}-\x{303f}'.
-'\x{3099}-\x{309e}\x{30a0}\x{30fb}\x{30fd}\x{30fe}\x{3190}-\x{319f}\x{31c0}-'.
-'\x{31cf}\x{3200}-\x{33ff}\x{4dc0}-\x{4dff}\x{a015}\x{a490}-\x{a716}\x{a802}'.
-'\x{a806}\x{a80b}\x{a823}-\x{a82b}\x{e000}-\x{f8ff}\x{fb1e}\x{fb29}\x{fd3e}'.
-'\x{fd3f}\x{fdfc}-\x{fe6b}\x{feff}-\x{ff0f}\x{ff1a}-\x{ff20}\x{ff3b}-\x{ff40}'.
-'\x{ff5b}-\x{ff65}\x{ff70}\x{ff9e}\x{ff9f}\x{ffe0}-\x{fffd}');
+'\x{3099}-\x{309e}\x{30a0}\x{30fb}-\x{30fe}\x{3190}-\x{319f}\x{31c0}-\x{31cf}'.
+'\x{3200}-\x{33ff}\x{4dc0}-\x{4dff}\x{a015}\x{a490}-\x{a716}\x{a802}\x{a806}'.
+'\x{a80b}\x{a823}-\x{a82b}\x{d800}-\x{f8ff}\x{fb1e}\x{fb29}\x{fd3e}\x{fd3f}'.
+'\x{fdfc}-\x{fe6b}\x{feff}-\x{ff0f}\x{ff1a}-\x{ff20}\x{ff3b}-\x{ff40}\x{ff5b}-'.
+'\x{ff65}\x{ff70}\x{ff9e}\x{ff9f}\x{ffe0}-\x{fffd}');
 
 /**
  * Matches all 'N' Unicode character classes (numbers)

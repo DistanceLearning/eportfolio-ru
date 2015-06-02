@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-resume
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -21,19 +37,13 @@ define('TITLE', get_string('resume', 'artefact.resume'));
 require_once('pieforms/pieform.php');
 safe_require('artefact', 'resume');
 
-if (!PluginArtefactResume::is_active()) {
-    throw new AccessDeniedException(get_string('plugindisableduser', 'mahara', get_string('resume','artefact.resume')));
-}
-
 $defaults = array(
     'coverletter' => array(
         'default' => '',
         'fshelp' => true,
     ),
 );
-$coverletterform = pieform(simple_resumefield_form($defaults, 'artefact/resume/index.php', array(
-    'editortitle' => get_string('coverletter', 'artefact.resume')
-)));
+$coverletterform = pieform(simple_resumefield_form($defaults, 'artefact/resume/index.php'));
 
 // load up all the artefacts this user already has....
 $personalinformation = null;
@@ -59,11 +69,8 @@ $personalinformationform = pieform(array(
                         'showsTime'      => false,
                         'ifFormat'       => get_string('strfdateofbirth', 'langconfig')
                         ),
-                    'defaultvalue' => (
-                            (!empty($personalinformation) && null !== $personalinformation->get_composite('dateofbirth'))
-                            ? $personalinformation->get_composite('dateofbirth')+3600
-                            : null
-                    ),
+                    'defaultvalue' => ((!empty($personalinformation)) 
+                                       ? $personalinformation->get_composite('dateofbirth')+3600 : null),
                     'title' => get_string('dateofbirth', 'artefact.resume'),
                     'description' => get_string('dateofbirthformatguide'),
                 ),
@@ -94,7 +101,6 @@ $personalinformationform = pieform(array(
                     'defaultvalue' => ((!empty($personalinformation))
                         ? $personalinformation->get_composite('gender') : null),
                     'options' => array(
-                        '' => get_string('gendernotspecified', 'artefact.resume'),
                         'female' => get_string('female', 'artefact.resume'),
                         'male'   => get_string('male', 'artefact.resume'),
                     ),

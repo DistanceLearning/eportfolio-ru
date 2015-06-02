@@ -27,7 +27,7 @@
           </tr>
           <tr>
             <td></td>
-            <td class="description">{str tag=tagsdescprofile}</td>
+            <td>{str tag=tagsdescprofile}</td>
           </tr>
 {if $groupinfo}
           <tr>
@@ -58,7 +58,6 @@
             </td>
           </tr>
 {/if}
-          {license_form_files($prefix, 'edit')}
           <tr>
             <th><label>{str tag=allowcomments section=artefact.comment}</label></th>
             <td><input type="checkbox" name="{$prefix}_edit_allowcomments" id="{$prefix}_edit_allowcomments" {if $fileinfo->allowcomments}checked {/if}/></td>

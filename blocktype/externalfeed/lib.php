@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype-externalfeed
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -48,10 +64,10 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
 
             $data = $instance->get_data('feed', $configdata['feedid']);
 
-            if (isset($data) && is_string($data->content)) {
+            if (is_string($data->content)) {
                 $data->content = unserialize($data->content);
             }
-            if (isset($data) && (is_string($data->image) || is_array($data->image))) {
+            if (is_string($data->image) || is_array($data->image)) {
                 $data->image = @unserialize($data->image);
             }
             else {
@@ -59,14 +75,13 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
             }
 
             // only keep the number of entries the user asked for
-            if (count($data->content) && !empty($data->content) && is_array($data->content)) {
+            if (count($data->content)) {
                 $chunks = array_chunk($data->content, isset($configdata['count']) ? $configdata['count'] : 10);
                 $data->content = $chunks[0];
+            }
 
-                foreach ($data->content as &$c) {
-                    $c->link =  sanitize_url($c->link);
-                    $c->pubdate = !empty($c->pubdate) ? format_date($c->pubdate) : null;
-                }
+            foreach ($data->content as $k => $c) {
+                $data->content[$k]->link =  sanitize_url($c->link);
             }
 
             // Attempt to fix relative URLs in the feeds
@@ -76,14 +91,12 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
                     'src="' . $data->image['link'] . '$1"',
                     $data->description
                 );
-                if (!empty($data->content) && is_array($data->content)) {
-                    foreach ($data->content as &$entry) {
-                        $entry->description = preg_replace(
-                            '/src="(\/[^"]+)"/',
-                            'src="' . $data->image['link'] . '$1"',
-                            $entry->description
-                        );
-                    }
+                foreach ($data->content as &$entry) {
+                    $entry->description = preg_replace(
+                        '/src="(\/[^"]+)"/',
+                        'src="' . $data->image['link'] . '$1"',
+                        $entry->description
+                    );
                 }
             }
 
@@ -164,7 +177,7 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
                 'defaultvalue' => $authuser,
             ),
             'authpassword' => array(
-                'type' => 'passwordnoread',
+                'type' => 'text',
                 'title' => get_string('authpassword', 'blocktype.externalfeed'),
                 'description' => get_string('authpassworddesc', 'blocktype.externalfeed'),
                 'width' => '90%',
@@ -214,26 +227,9 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
                 $form->set_error('url', get_string('invalidurl', 'blocktype.externalfeed'));
             }
         }
-
-        // If you're changing the URL on an authenticated feed, force them to re-enter the password
-        if (!empty($values['blockconfig'])) {
-            $instance = new BlockInstance($values['blockconfig']);
-            $configdata = $instance->get('configdata');
-            if (!empty($configdata['feedid'])) {
-                $olddata = $instance->get_data('feed', $configdata['feedid']);
-                if ($olddata) {
-                    if ($values['url'] <> $olddata->url && $olddata->authpassword != '' && $values['authpassword']['submittedvalue'] === null) {
-                        $form->set_error('authpassword', get_string('reenterpassword', 'blocktype.externalfeed'));
-                        return;
-                    }
-                }
-            }
-        }
-
-        if (!$form->get_error('url')) {
+        if (!$form->get_error('url') && !record_exists('blocktype_externalfeed_data', 'url', $values['url'])) {
             try {
-                $authpassword = ($values['authpassword']['submittedvalue'] !== null) ? $values['authpassword']['submittedvalue'] : $values['authpassword']['defaultvalue'];
-                self::parse_feed($values['url'], $values['insecuresslmode'], $values['authuser'], $authpassword);
+                self::parse_feed($values['url'], $values['insecuresslmode'], $values['authuser'], $values['authpassword']);
                 return;
             }
             catch (XML_Feed_Parser_Exception $e) {
@@ -250,12 +246,11 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
         }
         // We know this is safe because self::parse_feed caches its result and
         // the validate method would have failed if the feed was invalid
-        $authpassword = ($values['authpassword']['submittedvalue'] !== null) ? $values['authpassword']['submittedvalue'] : $values['authpassword']['defaultvalue'];
-        $data = self::parse_feed($values['url'], $values['insecuresslmode'], $values['authuser'], $authpassword);
+        $data = self::parse_feed($values['url'], $values['insecuresslmode'], $values['authuser'], $values['authpassword']);
         $data->content  = serialize($data->content);
         $data->image    = serialize($data->image);
         $data->lastupdate = db_format_timestamp(time());
-        $wheredata = array('url' => $values['url'], 'authuser' => $values['authuser'], 'authpassword' => $authpassword);
+        $wheredata = array('url' => $values['url'], 'authuser' => $values['authuser'], 'authpassword' => $values['authpassword']);
         $id = ensure_record_exists('blocktype_externalfeed_data', $wheredata, $data, 'id', true);
         $values['feedid'] = $id;
         unset($values['url']);
@@ -280,7 +275,7 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
 
     public static function refresh_feeds() {
         if (!$feeds = get_records_select_array('blocktype_externalfeed_data', 
-            'lastupdate < ? OR lastupdate IS NULL', array(db_format_timestamp(strtotime('-30 minutes'))),
+            'lastupdate < ?', array(db_format_timestamp(strtotime('-30 minutes'))),
             '', 'id,url,authuser,authpassword,insecuresslmode,' . db_format_tsfield('lastupdate', 'tslastupdate'))) {
             return;
         }
@@ -288,39 +283,25 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
         foreach ($feeds as $feed) {
             // Hack to stop the updating of dead feeds from delaying other
             // more important stuff that runs on cron.
-            if (defined('CRON') && !empty($feed->tslastupdate) && $feed->tslastupdate < $yesterday) {
+            if (defined('CRON') && $feed->tslastupdate < $yesterday) {
                 // We've been trying for 24 hours already, so waste less
                 // time on this one and just try it once a day
                 if (mt_rand(0, 24) != 0) {
                     continue;
                 }
             }
-
             try {
-                unset($data);
                 $data = self::parse_feed($feed->url, $feed->insecuresslmode, $feed->authuser, $feed->authpassword);
+                $data->id = $feed->id;
+                $data->lastupdate = db_format_timestamp(time());
+                $data->content = serialize($data->content);
+                $data->image   = serialize($data->image);
+                update_record('blocktype_externalfeed_data', $data);
             }
             catch (XML_Feed_Parser_Exception $e) {
-                // The feed must have changed in such a way as to become
-                // invalid since it was added. We ignore this case in the hope
+                // The feed must have changed in such a way as to become 
+                // invalid since it was added. We ignore this case in the hope 
                 // the feed will become valid some time later
-                continue;
-            }
-
-            if (isset($data)) {
-                if (!isset($data->image)) {
-                    $data->image = null;
-                }
-                try {
-                    $data->content = $data->content ? serialize($data->content) : '' ;
-                    $data->image = $data->image ? serialize($data->image) : '';
-                    $data->id = $feed->id;
-                    $data->lastupdate = db_format_timestamp(time());
-                    update_record('blocktype_externalfeed_data', $data);
-                }
-                catch (XML_Feed_Parser_Exception $e) {
-                    // We tried to add the newly parsed data
-                }
             }
         }
     }
@@ -362,9 +343,6 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
             $cache = array();
         }
         if (array_key_exists($source, $cache)) {
-            if ($cache[$source] instanceof Exception) {
-               throw $cache[$source];
-            }
             return $cache[$source];
         }
 
@@ -435,20 +413,7 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
                     $item->title = get_string('notitle', 'view');
                 }
             }
-            if (!$pubdate = $item->pubDate) {
-                if (!$pubdate = $item->date) {
-                    if (!$pubdate = $item->published) {
-                        $pubdate = $item->updated;
-                    };
-                }
-            }
-
-            $data->content[] = (object)array(
-                'title'       => $item->title,
-                'link'        => $item->link,
-                'description' => $description,
-                'pubdate'     => $pubdate,
-            );
+            $data->content[] = (object)array('title' => $item->title, 'link' => $item->link, 'description' => $description);
         }
         $cache[$source] = $data;
         return $data;
@@ -539,16 +504,14 @@ class PluginBlocktypeExternalfeed extends SystemBlocktype {
         if (!empty($config['feedid']) and $record = get_record('blocktype_externalfeed_data', 'id', $config['feedid'])) {
             $url =  $record->url;
             $authuser = $record->authuser;
+            $authpassword = $record->authpassword;
             $insecuresslmode = (bool)$record->insecuresslmode;
         }
 
-        // Note: We don't include authpassword, because that would mean printing out the
-        // RSS password in plain text. The user will have to re-enter the password when
-        // they import this archive.
         return array(
             'url' => $url,
             'authuser' => $authuser,
-            'authpassword' => '',
+            'authpassword' => $authpassword,
             'insecuresslmode' => $insecuresslmode ? 1 : 0,
             'full' => isset($config['full']) ? ($config['full'] ? 1 : 0) : 0,
         );

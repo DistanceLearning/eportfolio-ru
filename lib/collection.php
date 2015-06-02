@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -26,7 +42,6 @@ class Collection {
     private $submittedhost;
     private $submittedtime;
     private $views;
-    private $tags;
 
     public function __construct($id=0, $data=null) {
 
@@ -65,9 +80,6 @@ class Collection {
     public function get($field) {
         if (!property_exists($this, $field)) {
             throw new InvalidArgumentException("Field $field wasn't found in class " . get_class($this));
-        }
-        if ($field == 'tags') {
-            return $this->get_tags();
         }
         if ($field == 'views') {
             return $this->views();
@@ -126,7 +138,6 @@ class Collection {
         }
 
         delete_records('collection_view','collection',$this->id);
-        delete_records('collection_tag','collection',$this->id);
         delete_records('collection','id',$this->id);
 
         // Secret url records belong to the collection, so remove them from the view.
@@ -161,16 +172,6 @@ class Collection {
             $id = insert_record('collection', $fordb, 'id', true);
             if ($id) {
                 $this->set('id', $id);
-            }
-        }
-
-        if (isset($this->tags)) {
-            delete_records('collection_tag', 'collection', $this->get('id'));
-            $tags = check_case_sensitive($this->get_tags(), 'collection_tag');
-            foreach ($tags as $tag) {
-                //truncate the tag before insert it into the database
-                $tag = substr($tag, 0, 128);
-                insert_record('collection_tag', (object)array( 'collection' => $this->get('id'), 'tag' => $tag));
             }
         }
 
@@ -242,7 +243,6 @@ class Collection {
             $data->name = $collectiondata['name'];
         }
         $data->description = $colltemplate->get('description');
-        $data->tags = $colltemplate->get('tags');
         $data->navigation = $colltemplate->get('navigation');
         if (!empty($collectiondata['group'])) {
             $data->group = $collectiondata['group'];
@@ -430,13 +430,6 @@ class Collection {
                 'defaultvalue' => null,
                 'title' => get_string('description', 'collection'),
             ),
-            'tags'        => array(
-                'type'         => 'tags',
-                'title'        => get_string('tags'),
-                'description'  => get_string('tagsdescprofile'),
-                'defaultvalue' => null,
-                'help'         => true,
-            ),
             'navigation' => array(
                 'type'  => 'checkbox',
                 'title' => get_string('viewnavigation','collection'),
@@ -448,12 +441,7 @@ class Collection {
         // populate the fields with the existing values if any
         if (!empty($this->id)) {
             foreach ($elements as $k => $element) {
-                if ($k === 'tags') {
-                    $elements[$k]['defaultvalue'] = $this->get_tags();
-                }
-                else {
-                    $elements[$k]['defaultvalue'] = $this->$k;
-                }
+                $elements[$k]['defaultvalue'] = $this->$k;
             }
             $elements['id'] = array(
                 'type' => 'hidden',
@@ -906,17 +894,4 @@ class Collection {
             )
         );
     }
-
-    /**
-     * Returns the collection tags
-     *
-     * @return mixed
-     */
-    public function get_tags() {
-        if (!isset($this->tags)) {
-            $this->tags = get_column('collection_tag', 'tag', 'collection', $this->get('id'));
-        }
-        return $this->tags;
-    }
-
 }

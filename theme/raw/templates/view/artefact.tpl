@@ -4,7 +4,7 @@
 
         <h2>
             {$view->display_title()|safe}{foreach from=$artefactpath item=a}:
-                {if $a.url}<a href="{$a.url}">{/if}{$a.title}{if $a.url}</a>{/if}{if $hasfeed}<a href="{$feedlink}"><img class="feedicon" src="{theme_url filename='images/feed.png'}"></a>{/if}
+                {if $a.url}<a href="{$a.url}">{/if}{$a.title}{if $a.url}</a>{/if}{if $hasfeed}<a href="{$feedlink}"><img class="feedicon" src="{theme_url filename='images/rss.gif'}"></a>{/if}
             {/foreach}
         </h2>
 
@@ -18,14 +18,16 @@
 
       <div class="viewfooter cb">
         {if $feedback->count || $enablecomments}
-        <h3 class="title">{str tag="feedback" section="artefact.comment"}</h3>
-        <div id="feedbacktable" class="fullwidth">
+        <table id="feedbacktable" class="fullwidth table">
+          <thead><tr><th>{str tag="feedback" section="artefact.comment"}</th></tr></thead>
+          <tbody>
             {$feedback->tablerows|safe}
-        </div>
+          </tbody>
+        </table>
         {$feedback->pagination|safe}
         {/if}
         <div id="viewmenu">
-{include file="view/viewmenuartefact.tpl"}
+{include file="view/viewmenu.tpl"}
         </div>
         <div>{$addfeedbackform|safe}</div>
         <div>{$objectionform|safe}</div>

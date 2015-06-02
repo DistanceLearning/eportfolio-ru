@@ -25,8 +25,8 @@
 {if $sharedviews}
 {foreach from=$sharedviews item=view}
     <tr class="{cycle values='r0,r1'}">
-      <td><h3 class="title"><a href="{$view.baseurl}">{$view.title}</a></h3></td>
-      <td class="s">
+      <td><a href="{$view.baseurl}">{$view.title}</a></td>
+      <td>
 {if $view.owner}
         <a href="{$WWWROOT}user/view.php?id={$view.owner}">{$view.user->id|display_name:null:true|escape}</a>
 {elseif $view.group}
@@ -38,22 +38,22 @@
       <td>
         <ul>
 {foreach from=$view.comments key=commenter item=info}
-        {if $info.member}<li><a href="{$WWWROOT}user/view.php?id={$info.commenter}">{$info.commenter|display_name:null:true|escape}</a><span> ({$info.count})</span></li>{/if}
+        {if $info.member}<li><a href="{$WWWROOT}user/view.php?id={$info.commenter}">{$info.commenter|display_name:null:true|escape}</a><span class="right">{$info.count}</span></li>{/if}
 {/foreach}
         </ul>
-{if $view.mcomments > 0}<div class="detail">{$view.mcomments} {str tag=comments section=artefact.comment}</div>{/if}
+{if $view.mcomments > 0}<p class="right">{$view.mcomments} {str tag=comments section=artefact.comment}</p>{/if}
       </td>
       <td>
         <ul>
 {foreach from=$view.comments key=commenter item=info}
         {if $info.commenter|is_string}
-          <li>{$info.commenter}<span> ({$info.count})</span></li>
+          <li>{$info.commenter}<span class="right">{$info.count}</span></li>
         {elseif ! $info.member}
-          <li><a href="{$WWWROOT}user/view.php?id={$info.commenter}">{$info.commenter|display_name:null:true|escape}</a><span> ({$info.count})</span></li>
+          <li><a href="{$WWWROOT}user/view.php?id={$info.commenter}">{$info.commenter|display_name:null:true|escape}</a><span class="right">{$info.count}</span></li>
         {/if}
 {/foreach}
         </ul>
-{if $view.ecomments > 0}<div class="detail">{$view.ecomments} {str tag=comments section=artefact.comment}</div>{/if}
+{if $view.ecomments > 0}<p class="right">{$view.ecomments} {str tag=comments section=artefact.comment}</p>{/if}
       </td>
     </tr>
 {/foreach}
@@ -64,6 +64,8 @@
 {/if}
   </tbody>
 </table>
+
+<br/><br/>
 
 <table class="fullwidth groupviewsreport">
   <thead>
@@ -84,26 +86,26 @@
 {if $groupviews}
 {foreach from=$groupviews item=view}
     <tr class="{cycle values='r0,r1'}">
-      <td><h3 class="title"><a href="{$view.fullurl}">{$view.title}</a></h3></td>
+      <td><a href="{$view.fullurl}">{$view.title}</a></td>
       <td>
         <ul>
 {foreach from=$view.comments key=commenter item=info}
-        {if $info.member}<li><a href="{$WWWROOT}user/view.php?id={$info.commenter}">{$info.commenter|display_name:null:true|escape}</a><span> ({$info.count})</span></li>{/if}
+        {if $info.member}<li><a href="{$WWWROOT}user/view.php?id={$info.commenter}">{$info.commenter|display_name:null:true|escape}</a><span class="right">{$info.count}</span></li>{/if}
 {/foreach}
         </ul>
-{if $view.mcomments > 0}<div class="detail">{$view.mcomments} {str tag=comments section=artefact.comment}</div>{/if}
+{if $view.mcomments > 0}<p class="right">{$view.mcomments} {str tag=comments section=artefact.comment}</p>{/if}
       </td>
       <td>
         <ul>
 {foreach from=$view.comments key=commenter item=info}
         {if $info.commenter|is_string}
-          <li>{$info.commenter}<span> ({$info.count})</span></li>
+          <li>{$info.commenter}<span class="right">{$info.count}</span></li>
         {elseif ! $info.member}
-          <li><a href="{$WWWROOT}user/view.php?id={$info.commenter}">{$info.commenter|display_name:null:true|escape}</a><span> ({$info.count})</span></li>
+          <li><a href="{$WWWROOT}user/view.php?id={$info.commenter}">{$info.commenter|display_name:null:true|escape}</a><span class="right">{$info.count}</span></li>
         {/if}
 {/foreach}
         </ul>
-{if $view.ecomments > 0}<div class="detail">{$view.ecomments} {str tag=comments section=artefact.comment}</div>{/if}
+{if $view.ecomments > 0}<p class="right">{$view.ecomments} {str tag=comments section=artefact.comment}</p>{/if}
       </td>
     </tr>
 {/foreach}

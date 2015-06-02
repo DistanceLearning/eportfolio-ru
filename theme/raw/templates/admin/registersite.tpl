@@ -1,7 +1,7 @@
 {include file='header.tpl'}
 
-<div id="register-site-full">
-<h1>{str tag=registeryourmaharasite section=admin}</h1>
+<div class="message" id="register-site-full">
+<h3>{str tag=registeryourmaharasite section=admin}</h3>
 
 {if $register}
   {str tag=registeryourmaharasitedetail section=admin args=$WWWROOT}

@@ -1,11 +1,11 @@
 {include file="header.tpl"}
 <div id="onlinelistcontainer">
-    <p>({str tag="lastminutes" args=$lastminutes})</p>
-    <div id="onlinelist" class="fullwidth listing">
-
+    <div><p>({str tag="lastminutes" args=$lastminutes})</p></div>
+    <table id="onlinelist" class="fullwidth listing">
+        <tbody>
 {$data.tablerows|safe}
-
-    </div>
+        </tbody>
+    </table>
 </div>
 {$data.pagination|safe}
 {include file="footer.tpl"}

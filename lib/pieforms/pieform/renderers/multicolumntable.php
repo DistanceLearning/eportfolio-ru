@@ -19,8 +19,8 @@
  * @package    pieform
  * @subpackage renderer
  * @author     Penny Leach <penny@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -118,8 +118,9 @@ class FormRendererMultiColumnTable {/*{{{*/
                 $result .= $builtelement;
 
                 // Contextual help
-                if (isset($rawelement['helphtml'])) {
-                    $result .= ' ' . $rawelement['helphtml'];
+                if (!empty($rawelement['help'])) {
+                    $result .= ' <span class="help"><a href="#" title="' 
+                        . Pieform::hsc($rawelement['help']) . '">?</a></span>';
                 }
                 $result .= "</td>\n\t";
 

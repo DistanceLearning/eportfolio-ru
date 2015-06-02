@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-blog
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -17,13 +33,10 @@ define('SECTION_PAGE', 'post');
 
 require(dirname(dirname(dirname(__FILE__))) . '/init.php');
 require_once('pieforms/pieform.php');
-require_once('license.php');
 
 safe_require('artefact', 'blog');
 safe_require('artefact', 'file');
-if (!PluginArtefactBlog::is_active()) {
-    throw new AccessDeniedException(get_string('plugindisableduser', 'mahara', get_string('blog','artefact.blog')));
-}
+
 /* 
  * For a new post, the 'blog' parameter will be set to the blog's
  * artefact id.  For an existing post, the 'blogpost' parameter will
@@ -123,8 +136,6 @@ $form = pieform(array(
             'description'  => get_string('tagsdesc'),
             'help' => true,
         ),
-        'license' => license_form_el_basic(isset($blogpostobj) ? $blogpostobj : null),
-        'licensing_advanced' => license_form_el_advanced(isset($blogpostobj) ? $blogpostobj : null),
         'filebrowser' => array(
             'type'         => 'filebrowser',
             'title'        => get_string('attachments', 'artefact.blog'),
@@ -266,7 +277,7 @@ $smarty->display('artefact:blog:editpost.tpl');
  */
 function editpost_cancel_submit() {
     global $blog;
-    redirect(get_config('wwwroot') . 'artefact/blog/view/index.php?id=' . $blog);
+    redirect(get_config('wwwroot') . 'artefact/blog/view/?id=' . $blog);
 }
 
 function editpost_submit(Pieform $form, $values) {
@@ -277,11 +288,6 @@ function editpost_submit(Pieform $form, $values) {
     $postobj->set('title', $values['title']);
     $postobj->set('description', $values['description']);
     $postobj->set('tags', $values['tags']);
-    if (get_config('licensemetadata')) {
-        $postobj->set('license', $values['license']);
-        $postobj->set('licensor', $values['licensor']);
-        $postobj->set('licensorurl', $values['licensorurl']);
-    }
     $postobj->set('published', !$values['draft']);
     $postobj->set('allowcomments', (int) $values['allowcomments']);
     if (!$blogpost) {
@@ -295,13 +301,6 @@ function editpost_submit(Pieform $form, $values) {
     $old = $postobj->attachment_id_list();
     // $new = is_array($values['filebrowser']['selected']) ? $values['filebrowser']['selected'] : array();
     $new = is_array($values['filebrowser']) ? $values['filebrowser'] : array();
-    // only allow the attaching of files that exist and are editable by user
-    foreach ($new as $key => $fileid) {
-        $file = artefact_instance_from_id($fileid);
-        if (!($file instanceof ArtefactTypeFile) || !$USER->can_publish_artefact($file)) {
-            unset($new[$key]);
-        }
-    }
     if (!empty($new) || !empty($old)) {
         foreach ($old as $o) {
             if (!in_array($o, $new)) {

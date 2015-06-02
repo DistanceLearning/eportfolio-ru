@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-file
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -32,21 +48,6 @@ else {
 }
 
 if ($viewid && $fileid) {
-    $file = artefact_instance_from_id($fileid);
-    $parent = $file->get('parent');
-    $artefactok = false;
-    if (artefact_in_view($file->get('id'), $viewid)) {
-        $artefactok = true;
-    }
-    // Check to see if the artefact has a parent that is allowed to be in this view
-    // for example subdirectory of a folder artefact on a view
-    while ($parent !== null) {
-        $parentobj = artefact_instance_from_id($parent);
-        $parent = $parentobj->get('parent');
-        if (artefact_in_view($parentobj->get('id'), $viewid)) {
-            $artefactok = true;
-        }
-    }
 
     // The user may be trying to download a file that's not in the view, but which has
     // been attached to public feedback on the view
@@ -60,7 +61,7 @@ if ($viewid && $fileid) {
             throw new AccessDeniedException('');
         }
     }
-    else if ($artefactok == false) {
+    else if (!artefact_in_view($fileid, $viewid)) {
         throw new AccessDeniedException('');
     }
 
@@ -68,6 +69,7 @@ if ($viewid && $fileid) {
         throw new AccessDeniedException('');
     }
 
+    $file = artefact_instance_from_id($fileid);
     if (!($file instanceof ArtefactTypeFile)) {
         throw new NotFoundException();
     }
@@ -87,10 +89,7 @@ else {
         // If the file is in the logged in menu and the user is logged in then
         // they can view it
         $fileinloggedinmenu = $file->get('institution') == 'mahara';
-        // check if users are allowed to access files in subfolders
-        if (!get_config('sitefilesaccess')) {
-            $fileinloggedinmenu = $fileinloggedinmenu && $file->get('parent') == null;
-        }
+        $fileinloggedinmenu = $fileinloggedinmenu && $file->get('parent') == null;
         $fileinloggedinmenu = $fileinloggedinmenu && $USER->is_logged_in();
         $fileinloggedinmenu = $fileinloggedinmenu && record_exists('site_menu', 'file', $fileid, 'public', 0);
 

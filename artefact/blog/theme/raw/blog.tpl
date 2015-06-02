@@ -1,5 +1,5 @@
 {if ($editing)}
-<div class="shortcut">
+<div class="right">
     <span> <a class="btn" href="{$WWWROOT}artefact/blog/post.php?blog={$blogid}" target="_blank">{str tag='shortcutnewentry' section='artefact.blog'}</a> </span>
 </div>
 {/if}
@@ -8,18 +8,15 @@
 {/if}
 
 <div id="blogdescription">{$description|clean_html|safe}
-{if $tags}<div class="tags">{str tag=tags}: {list_tags owner=$owner tags=$tags}</div>{/if}
+{if $tags}<p class="tags s"><label>{str tag=tags}:</label> {list_tags owner=$owner tags=$tags}</p>{/if}
 </div>
-<div id="postlist{if $blockid}_{$blockid}{/if}" class="postlist fullwidth">
+<table id="postlist{if $blockid}_{$blockid}{/if}" class="postlist">
+  <tbody>
   {$posts.tablerows|safe}
-</div>
+  </tbody>
+</table>
 {if $posts.pagination}
 <div id="blogpost_page_container{if $blockid}_{$blockid}{/if}" class="hidden center">{$posts.pagination|safe}</div>
-{/if}
-{if $license}
-  <div class="bloglicense">
-    {$license|safe}
-  </div>
 {/if}
 {if $posts.pagination_js}
 <script>

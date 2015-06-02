@@ -1,18 +1,32 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2008 Catalyst IT Ltd (http://www.catalyst.net.nz)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-comment
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
 defined('INTERNAL') || die();
 
 require_once('activity.php');
-require_once('license.php');
 
 define('MIN_RATING', 1);
 define('MAX_RATING', 5);
@@ -124,47 +138,6 @@ class PluginArtefactComment extends PluginArtefact {
         safe_require('notification', 'internal');
         PluginNotificationInternal::clean_notifications(array('feedback'));
     }
-
-    public static function progressbar_link($artefacttype) {
-        switch ($artefacttype) {
-            case 'feedback':
-                return 'view/sharedviews.php';
-                break;
-        }
-    }
-
-    public static function progressbar_additional_items() {
-        return array(
-            (object)array(
-                    'name' => 'feedback',
-                    'title' => get_string('placefeedback', 'artefact.comment'),
-                    'plugin' => 'comment',
-                    'active' => true,
-                    'iscountable' => true,
-                    'is_metaartefact' => true,
-            )
-        );
-    }
-
-    public static function progressbar_metaartefact_count($name) {
-        global $USER;
-        $meta = new stdClass();
-        $meta->artefacttype = $name;
-        $meta->completed = 0;
-        switch ($name) {
-            case 'feedback':
-                $sql = "SELECT COUNT(*) AS completed
-                         FROM {artefact}
-                       WHERE artefacttype='comment'
-                         AND owner <> ? AND author = ?";
-                $count = get_records_sql_array($sql, array($USER->get('id'), $USER->get('id')));
-                $meta->completed = $count[0]->completed;
-                break;
-            default:
-                return false;
-        }
-        return $meta;
-    }
 }
 
 class ArtefactTypeComment extends ArtefactType {
@@ -175,7 +148,6 @@ class ArtefactTypeComment extends ArtefactType {
     protected $deletedby;
     protected $requestpublic;
     protected $rating;
-    protected $lastcontentupdate;
 
     public function __construct($id = 0, $data = null) {
         parent::__construct($id, $data);
@@ -187,27 +159,6 @@ class ArtefactTypeComment extends ArtefactType {
                 }
             }
         }
-    }
-
-    public static function is_allowed_in_progressbar() {
-        return false;
-    }
-
-
-    /**
-     * For comments, the artefact.mtime property is displayed to users, as the "Update on" date,
-     * if it is later than the artefact's creation time. The purpose of this is for transparency
-     * in communication, so that people will know that a later comment may be in response to one
-     * that no longer exists.
-     *
-     * So, we don't want the publishing
-     * @see ArtefactType::set()
-     */
-    public function set($field, $value) {
-        if (($field == 'title' || $field == 'description') && $this->{$field} != $value) {
-            $this->lastcontentupdate = $this->mtime;
-        }
-        return parent::set($field, $value);
     }
 
     public function commit() {
@@ -230,9 +181,6 @@ class ArtefactTypeComment extends ArtefactType {
             'requestpublic' => $this->get('requestpublic'),
             'rating'        => $this->get('rating'),
         );
-        if ($this->get('lastcontentupdate')) {
-            $data->lastcontentupdate = db_format_timestamp($this->get('lastcontentupdate'));
-        }
 
         if ($new) {
             insert_record('artefact_comment_comment', $data);
@@ -251,7 +199,7 @@ class ArtefactTypeComment extends ArtefactType {
 
     public static function get_icon($options=null) {
         global $THEME;
-        return $THEME->get_url('images/comment.png', false, 'artefact/comment');
+        return $THEME->get_url('images/comment.gif', false, 'artefact/comment');
     }
 
     public function delete() {
@@ -390,8 +338,8 @@ class ArtefactTypeComment extends ArtefactType {
 
             $comments = get_records_sql_assoc('
                 SELECT
-                    a.id, a.author, a.authorname, a.ctime, a.mtime, a.description, a.group,
-                    c.private, c.deletedby, c.requestpublic, c.rating, c.lastcontentupdate,
+                    a.id, a.author, a.authorname, a.ctime, a.mtime, a.description,
+                    c.private, c.deletedby, c.requestpublic, c.rating,
                     u.username, u.firstname, u.lastname, u.preferredname, u.email, u.staff, u.admin,
                     u.deleted, u.profileicon, u.urlid
                 FROM {artefact} a
@@ -410,19 +358,6 @@ class ArtefactTypeComment extends ArtefactType {
             }
 
             $result->data = array_values($comments);
-        }
-
-        // check to see if the feedback is to be displayed in a block instance
-        // or the base of the page
-        $result->position = 'base';
-        $blocks = get_records_array('block_instance', 'view', $viewid);
-        if (!empty($blocks)) {
-            foreach ($blocks as $block) {
-                if ($block->blocktype == 'comment') {
-                    $result->position = 'blockinstance';
-                    break;
-                }
-            }
         }
 
         self::build_html($result);
@@ -489,8 +424,8 @@ class ArtefactTypeComment extends ArtefactType {
         foreach ($data->data as &$item) {
             $item->ts = strtotime($item->ctime);
             $item->date = format_date($item->ts, 'strftimedatetime');
-            if ($item->ts < strtotime($item->lastcontentupdate)) {
-                $item->updated = format_date(strtotime($item->lastcontentupdate), 'strftimedatetime');
+            if ($item->ts < strtotime($item->mtime)) {
+                $item->updated = format_date(strtotime($item->mtime), 'strftimedatetime');
             }
             $item->isauthor = $item->author && $item->author == $USER->get('id');
             if (!empty($item->attachments)) {
@@ -514,16 +449,16 @@ class ArtefactTypeComment extends ArtefactType {
             if (isset($data->showcomment) && $data->showcomment == $item->id) {
                 $item->highlight = 1;
             }
-            $is_export_preview = param_integer('export',0);
+
             if ($item->deletedby) {
                 $item->deletedmessage = $deletedmessage[$item->deletedby];
             }
-            else if (($candelete || $item->isauthor) && !$is_export_preview) {
+            else if ($candelete || $item->isauthor) {
                 $item->deleteform = pieform(self::delete_comment_form($item->id));
             }
 
             // Comment authors can edit recent comments if they're private or if no one has replied yet.
-            if (!$item->deletedby && $item->isauthor && !$is_export_preview
+            if (!$item->deletedby && $item->isauthor
                 && ($item->private || $item->id == $lastcomment->id) && $item->ts > $editableafter) {
                 $item->canedit = 1;
             }
@@ -532,35 +467,14 @@ class ArtefactTypeComment extends ArtefactType {
             // private comment be made public
             if (!$item->deletedby && $item->private && $item->author && $data->owner
                 && ($item->isauthor || $data->isowner)) {
-                if ((empty($item->requestpublic) && $data->isowner)
+                if (empty($item->requestpublic)
                     || $item->isauthor && $item->requestpublic == 'owner'
                     || $data->isowner && $item->requestpublic == 'author') {
-                    if (!$is_export_preview) {
-                        $item->makepublicform = pieform(self::make_public_form($item->id));
-                    }
+                    $item->makepublicform = pieform(self::make_public_form($item->id));
                 }
                 else if ($item->isauthor && $item->requestpublic == 'author'
                          || $data->isowner && $item->requestpublic == 'owner') {
                     $item->makepublicrequested = 1;
-                }
-            }
-            else if (!$item->deletedby && $item->private && !$item->author
-                && $data->owner && $data->isowner && $item->requestpublic == 'author' && !$is_export_preview) {
-                $item->makepublicform = pieform(self::make_public_form($item->id));
-            }
-            else if (!$item->deletedby && $item->private && !$data->owner
-                && $item->group && $item->requestpublic == 'author') {
-                // no owner as comment is on a group view / artefact
-                if ($item->isauthor) {
-                    $item->makepublicrequested = 1;
-                }
-                else {
-                    if (($data->artefact && $data->canedit) || ($data->view && $data->canedit) && !$is_export_preview) {
-                        $item->makepublicform = pieform(self::make_public_form($item->id));
-                    }
-                    else {
-                        $item->makepublicrequested = 1;
-                    }
                 }
             }
 
@@ -580,7 +494,7 @@ class ArtefactTypeComment extends ArtefactType {
                         'admin'         => $item->admin,
                         'deleted'       => $item->deleted,
                         'profileicon'   => $item->profileicon,
-                        'profileurl'    => profile_url($item->author),
+                        'profileurl'    => profile_url($item),
                     );
                 }
             }
@@ -610,7 +524,6 @@ class ArtefactTypeComment extends ArtefactType {
         $smarty->assign_by_ref('data', $data->data);
         $smarty->assign('canedit', $data->canedit);
         $smarty->assign('viewid', $data->view);
-        $smarty->assign('position', $data->position);
         $smarty->assign('baseurl', $data->baseurl);
         $data->tablerows = $smarty->fetch('artefact:comment:commentlist.tpl');
         $pagination = build_pagination(array(
@@ -682,10 +595,6 @@ class ArtefactTypeComment extends ArtefactType {
             'title' => get_string('makepublic', 'artefact.comment'),
             'defaultvalue' => !$defaultprivate,
         );
-        if (get_config('licensemetadata')) {
-            $form['elements']['license'] = license_form_el_basic(null);
-            $form['elements']['licensing_advanced'] = license_form_el_advanced(null);
-        }
         if ($moderate) {
             $form['elements']['ispublic']['description'] = get_string('approvalrequired', 'artefact.comment');
             $form['elements']['moderate'] = array(
@@ -733,7 +642,7 @@ class ArtefactTypeComment extends ArtefactType {
                 'comment' => array('type' => 'hidden', 'value' => $id),
                 'submit'  => array(
                     'type'  => 'image',
-                    'src' => $THEME->get_url('images/btn_deleteremove.png'),
+                    'src' => $THEME->get_url('images/icon_close.gif'),
                     'value' => get_string('delete'),
                     'elementtitle' => get_string('delete'),
                     'confirm' => get_string('reallydeletethiscomment', 'artefact.comment'),
@@ -831,25 +740,8 @@ function make_public_validate(Pieform $form, $values) {
     $author    = $comment->get('author');
     $owner     = $comment->get('owner');
     $requester = $USER->get('id');
-    $group     = $comment->get('group');
 
-    if (!$owner && !$group) {
-        $form->set_error('comment', get_string('makepublicnotallowed', 'artefact.comment'));
-    }
-    else if (!$owner && $group) {
-        if ($requester) {
-            $allowed = false;
-            // check to see if the requester is a group admin
-            $group_admins = group_get_admin_ids($group);
-            if (array_search($requester,$group_admins) === false) {
-                $form->set_error('comment', get_string('makepublicnotallowed', 'artefact.comment'));
-            }
-        }
-        else {
-            $form->set_error('comment', get_string('makepublicnotallowed', 'artefact.comment'));
-        }
-    }
-    else if (!$owner || !$requester || ($requester != $owner && $requester != $author)) {
+    if (!$author || !$owner || !$requester || ($requester != $owner && $requester != $author)) {
         $form->set_error('comment', get_string('makepublicnotallowed', 'artefact.comment'));
     }
 }
@@ -864,16 +756,10 @@ function make_public_submit(Pieform $form, $values) {
 
     $author    = $comment->get('author');
     $owner     = $comment->get('owner');
-    $groupid   = $comment->get('group');
-    $group_admins = array();
-    if ($groupid) {
-        $group_admins = group_get_admin_ids($groupid);
-    }
     $requester = $USER->get('id');
 
     if (($author == $owner && $requester == $owner)
         || ($requester == $owner  && $comment->get('requestpublic') == 'author')
-        || (array_search($requester,$group_admins) !== false && $comment->get('requestpublic') == 'author')
         || ($requester == $author && $comment->get('requestpublic') == 'owner')) {
         $comment->set('private', 0);
         $comment->set('requestpublic', null);
@@ -896,13 +782,6 @@ function make_public_submit(Pieform $form, $values) {
         $arg = display_name($author, $owner);
         $userid = $owner;
         $sessionmessage = get_string('makepublicrequestsent', 'artefact.comment', display_name($owner));
-    }
-    else if (array_search($requester,$group_admins) !== false) {
-        $comment->set('requestpublic', 'owner');
-        $message = 'makepublicrequestbyownermessage';
-        $arg = display_name($requester, $author);
-        $userid = $author;
-        $sessionmessage = get_string('makepublicrequestsent', 'artefact.comment', display_name($author));
     }
     else {
         redirect($url); // Freak out?
@@ -1016,8 +895,8 @@ function delete_comment_submit(Pieform $form, $values) {
 }
 
 function add_feedback_form_validate(Pieform $form, $values) {
-    require_once(get_config('libroot') . 'antispam.php');
     if ($form->get_property('spam')) {
+        require_once(get_config('libroot') . 'antispam.php');
         $spamtrap = new_spam_trap(array(
             array(
                 'type' => 'body',
@@ -1036,10 +915,6 @@ function add_feedback_form_validate(Pieform $form, $values) {
     }
     if (empty($values['attachments']) && empty($values['message'])) {
         $form->set_error('message', get_string('messageempty', 'artefact.comment'));
-    }
-    $result = probation_validate_content($values['message']);
-    if ($result !== true) {
-        $form->set_error('message', get_string('newuserscantpostlinksorimages'));
     }
 }
 
@@ -1064,29 +939,18 @@ function add_feedback_form_submit(Pieform $form, $values) {
     }
 
     if ($author = $USER->get('id')) {
-        $anonymous = false;
         $data->author = $author;
     }
     else {
-        $anonymous = true;
         $data->authorname = $values['authorname'];
     }
 
     if (isset($values['moderate']) && $values['ispublic'] && !$USER->can_edit_view($view)) {
         $data->private = 1;
         $data->requestpublic = 'author';
-        $moderated = true;
     }
     else {
         $data->private = (int) !$values['ispublic'];
-        $moderated = false;
-    }
-    $private = $data->private;
-
-    if (get_config('licensemetadata')) {
-        $data->license       = $values['license'];
-        $data->licensor      = $values['licensor'];
-        $data->licensorurl   = $values['licensorurl'];
     }
 
     if (isset($values['rating'])) {
@@ -1200,21 +1064,8 @@ function add_feedback_form_submit(Pieform $form, $values) {
 
     $newlist = ArtefactTypeComment::get_comments(10, 0, 'last', $view, $artefact);
 
-    // If you're anonymous and your message is moderated or private, then you won't
-    // be able to tell what happened to it. So we'll provide some more explanation in
-    // the feedback message.
-    if ($anonymous && $moderated) {
-        $message = get_string('feedbacksubmittedmoderatedanon', 'artefact.comment');
-    }
-    else if ($anonymous && $private) {
-        $message = get_string('feedbacksubmittedprivateanon', 'artefact.comment');
-    }
-    else {
-        $message = get_string('feedbacksubmitted', 'artefact.comment');
-    }
-
     $form->reply(PIEFORM_OK, array(
-        'message' => $message,
+        'message' => get_string('feedbacksubmitted', 'artefact.comment'),
         'goto' => $goto,
         'data' => $newlist,
     ));

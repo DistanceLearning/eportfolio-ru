@@ -1,11 +1,25 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2012 Catalyst IT Ltd and others; see:
+ *                    http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Richard Mansfield
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
  *
  */
 
@@ -13,7 +27,6 @@ define('INTERNAL', 1);
 define('INSTITUTIONALSTAFF', 1);
 define('MENUITEM', 'configusers');
 require(dirname(dirname(dirname(__FILE__))) . '/init.php');
-require(get_config('docroot') . 'lib/antispam.php');
 
 define('TITLE', get_string('userreports', 'admin'));
 
@@ -25,10 +38,6 @@ $tabs = array(
     'accesslist' => array(
         'id'   => 'accesslist',
         'name' => get_string('accesslist', 'view'),
-    ),
-    'loginaslog' => array(
-        'id'   => 'loginaslog',
-        'name' => get_string('loginaslog', 'admin'),
     ),
 );
 
@@ -62,7 +71,7 @@ if (!$USER->get('admin') && !$USER->get('staff')) {
 $users = get_records_sql_assoc('
     SELECT
         u.id, u.username, u.email, u.firstname, u.lastname, u.studentid, u.preferredname, u.urlid,
-        aru.remoteusername AS remoteuser, u.lastlogin, u.probation
+        aru.remoteusername AS remoteuser
     FROM {usr} u
         LEFT JOIN {auth_remote_user} aru ON u.id = aru.localusr AND u.authinstance = aru.authinstance
     WHERE id IN (' . join(',', array_fill(0, count($userids), '?')) . ')
@@ -116,10 +125,10 @@ if ($selected == 'users') {
     $userlisthtml = $smarty->fetch('admin/users/userlist.tpl');
 
     if ($USER->get('admin') || $USER->is_institutional_admin()) {
-        $csvfields = array('username', 'email', 'firstname', 'lastname', 'studentid', 'preferredname', 'remoteuser', 'lastlogin');
+        $csvfields = array('username', 'email', 'firstname', 'lastname', 'studentid', 'preferredname', 'remoteuser');
     }
     else {
-        $csvfields = array('username', 'firstname', 'lastname', 'studentid', 'preferredname', 'lastlogin');
+        $csvfields = array('username', 'firstname', 'lastname', 'studentid', 'preferredname');
     }
 
     $USER->set_download_file(generate_csv($users, $csvfields), 'users.csv', 'text/csv');
@@ -144,39 +153,6 @@ else if ($selected == 'accesslist') {
     $smarty->assign_by_ref('users', $users);
     $smarty->assign_by_ref('USER', $USER);
     $userlisthtml = $smarty->fetch('admin/users/accesslists.tpl');
-}
-else if ($selected == 'loginaslog') {
-    $ph = array_merge($userids, $userids);
-    $log = get_records_sql_array('
-        SELECT *
-        FROM {event_log}
-        WHERE (usr IN (' . join(',', array_fill(0, count($userids), '?')) . ')
-           OR realusr IN (' . join(',', array_fill(0, count($userids), '?')) . '))
-          AND event = \'loginas\'
-
-        ORDER BY time DESC',
-        $ph
-    );
-    if (empty($log)) {
-        $log = array();
-    }
-    foreach($log as $l) {
-        $l->data = json_decode($l->data);
-        foreach(array('usr', 'realusr') as $f) {
-            $l->{$f . 'name'} = display_name($l->{$f});
-        }
-    }
-    if (!in_array(get_config('eventloglevel'), array('masq', 'all'))) {
-      $note = get_string('masqueradingnotloggedwarning', 'admin', get_config('wwwroot'));
-    }
-    else {
-      $note = false;
-    }
-    $smarty = smarty_core();
-    $smarty->assign_by_ref('log', $log);
-    $smarty->assign_by_ref('USER', $USER);
-    $smarty->assign('note', $note);
-    $userlisthtml = $smarty->fetch('admin/users/loginaslog.tpl');
 }
 
 $smarty = smarty();

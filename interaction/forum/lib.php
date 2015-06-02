@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage interaction-forum
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -45,7 +61,7 @@ class PluginInteractionForum extends PluginInteraction {
             WHERE i.group = ?
             AND i.deleted != 1
             ' . $exclude . '
-            ORDER BY CHAR_LENGTH(c.value), c.value',
+            ORDER BY c.value',
             array($group->id));
         if ($existing) {
             foreach ($existing as &$item) {
@@ -112,6 +128,7 @@ class PluginInteractionForum extends PluginInteraction {
                         'defaultvalue' => isset($moderators) ? $moderators : null,
                         'group' => $group->id,
                         'includeadmins' => false,
+                        'filter' => false,
                         'lefttitle' => get_string('potentialmoderators', 'interaction.forum'),
                         'righttitle' => get_string('currentmoderators', 'interaction.forum')
                     ),
@@ -307,13 +324,6 @@ EOF;
         db_commit();
     }
 
-    public static function postinst($prevversion) {
-        // On a new installation, set post delay to 30 minutes
-        if ($prevversion == 0) {
-            set_config_plugin('interaction', 'forum', 'postdelay', 30);
-        }
-    }
-
     public static function get_activity_types() {
         return array(
             (object)array(
@@ -372,20 +382,6 @@ EOF;
                 'weight' => 70,
             ),
         );
-    }
-
-    public static function group_menu_items($group) {
-        $role = group_user_access($group->id);
-        $menu = array();
-        if ($group->public || $role) {
-            $menu['forums'] = array(// @todo: make forums an artefact plugin
-                'path' => 'groups/forums',
-                'url' => 'interaction/forum/index.php?group=' . $group->id,
-                'title' => get_string('nameplural', 'interaction.forum'),
-                'weight' => 40,
-            );
-        }
-        return $menu;
     }
 
     /**
@@ -527,7 +523,10 @@ EOF;
     }
 
     public static function get_config_options() {
-        $postdelay = (int) get_config_plugin('interaction', 'forum', 'postdelay');
+        $postdelay = get_config_plugin('interaction', 'forum', 'postdelay');
+        if (!is_numeric($postdelay)) {
+            $postdelay = 30;
+        }
 
         return array(
             'elements' => array(
@@ -536,7 +535,7 @@ EOF;
                     'description'  => get_string('postdelaydescription', 'interaction.forum'),
                     'type'         => 'text',
                     'rules'        => array('integer' => true, 'minvalue' => 0, 'maxvalue' => 10000000),
-                    'defaultvalue' => $postdelay,
+                    'defaultvalue' => (int) $postdelay,
                 ),
             ),
             'renderer' => 'table'
@@ -800,8 +799,8 @@ class ActivityTypeInteractionForumNewPost extends ActivityTypePlugin {
     protected $postid;
     protected $temp;
 
-    public function __construct($data, $cron=false) {
-        parent::__construct($data, $cron);
+    public function __construct($data) {
+        parent::__construct($data);
         $this->overridemessagecontents = true;
 
         $post = get_record_sql('
@@ -823,39 +822,13 @@ class ActivityTypeInteractionForumNewPost extends ActivityTypePlugin {
             return;
         }
 
-        // A user may be subscribed via the forum or the specific topic. If they're subscribed to both, we want
-        // to focus on the topic subscription because it's more specific.
-        $sql = '
-            SELECT
-                subq2.subscriber,
-                (CASE WHEN subq2.topickey IS NOT NULL THEN subq2.topickey ELSE subq2.forumkey END) AS "key",
-                (CASE WHEN subq2.topickey IS NOT NULL THEN \'topic\' ELSE \'forum\' END) AS "type"
-            FROM (
-                SELECT subq1.subscriber, max(topickey) AS topickey, max(forumkey) AS forumkey
-                FROM (
-                    SELECT "user" AS subscriber, "key" AS topickey, NULL AS forumkey FROM {interaction_forum_subscription_topic} WHERE topic = ?
-                    UNION ALL
-                    SELECT "user" AS subscriber, NULL AS topickey, "key" AS forumkey FROM {interaction_forum_subscription_forum} WHERE forum = ?
-                ) subq1
-                GROUP BY subq1.subscriber
-            ) subq2
-            INNER JOIN {usr} u ON subq2.subscriber = u.id
-            WHERE u.deleted = 0
-        ';
-        $params = array($post->topicid, $post->forumid);
-        if ($cron) {
-            $sql .= ' AND subq2.subscriber > ? ';
-            $params[] = (int) $data->last_processed_userid;
-            $limitfrom = 0;
-            $limitnum = self::USERCHUNK_SIZE;
-        }
-        else {
-            $limitfrom = '';
-            $limitnum = '';
-        }
-        $sql .= ' ORDER BY subq2.subscriber';
-
-        $subscribers = get_records_sql_assoc($sql, $params, $limitfrom, $limitnum);
+        $subscribers = get_records_sql_assoc('
+            SELECT "user" AS subscriber, \'topic\' AS type, "key" FROM {interaction_forum_subscription_topic} WHERE topic = ?
+            UNION
+            SELECT "user" AS subscriber, \'forum\' AS type, "key" FROM {interaction_forum_subscription_forum} WHERE forum = ?
+            ORDER BY type',
+            array($post->topicid, $post->forumid)
+        );
 
         $this->users = $subscribers ? activity_get_users($this->get_id(), array_keys($subscribers)) : array();
         $this->fromuser = $post->poster;
@@ -880,10 +853,7 @@ class ActivityTypeInteractionForumNewPost extends ActivityTypePlugin {
         }
 
         $post->posttime = strftime(get_string('strftimedaydatetime'), $post->ctime);
-        // Some messages are all html and when they're 'cleaned' with
-        // strip_tags(str_shorten_html($post->body, 200, true)) for display,
-        // they are left empty. Use html2text instead.
-        $this->message = str_shorten_text(trim(html2text($post->body)), 200, true); // For internal notifications.
+        $this->message = strip_tags(str_shorten_html($post->body, 200, true)); // For internal notifications.
 
         $post->textbody = trim(html2text($post->body));
         $post->htmlbody = clean_html($post->body);
@@ -897,7 +867,7 @@ class ActivityTypeInteractionForumNewPost extends ActivityTypePlugin {
         $this->strings->subject = (object) array(
             'key'     => 'newforumpostnotificationsubjectline',
             'section' => 'interaction.forum',
-            'args'    => array($post->subject ? $post->subject : get_string('Re:', 'interaction.forum') . ($post->parent ? get_ancestorpostsubject($post->parent, true) : $post->topicsubject)),
+            'args'    => array($post->parent ? get_string('Re:', 'interaction.forum') . $post->topicsubject : $post->subject),
         );
 
         foreach ($this->users as &$user) {
@@ -1039,7 +1009,7 @@ function relative_date($relative, $absolute, $time1, $time2=null) {
     else if ($date['year'] == $today['year'] && $date['yday'] == $today['yday']) {
         return str_replace('%v', get_string('today', 'interaction.forum'), strftime($relative, $time1));
     }
-    return strftime(get_string('strftimedatetime'), $time1);
+    return strftime($absolute, $time1);
 
 }
 
@@ -1088,35 +1058,4 @@ function subscribe_forum_submit(Pieform $form, $values) {
     else {
         redirect('/interaction/forum/view.php?id=' . $values['forum'] . '&offset=' . $values['offset']);
     }
-}
-
-/*
- * Return the subject for the topic
- *
- * @param int $postid the ID of the post
- *
- * @return string the subject
- */
-
-function get_ancestorpostsubject($postid, $isparent = false) {
-    if ($isparent) {
-        $record = get_record_sql(
-           'SELECT p.subject
-            FROM {interaction_forum_post} p
-            WHERE p.id = ?', array($postid));
-        if ($record && !empty($record->subject)) {
-            return $record->subject;
-        }
-    }
-    while ($ppost = get_record_sql(
-           'SELECT p1.id, p1.subject
-            FROM {interaction_forum_post} p1
-            INNER JOIN {interaction_forum_post} p2 ON (p1.id = p2.parent)
-            WHERE p2.id = ?', array($postid))) {
-        if (!empty ($ppost->subject)) {
-            return $ppost->subject;
-        }
-        $postid = $ppost->id;
-    }
-    return null;
 }

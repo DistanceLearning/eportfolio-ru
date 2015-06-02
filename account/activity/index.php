@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -51,7 +67,7 @@ if ($type == '') {
 if (!isset($options[$type])) {
     // Comma-separated list; filter out anything that's not an installed type
     $type = join(',', array_unique(array_filter(
-        explode(',', $type),
+        split(',', $type),
         create_function('$a', 'global $installedtypes; return isset($installedtypes[$a]);')
     )));
 }
@@ -60,7 +76,7 @@ require_once('activity.php');
 $activitylist = activitylist_html($type);
 
 $star = json_encode($THEME->get_url('images/star.png'));
-$readicon = json_encode($THEME->get_url('images/readusermessage.png'));
+$readicon = json_encode($THEME->get_url('images/readusermessage.gif'));
 $strread = json_encode(get_string('read', 'activity'));
 
 $javascript = <<<JAVASCRIPT
@@ -108,19 +124,17 @@ function showHideMessage(id) {
         var unread = getFirstElementByTagAndClassName(
             'input', 'tocheckread', message.parentNode.parentNode
         );
-        var subject = getFirstElementByTagAndClassName(
-            'a', 'inbox-showmessage', message.parentNode
-        );
-        var unreadText = getFirstElementByTagAndClassName(
-            null, 'accessible-hidden', subject
+        var unreadicon = getFirstElementByTagAndClassName(
+            'img', 'unreadmessage', message.parentNode.parentNode
         );
         if (unread) {
             var pd = {'readone':id};
             sendjsonrequest('index.json.php', pd, 'GET', function(data) {
                 swapDOM(unread, IMG({'src' : {$star}, 'alt' : {$strread}}));
+                if (unreadicon) {
+                    swapDOM(unreadicon, IMG({'src' : {$readicon}, 'alt' : getNodeAttribute(unreadicon, 'alt') + ' - ' + {$strread}}));
+                };
                 updateUnreadCount(data);
-                removeElementClass(subject, 'unread');
-                removeElement(unreadText);
             });
         }
         removeElementClass(message, 'hidden');
@@ -194,7 +208,7 @@ function delete_all_notifications_submit() {
     $typesql = '';
     if ($type != 'all') {
         // Treat as comma-separated list of activity type names
-        $types = explode(',', preg_replace('/[^a-z,]+/', '', $type));
+        $types = split(',', preg_replace('/[^a-z,]+/', '', $type));
         if ($types) {
             $typesql = ' at.name IN (' . join(',', array_map('db_quote', $types)) . ')';
             if (in_array('adminmessages', $types)) {

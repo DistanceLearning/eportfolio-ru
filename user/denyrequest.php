@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -18,6 +34,7 @@ require_once('searchlib.php');
 safe_require('search', 'internal');
 
 $id = param_integer('id');
+$returnto = param_alpha('returnto', 'myfriends');
 
 if (!record_exists('usr_friend_request', 'owner', $USER->get('id'), 'requester', $id)
     || !($user = get_record('usr', 'id', $id, 'deleted', 0))) {
@@ -25,21 +42,6 @@ if (!record_exists('usr_friend_request', 'owner', $USER->get('id'), 'requester',
 }
 
 $user->introduction = get_field('artefact', 'title', 'artefacttype', 'introduction', 'owner', $id);
-
-$returnto = param_alpha('returnto', 'myfriends');
-$offset = param_integer('offset', 0);
-switch ($returnto) {
-    case 'find':
-        $goto = 'user/find.php';
-        break;
-    case 'view':
-        $goto = profile_url($user, false);
-        break;
-     default:
-        $goto = 'user/myfriends.php';
-}
-$goto .= (strpos($goto,'?') ? '&' : '?') . 'offset=' . $offset;
-$goto = get_config('wwwroot') . $goto;
 
 $form = pieform(array(
     'name' => 'denyrequest',
@@ -54,7 +56,7 @@ $form = pieform(array(
         'submit' => array(
             'type' => 'submitcancel',
             'value' => array(get_string('denyfriendrequestlower', 'group'), get_string('cancel')),
-            'goto' => $goto,
+            'goto' => get_config('wwwroot') . ($returnto == 'find' ? 'user/find.php' : ($returnto == 'view' ? profile_url($user, false) : 'user/myfriends.php')),
         )
     )
 ));
@@ -97,19 +99,15 @@ function denyrequest_submit(Pieform $form, $values) {
     handle_event('removefriendrequest', array('owner' => $loggedinid, 'requester' => $id));
 
     $SESSION->add_ok_msg(get_string('friendformrejectsuccess', 'group'));
-    $offset = param_integer('offset', 0);
     switch (param_alpha('returnto', 'myfriends')) {
         case 'find':
-            $goto = 'user/find.php';
+            redirect('/user/find.php');
             break;
         case 'view':
-            $goto = profile_url($user, false);
+            redirect(profile_url($user));
             break;
         default:
-            $goto = 'user/myfriends.php';
+            redirect('/user/myfriends.php');
             break;
     }
-    $goto .= (strpos($goto,'?')) ? '&offset=' . $offset : '?offset=' . $offset;
-    $goto = get_config('wwwroot') . $goto;
-    redirect($goto);
 }

@@ -1,11 +1,25 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2012 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage lang
  * @author     Hugh Davenport <hugh@catalyst.net.nz>, Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
  *
  */
 
@@ -57,7 +71,7 @@ $string['artefact_type_personalgoal'] = 'Artefact: Personal goals';
 $string['artefact_type_personalinformation'] = 'Artefact: Personal information';
 $string['artefact_type_personalskill'] = 'Artefact: Personal skills';
 $string['artefact_type_personalwebsite'] = 'Artefact: Personal website address';
-$string['artefact_type_plan'] = 'Artefact: tests';
+$string['artefact_type_plan'] = 'Artefact: Plans';
 $string['artefact_type_preferredname'] = 'Artefact: Display name';
 $string['artefact_type_profileicon'] = 'Artefact: Profile pictures';
 $string['artefact_type_skypeusername'] = 'Artefact: Skype username';
@@ -82,7 +96,6 @@ $string['blocktype_groupinfo'] = 'Block: Group info';
 $string['blocktype_groupmembers'] = 'Block: Group members';
 $string['blocktype_groupviews'] = 'Block: Group pages';
 $string['blocktype_html'] = 'Block: Some HTML';
-$string['blocktype_pdf'] = 'Block: PDF';
 $string['blocktype_image'] = 'Block: Image';
 $string['blocktype_inbox'] = 'Block: My inbox';
 $string['blocktype_internalmedia'] = 'Block: Embedded media';
@@ -91,7 +104,7 @@ $string['blocktype_mygroups'] = 'Block: My groups';
 $string['blocktype_myviews'] = 'Block: My pages';
 $string['blocktype_navigation'] = 'Block: Navigation';
 $string['blocktype_newviews'] = 'Block: Latest pages';
-$string['blocktype_tests'] = 'Block: tests';
+$string['blocktype_plans'] = 'Block: Plans';
 $string['blocktype_profileinfo'] = 'Block: Profile information';
 $string['blocktype_recentforumposts'] = 'Block: Recent forum posts';
 $string['blocktype_recentposts'] = 'Block: Recent journal entries';
@@ -123,7 +136,7 @@ $string['plugin_artefact_blog_version'] = 'Artefact plugin Journal version';
 $string['plugin_artefact_comment_version'] = 'Artefact plugin Comment version';
 $string['plugin_artefact_file_version'] = 'Artefact plugin File version';
 $string['plugin_artefact_internal_version'] = 'Artefact plugin XXXXXX version';
-$string['plugin_artefact_tests_version'] = 'Artefact plugin tests version';
+$string['plugin_artefact_plans_version'] = 'Artefact plugin Plans version';
 $string['plugin_artefact_resume_version'] = 'Artefact plugin Résumé version';
 $string['plugin_auth_browserid_version'] = 'Authentication plugin Persona version';
 $string['plugin_auth_imap_version'] = 'Authentication plugin IMAP version';
@@ -147,7 +160,6 @@ $string['plugin_blocktype_groupinfo_version'] = 'Block type plugin Group info ve
 $string['plugin_blocktype_groupmembers_version'] = 'Block type plugin Group members version';
 $string['plugin_blocktype_groupviews_version'] = 'Block type plugin Group pages version';
 $string['plugin_blocktype_html_version'] = 'Block type plugin Some HTML version';
-$string['plugin_blocktype_html_version'] = 'Block type plugin PDF version';
 $string['plugin_blocktype_image_version'] = 'Block type plugin Image version';
 $string['plugin_blocktype_inbox_version'] = 'Block type plugin Inbox version';
 $string['plugin_blocktype_internalmedia_version'] = 'Block type plugin Embedded media version';
@@ -156,7 +168,7 @@ $string['plugin_blocktype_mygroups_version'] = 'Block type plugin My groups vers
 $string['plugin_blocktype_myviews_version'] = 'Block type plugin My pages version';
 $string['plugin_blocktype_navigation_version'] = 'Block type plugin Navigation version';
 $string['plugin_blocktype_newviews_version'] = 'Block type plugin Latest pages version';
-$string['plugin_blocktype_tests_version'] = 'Block type plugin tests version';
+$string['plugin_blocktype_plans_version'] = 'Block type plugin Plans version';
 $string['plugin_blocktype_profileinfo_version'] = 'Block type plugin Profile information version';
 $string['plugin_blocktype_recentforumposts_version'] = 'Block type plugin Recent forum posts version';
 $string['plugin_blocktype_recentposts_version'] = 'Block type plugin Recent journal posts version';

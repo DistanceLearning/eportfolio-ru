@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype-internalmedia
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -62,13 +78,6 @@ class PluginBlocktypeInternalmedia extends PluginBlocktype {
 
     public static function has_instance_config() {
         return true;
-    }
-
-    public static function get_instance_config_javascript() {
-        $result = self::get_js_source(true);
-        if (!empty($result)) {
-            return $result;
-        }
     }
 
     public static function instance_config_form($instance) {
@@ -273,13 +282,11 @@ class PluginBlocktypeInternalmedia extends PluginBlocktype {
 
         $id = 'blocktype_internalmedia_flow_' . time() . $count;
         $url = self::get_download_link($artefact, $block);
-        $url = parse_url($url, PHP_URL_PATH) . '?' . parse_url($url, PHP_URL_QUERY);
         $escapedurl = str_replace('&', '%26', $url); // Flash needs these escaped
 
-        $baseurlpath = parse_url(get_config('wwwroot'), PHP_URL_PATH);
-        $baseurl = $baseurlpath . 'artefact/file/blocktype/internalmedia/';
+        $baseurl = get_config('wwwroot') . 'artefact/file/blocktype/internalmedia/';
 
-        $playerurl = $baseurl . 'mahara-flashplayer/mahara-flashplayer.swf';
+        $playerurl = $baseurl . 'flowplayer/flowplayer-3.2.7.swf';
         $autohide = 'true';
         $type = '';
         $audio = '';
@@ -307,7 +314,7 @@ class PluginBlocktypeInternalmedia extends PluginBlocktype {
                    },
                    plugins: {
 	                  controls: {
-                          url: "mahara-flashplayer.controls.swf",
+                          url: "flowplayer.controls-3.2.5.swf",
                           play:true,
                           volume:true,
                           mute:true,
@@ -385,7 +392,6 @@ class PluginBlocktypeInternalmedia extends PluginBlocktype {
      <param name="AnimationAtStart" value="false">
      <param name="ShowGotoBar" value="false">
      <param name="EnableFullScreenControls" value="true">
-     <param name="Wmode" value="opaque">
     <!--[if !IE]>-->
       <object data="' . $url . '" type="' . $mimetype . '" ' . $size . '>
        <param name="src" value="' . $url . '">
@@ -394,7 +400,6 @@ class PluginBlocktypeInternalmedia extends PluginBlocktype {
        <param name="autoplay" value="' . $autostart . '">
        <param name="autostart" value="' . $autostart . '">
        <param name="resize" value="scale">
-       <param name="wmode" value="opaque">
       </object>
     <!--<![endif]-->
     </object></span>';
@@ -441,17 +446,12 @@ class PluginBlocktypeInternalmedia extends PluginBlocktype {
             . ($wmp ? '&download=1' : '');
     }
 
-    private static function get_js_source($asarray = false) {
+    private static function get_js_source() {
         if (defined('BLOCKTYPE_INTERNALMEDIA_JS_INCLUDED')) {
             return '';
         }
         define('BLOCKTYPE_INTERNALMEDIA_JS_INCLUDED', true);
-        if ($asarray) {
-            return array(get_config('wwwroot').'artefact/file/blocktype/internalmedia/mahara-flashplayer/mahara-flashplayer-3.2.6.js',
-                         get_config('wwwroot') . 'artefact/file/blocktype/internalmedia/swfobject.js',
-                         );
-        }
-        return '<script src="'.get_config('wwwroot').'artefact/file/blocktype/internalmedia/mahara-flashplayer/mahara-flashplayer-3.2.6.js"></script>
+        return '<script src="'.get_config('wwwroot').'artefact/file/blocktype/internalmedia/flowplayer/flowplayer-3.2.6.js"></script>
              <script src="' . get_config('wwwroot') . 'artefact/file/blocktype/internalmedia/swfobject.js" type="text/javascript"></script>';
     }
 

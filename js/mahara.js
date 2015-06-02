@@ -1,9 +1,24 @@
 /**
  * General javascript routines for Mahara
  * @source: http://gitorious.org/mahara/mahara
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
  *
+ * @licstart
+ * Copyright (C) 2006-2010  Catalyst IT Ltd
+ *
+ * The JavaScript code in this page is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GNU GPL) as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.  The code is distributed WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+ *
+ * As additional permission under GNU GPL version 3 section 7, you
+ * may distribute non-source (e.g., minimized or compacted) forms of
+ * that code without the copy of the GNU GPL normally required by
+ * section 4, provided you include this license notice and a URL
+ * through which recipients can access the Corresponding Source.
+ * @licend
  */
 
 // Expects strings array
@@ -59,7 +74,7 @@ function globalErrorHandler(data) {
 function show_login_form(submit) {
     if($('ajax-login-form') == null) {
         var loginForm = DIV({id: 'ajax-login-form'});
-        loginForm.innerHTML = '<h2>' + get_string('login') + '</h2><a href="/">&laquo; ' + get_string('home') + '<\/a><div id="loginmessage">' + get_string('sessiontimedout') + '</div><form class="pieform" name="login" method="post" action="" id="login" onsubmit="' + submit + '(this, 42); return false;"><table cellspacing="0" border="0" class="maharatable"><tbody><tr id="login_login_username_header" class="required text"><th><label for="login_login_username">' + get_string('username') + ':<\/label><\/th><\/tr><tr id="login_login_username_container"><td><input type="text" class="required text autofocus" id="login_login_username" name="login_username" value=""><\/td><\/tr><tr><td class="description"> <\/td><\/tr><tr id="login_login_password_header" class="required password"><th><label for="login_login_password">' + get_string('password') + ':<\/label><\/th><\/tr><tr id="login_login_password_container"><td><input type="password" class="required password" id="login_login_password" name="login_password" value=""><\/td><\/tr><tr><td class="description"> <\/td><\/tr><tr id="login_submit_container"><td><input type="submit" class="submit" id="login_submit" name="submit" value="' + get_string('login') + '"><\/td><\/tr><\/tbody><\/table><div id="homepage"><\/div><input type="hidden" name="sesskey" value=""><input type="hidden" name="pieform_login" value=""><\/form><script type="text\/javascript">var login_btn = null;addLoadEvent(function() {    connect($(\'login_submit\'), \'onclick\', function() { login_btn = \'login_submit\'; });});connect(\'login\', \'onsubmit\', function() { formStartProcessing(\'login\', login_btn); });<\/script>';
+        loginForm.innerHTML = '<h2>' + get_string('login') + '</h2><a href="/">&laquo; ' + get_string('home') + '<\/a><div id="loginmessage">' + get_string('sessiontimedout') + '</div><form class="pieform" name="login" method="post" action="" id="login" onsubmit="' + submit + '(this, 42); return false;"><table cellspacing="0" border="0" class="maharatable"><tbody><tr id="login_login_username_header" class="required text"><th><label for="login_login_username">' + get_string('username') + ':<\/label><\/th><\/tr><tr id="login_login_username_container"><td><input type="text" class="required text autofocus" id="login_login_username" name="login_username" tabindex="2" value=""><\/td><\/tr><tr><td class="description"> <\/td><\/tr><tr id="login_login_password_header" class="required password"><th><label for="login_login_password">' + get_string('password') + ':<\/label><\/th><\/tr><tr id="login_login_password_container"><td><input type="password" class="required password" id="login_login_password" name="login_password" tabindex="2" value=""><\/td><\/tr><tr><td class="description"> <\/td><\/tr><tr id="login_submit_container"><td><input type="submit" class="submit" id="login_submit" name="submit" tabindex="2" value="' + get_string('login') + '"><\/td><\/tr><\/tbody><\/table><div id="homepage"><\/div><input type="hidden" name="sesskey" value=""><input type="hidden" name="pieform_login" value=""><\/form><script type="text\/javascript">var login_btn = null;addLoadEvent(function() {    connect($(\'login_submit\'), \'onclick\', function() { login_btn = \'login_submit\'; });});connect(\'login\', \'onsubmit\', function() { formStartProcessing(\'login\', login_btn); });<\/script>';
         appendChildNodes(document.body, DIV({id: 'overlay'}));
         appendChildNodes(document.body, loginForm);
         $('login_login_username').focus();
@@ -135,20 +150,19 @@ function makeMessage(message, type) {
 }
 
 /* Appends a status message to the end of elemid */
-function displayMessage(message, type, hideprevmsg) {
+function displayMessage(message, type) {
     // ensure we have type 'ok', 'error', or 'info' (the default)
     if (!type || (type != 'ok' && type != 'error')) {
         type = 'info';
     }
 
     var oldmessage = getFirstElementByTagAndClassName('div', null, 'messages');
+
     var message = makeMessage(message, type);
     appendChildNodes('messages', message);
 
-    if (typeof hideprevmsg === 'undefined' || hideprevmsg == true) {
-        if (oldmessage) {
-            fade(oldmessage, {afterFinish: partial(removeElement, oldmessage)});
-        }
+    if (oldmessage) {
+        fade(oldmessage, {afterFinish: partial(removeElement, oldmessage)});
     }
 }
 
@@ -324,20 +338,19 @@ contextualHelpSelected    = null;
 contextualHelpContainer   = null;
 contextualHelpDeferrable  = null;
 contextualHelpOpened      = false;
-contextualHelpLink        = null;
 badIE = false;
 
 function contextualHelpIcon(formName, helpName, pluginType, pluginName, page, section) {
     var link = A(
         {'href': null},
-        IMG({'alt': get_string('Help'), 'src': get_themeurl('images/help.png')})
+        IMG({'alt': '?', 'src': get_themeurl('images/icon_help.gif')})
     );
     connect(link, 'onclick', function (e) {
         e.stop();
         contextualHelp(formName, helpName, pluginType, pluginName, page, section, link);
     });
 
-    return SPAN({'class':'help'}, link);
+    return link;
 }
 
 function contextualHelp(formName, helpName, pluginType, pluginName, page, section, ref) {
@@ -349,7 +362,7 @@ function contextualHelp(formName, helpName, pluginType, pluginName, page, sectio
         'pluginname': pluginName
     };
 
-    contextualHelpLink = ref;
+    var parentElement = 'messages';
 
     // deduce the key
     if (page) {
@@ -387,27 +400,36 @@ function contextualHelp(formName, helpName, pluginType, pluginName, page, sectio
     // create and display the container
     contextualHelpContainer = DIV({
             'style': 'position: absolute;',
-            'class': 'contextualHelp hidden',
-            'role' : 'dialog'
+            'class': 'contextualHelp hidden'
         },
         IMG({'src': config.theme['images/loading.gif']})
     );
-    var parent = ref.parentNode;
-    var inserted = false;
-    var illegalParents = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'legend'];
-    while (parent != null) {
-        if (illegalParents.indexOf(parent.nodeName.toLowerCase()) >= 0) {
-            insertSiblingNodesAfter(parent, contextualHelpContainer);
-            inserted = true;
-            break;
-        }
-        parent = parent.parentNode;
-    }
-    if (!inserted) {
-        insertSiblingNodesAfter(ref.parentNode, contextualHelpContainer);
-    }
+    appendChildNodes($(parentElement), contextualHelpContainer);
 
-    var position = contextualHelpPosition(ref, contextualHelpContainer);
+    var position = getElementPosition(ref);
+    var dimensions = getElementDimensions(contextualHelpContainer);
+
+    // Adjust the position. The element is moved towards the centre of the
+    // screen, based on which quadrant of the screen the help icon is in
+    screenDimensions = getViewportDimensions();
+    if (position.x + dimensions.w < screenDimensions.w) {
+        // Left of the screen - there's enough room for it
+        position.x += 15;
+    }
+    else if (position.x - dimensions.w < 0) {
+        if (dimensions.w >= screenDimensions.w) {
+            // Very small screen, let them scroll
+            position.x = 0;
+        }
+        else {
+            // Otherwise center it
+            position.x = (screenDimensions.w / 2) - (dimensions.w / 2);
+        }
+    }
+    else {
+        position.x -= dimensions.w;
+    }
+    position.y -= 10;
 
     // Once it has been positioned, make it visible
     setElementPosition(contextualHelpContainer, position);
@@ -441,12 +463,13 @@ function contextualHelp(formName, helpName, pluginType, pluginName, page, sectio
         },
         function (error) {
             contextualHelpCache[key] = get_string('couldnotgethelp');
-            buildContextualHelpBox(contextualHelpCache[key]);
+            contextualHelpContainer.innerHTML = contextualHelpCache[key];
             processingStop();
             contextualHelpOpened = true;
         },
         true, true);
     }
+    contextualHelpContainer.focus();
 }
 
 /*
@@ -455,58 +478,12 @@ function contextualHelp(formName, helpName, pluginType, pluginName, page, sectio
  * help closing the box
  */
 function buildContextualHelpBox(content) {
-    var result = '<div class="fr">';
-    result += '<a href="" class="help-dismiss" onclick="return false;"><img src="' + config.theme['images/btn_close.png'] + '" alt="' + get_string('closehelp') + '"></a>';
-    result += '</div>';
+    var result = '<div class="fr"><a href="" onclick="return false;"><img src="' + config.theme['images/icon_close.gif'] + '" alt="X"></a></div>';
     result += '<div id="helpstop">';
     result += content;
     result += '</div>';
     contextualHelpContainer.innerHTML = result;
-
     connect('helpstop', 'onclick', function(e) { if (e.target().nodeName != "A") { e.stop(); } });
-    getFirstElementByTagAndClassName(null, 'help-dismiss', contextualHelpContainer).focus();
-}
-
-/*
- * Positions the box so that it's next to the link that was activated
- */
-function contextualHelpPosition(ref, contextualHelpContainer) {
-    $j(contextualHelpContainer).css('visibility', 'hidden').removeClass('hidden');
-
-    var position = $j(ref).position();
-    var offset = $j(ref).offset();
-    var containerwidth = $j(contextualHelpContainer).outerWidth(true);
-
-    // Adjust the position. The element is moved towards the centre of the
-    // screen, based on which quadrant of the screen the help icon is in
-    var screenwidth = $j(window).width();
-    if (offset.left + containerwidth < screenwidth) {
-        // Left of the screen - there's enough room for it
-        position.left += 15;
-    }
-    else if (offset.left - containerwidth < 0) {
-        var oldoffset = $j(contextualHelpContainer).offset();
-        var oldposition = $j(contextualHelpContainer).position();
-
-        if (containerwidth >= screenwidth) {
-            // Very small screen, resize the help box to fit
-            var margin = containerwidth - $j(contextualHelpContainer).width();
-            $j(contextualHelpContainer).css('width', screenwidth - margin);
-            position.left = oldposition.left - oldoffset.left;
-        }
-        else {
-            // Otherwise center it
-            position.left = (screenwidth / 2) - (containerwidth / 2) - oldoffset.left + oldposition.left;
-        }
-    }
-    else {
-        position.left -= containerwidth;
-    }
-    position.top -= 10;
-
-    $j(contextualHelpContainer).css('visibility', 'visible');
-
-    return {x: position.left, y: position.top};
 }
 
 /*
@@ -515,11 +492,10 @@ function contextualHelpPosition(ref, contextualHelpContainer) {
  * next to the bottom or top of the viewport
  */
 function ensureHelpIsOnScreen(container, position) {
-    var screenheight = $j(window).height();
-    var containerheight = $j(container).height();
-    if (position.y + containerheight > screenheight + $j('html').scrollTop()) {
-        position.y -= containerheight - 18;
-        $j(container).css('top', position.y);
+    var dimensions = getElementDimensions(container);
+    if (position.y + dimensions.h > screenDimensions.h + getFirstElementByTagAndClassName('html').scrollTop) {
+        position.y -= dimensions.h - 18;
+        setElementPosition(container, position);
     }
 }
 
@@ -532,10 +508,6 @@ connect(document, 'onclick', function(e) {
         contextualHelpContainer = null;
         contextualHelpSelected = null;
         contextualHelpOpened = false;
-        if (contextualHelpLink) {
-            contextualHelpLink.focus();
-            contextualHelpLink = null;
-        }
     }
     badIE = false;
 });
@@ -601,7 +573,7 @@ function toggleChecked(c) {
     var e = getElementsByTagAndClassName(null, c);
     if (e) {
         for (cb in e) {
-        if (e[cb].checked == true) {
+	    if (e[cb].checked == true) {
                 e[cb].checked = '';
             } 
             else {
@@ -659,21 +631,15 @@ function augment_tags_control(elem, returnContainer) {
             else {
                 var tagData = [];
                 forEach(data, function(tag) {
-                    var tagLink = A({'href':'', 'class':'tag'}, tag.tag);
+                    var tagLink = A({'href':''}, tag.tag);
                     connect(tagLink, 'onclick', function(e) {
                         e.stop();
 
-                        if (typeof formchangemanager !== 'undefined') {
-                            // Get the form which contains the tag input
-                            var form = jQuery(elem).closest('form')[0];
-                            formchangemanager.setFormState(form, FORM_CHANGED);
-                        }
-
                         if (some(elem.value.split(/ *, */), function(t) { return t == tag.tag; })) {
                             // If at the start of the string, remove it and the comma/spaces after
-                            elem.value = elem.value.replace(new RegExp('^' + escapeRegExp(tag.tag) + ',? *'), '');
+                            elem.value = elem.value.replace(new RegExp('^' + tag.tag + ',? *'), '');
                             // Otherwise, remove the comma/spaces before it
-                            elem.value = elem.value.replace(new RegExp(', *' + escapeRegExp(tag.tag)), '');
+                            elem.value = elem.value.replace(new RegExp(', *' + tag.tag), '');
                             return;
                         }
 
@@ -707,46 +673,6 @@ function augment_tags_control(elem, returnContainer) {
     swapDOM(elem, newNode);
     appendChildNodes(newNode, tagContainer, elem, ' ', help);
 };
-
-function progressbarUpdate(artefacttype, remove) {
-    if (! $('progress_bar')) {
-        return;
-    }
-    // are we adding or deleting?
-    var change = 1;
-    if (remove) {
-        change = -1;
-    }
-
-    // if we have the artefacttype and it needs to be updated
-    if (typeof artefacttype != 'undefined') {
-        if ($('progress_counting_' + artefacttype)) {
-            var counting = parseInt($('progress_counting_' + artefacttype).innerHTML);
-            var oldcompleted = parseInt($('progress_completed_' + artefacttype).innerHTML);
-            var completed = oldcompleted + change;
-            $('progress_completed_' + artefacttype).innerHTML = completed;
-            var progressitem = $('progress_item_' + artefacttype);
-            progressitem.innerHTML = progressitem.innerHTML.replace(/-?\d+/, counting - completed);
-
-            // when progress is met
-            if ((counting - completed) <= 0) {
-                addElementClass(progressitem.parentNode.parentNode,'hidden');
-            }
-            else {
-                removeElementClass(progressitem.parentNode.parentNode,'hidden');
-            }
-            // now update the totals if we need to
-            if ((oldcompleted > 0 && oldcompleted <= counting && remove ) || (completed <= counting && !remove)) {
-                var totalcounting = parseInt($('progress_counting_total').innerHTML);
-                var totalcompleted = parseInt($('progress_completed_total').innerHTML) + change;
-                $('progress_completed_total').innerHTML = totalcompleted;
-                var percentage = roundToFixed((totalcompleted / totalcounting) * 100, 0);
-                $('progress_bar_percentage').innerHTML = percentage + '%';
-                setStyle($('progress_bar_fill'), {'width': (percentage*2) + 'px'});
-            }
-        }
-    }
-}
 
 function quotaUpdate(quotaused, quota) {
     if ($('instconf')) {
@@ -842,24 +768,3 @@ function is_FF() {
     }
     return false;
 }
-
-// Escapes all special characters for RegExp, code from https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions
-function escapeRegExp(string) {
-  return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
-}
-
-// Fix for Chrome and IE, which don't change focus when going to a fragment identifier link
-// Manually focuses the main content when the "skip to main content" link is activated
-jQuery(document).ready(function() {
-    $j('a.skiplink').click(function() {
-        var id = $j(this).attr('href');
-        $j(id).attr('tabIndex', -1).focus();
-    });
-});
-
-/**
-* Allow the js / no-js toggle on all pages for theme styling
-*/
-jQuery(document).ready(function() {
-    jQuery('body').removeClass('no-js').addClass('js');
-});

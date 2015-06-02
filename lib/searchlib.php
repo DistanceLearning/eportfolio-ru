@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  * @copyright  (C) portions from Moodle, (C) Martin Dougiamas http://dougiamas.com
  */
 
@@ -61,22 +77,9 @@ function search_user($query_string, $limit, $offset = 0, $data = array()) {
     return $results;
 }
 
-/*
-*   The elastic search plug-in is for now only used in the "Universal Search" page.
-*   Search is performed using the internal plug-in in all other case.
-*   This might change in the future.
-*/
-function search_all($query_string, $limit, $offset = 0, $data = array(), $type = null) {
-    if (record_exists('search_installed', 'name', 'elasticsearch', 'active', 1)) {
-        safe_require('search', 'elasticsearch');
-        $plugin = 'elasticsearch';
-        $results = call_static_method(generate_class_name('search', $plugin), 'search_all', $query_string, $limit, $offset, $data, $type);
-        return $results;
-    }
-}
 
 
-/*
+/* 
  * Institutional admin queries:
  *
  * These are only used to populate user lists on the Institution
@@ -106,7 +109,7 @@ function get_institutional_admin_search_results($search, $limit) {
 function institutional_admin_user_search($query, $institution, $limit) {
     $plugin = get_config('searchplugin');
     safe_require('search', $plugin);
-    return call_static_method(generate_class_name('search', $plugin), 'institutional_admin_search_user',
+    return call_static_method(generate_class_name('search', $plugin), 'institutional_admin_search_user', 
                               $query, $institution, $limit);
 }
 
@@ -133,7 +136,7 @@ function parse_name_query($text) {
     // Strip off phrase quotes
     if ($match[1]{0} == '"') {
       $phrase = preg_replace('/\s\s+/', ' ', strtolower(substr($match[1], 1, -1)));
-      $phraselist = explode(' ', $phrase);
+      $phraselist = split(' ', $phrase);
       if (count($phraselist) == 2) {
         $fullnames[] = $phraselist;
       } else {
@@ -220,53 +223,6 @@ function get_admin_user_search_results($search, $offset, $limit) {
                                'type' => 'starts',
                                'string' => $search->l);
     }
-    if ($search->loggedin !== 'any') {
-        if ($search->loggedin == 'never') {
-            $constraints[] = array('field'  => 'lastlogin',
-                                   'type'   => 'equals',
-                                   'string' => null);
-        }
-        else if ($search->loggedin == 'ever') {
-            $constraints[] = array('field'  => 'lastlogin',
-                                   'type'   => 'notequals',
-                                   'string' => null);
-        }
-        else if ($search->loggedin == 'since') {
-            $constraints[] = array('field'  => 'lastlogin',
-                                   'type'   => 'greaterthan',
-                                   'string' => $search->loggedindate);
-        }
-        else if ($search->loggedin == 'notsince') {
-            $constraints[] = array('field'  => 'lastlogin',
-                                   'type'   => 'lessthanequal',
-                                   'string' => $search->loggedindate);
-        }
-
-    }
-
-    // Filter by duplicate emails
-    if ($search->duplicateemail) {
-        $duplicateemailartefacts = get_column_sql('
-            SELECT id
-            FROM {artefact}
-            WHERE
-                artefacttype = \'email\'
-                AND LOWER(title) IN (
-                    SELECT LOWER(title)
-                    FROM {artefact}
-                    WHERE artefacttype = \'email\'
-                    GROUP BY LOWER(title)
-                    HAVING count(id) > 1
-                )');
-        if ($duplicateemailartefacts === false || !is_array($duplicateemailartefacts)) {
-            $duplicateemailartefacts = array();
-        }
-        $constraints[] = array(
-            'field'  => 'duplicateemail',
-            'type'   => 'in',
-            'string' => $duplicateemailartefacts
-        );
-    }
 
     // Filter by viewable institutions:
     global $USER;
@@ -294,7 +250,7 @@ function get_admin_user_search_results($search, $offset, $limit) {
                                'type' => 'equals',
                                'string' => $search->institution);
     }
-
+    
     $results = call_static_method(
         generate_class_name('search', $plugin), 'admin_search_user',
         $queries, $constraints, $offset, $limit, $search->sortby, $search->sortdir
@@ -308,35 +264,6 @@ function get_admin_user_search_results($search, $offset, $limit) {
             $result['name'] = display_name($result);
             if (!empty($result['institutions'])) {
                 $result['institutions'] = array_combine($result['institutions'],$result['institutions']);
-            }
-
-            // Show all user's emails if searching for duplicate emails
-            if ($search->duplicateemail) {
-                $emails = get_records_sql_array('
-                    SELECT title,
-                        (CASE WHEN id IN (' . join(',', array_map('db_quote', $duplicateemailartefacts)) . ') THEN 1 ELSE 0 END) AS duplicated
-                    FROM {artefact} a
-                    WHERE a.artefacttype = ?
-                        AND a.owner = ?',
-                    array('email', $result['id']));
-                if (is_array($emails)) {
-                    for ($i = 0; $i < count($emails); $i++) {
-                        // Move primary email to the beginning of $emails
-                        if ($emails[0]->title == $result['email']) {
-                            break;
-                        }
-                        if ($emails[$i]->title == $result['email']) {
-                            $e = $emails[0];
-                            $emails[0] = $emails[$i];
-                            $emails[$i] = $e;
-                            break;
-                        }
-                    }
-                }
-                else {
-                    throw new EmailException('An User must have at least one email!');
-                }
-                $result['email'] = $emails;
             }
             if ($isadmin) {
                 continue;
@@ -360,12 +287,8 @@ function get_admin_user_search_results($search, $offset, $limit) {
 function build_admin_user_search_results($search, $offset, $limit) {
     global $USER, $THEME;
 
-    $wantedparams = array('query', 'f', 'l', 'sortby', 'sortdir', 'loggedin', 'loggedindate', 'duplicateemail', 'institution');
     $params = array();
     foreach ($search as $k => $v) {
-        if (!in_array($k, $wantedparams)) {
-            continue;
-        }
         if (!empty($v)) {
             $params[] = $k . '=' . $v;
         }
@@ -374,18 +297,16 @@ function build_admin_user_search_results($search, $offset, $limit) {
 
     $results = get_admin_user_search_results($search, $offset, $limit);
 
-    $pagination = build_pagination(array(
+    $results['pagination'] = build_pagination(array(
             'id' => 'admin_usersearch_pagination',
             'class' => 'center',
             'url' => $searchurl,
             'count' => $results['count'],
-            'setlimit' => true,
             'limit' => $limit,
             'jumplinks' => 8,
             'numbersincludeprevnext' => 2,
             'offset' => $offset,
             'datatable' => 'searchresults',
-            'searchresultsheading' => 'resultsheading',
             'jsonscript' => 'admin/users/search.json.php',
     ));
 
@@ -419,16 +340,6 @@ function build_admin_user_search_results($search, $offset, $limit) {
         ),
     );
 
-    if ($search->duplicateemail) {
-        $cols['email'] = array(
-                'name'     => get_string('emails'),
-                'sort'     => true,
-                'help'     => true,
-                'helplink'     => get_help_icon('core', 'admin', 'usersearch', 'email'),
-                'template' => 'admin/users/searchemailcolumn.tpl',
-        );
-    }
-
     $institutions = get_records_assoc('institution', '', '', '', 'name,displayname');
     if (count($institutions) > 1) {
         $cols['institution'] = array(
@@ -437,17 +348,6 @@ function build_admin_user_search_results($search, $offset, $limit) {
             'template' => 'admin/users/searchinstitutioncolumn.tpl',
         );
     }
-
-    $cols['authname'] = array(
-            'name'     => get_string('authentication'),
-            'sort'     => true,
-    );
-
-    $cols['lastlogin'] = array(
-        'name'      => get_string('lastlogin', 'admin'),
-        'sort'      => true,
-        'template'  => 'strftimedatetime.tpl',
-    );
 
     $cols['select'] = array(
         'headhtml' => '<a href="" id="selectall">' . get_string('All') . '</a>&nbsp;<a href="" id="selectnone">' . get_string('none') . '</a>',
@@ -473,16 +373,13 @@ function build_admin_user_search_results($search, $offset, $limit) {
     $smarty->assign_by_ref('results', $results);
     $smarty->assign_by_ref('institutions', $institutions);
     $smarty->assign('USER', $USER);
-    $smarty->assign('limit', $limit);
+    $smarty->assign('searchurl', $searchurl);
+    $smarty->assign('sortby', $search->sortby);
+    $smarty->assign('sortdir', $search->sortdir);
     $smarty->assign('limitoptions', array(10, 50, 100, 200, 500));
     $smarty->assign('cols', $cols);
     $smarty->assign('ncols', count($cols));
-    $html = $smarty->fetch('searchresulttable.tpl');
-    return array($html, $cols, $pagination, array(
-        'url' => $searchurl,
-        'sortby' => $search->sortby,
-        'sortdir' => $search->sortdir
-    ));
+    return $smarty->fetch('searchresulttable.tpl');
 }
 
 
@@ -503,10 +400,9 @@ function build_admin_user_search_results($search, $offset, $limit) {
 function get_group_user_search_results($group, $query, $offset, $limit, $membershiptype, $order=null, $friendof=null, $sortoptionidx=null) {
     $plugin = get_config('searchplugin');
     safe_require('search', $plugin);
-    $searchclass = generate_class_name('search', $plugin);
 
     $constraints = array();
-    if (call_static_method($searchclass, 'can_process_raw_group_search_user_queries')) {
+    if ($plugin == 'internal') {
         // Pass the raw query string through to group_search_user; parsing of the
         // query depends on the plugin configuration.
         $queries = $query;
@@ -543,8 +439,7 @@ function get_group_user_search_results($group, $query, $offset, $limit, $members
     }
 
     $results = call_static_method(
-        $searchclass,
-        'group_search_user',
+        generate_class_name('search', $plugin), 'group_search_user',
         $group, $queries, $constraints, $offset, $limit, $membershiptype, $order, $friendof, $sortoptionidx
     );
 
@@ -619,13 +514,10 @@ function get_portfolio_types_from_param($filter) {
         return null;
     }
     if ($filter == 'view') {
-        return array('view' => true, 'collection' => false, 'artefact' => false);
-    }
-    if ($filter == 'collection') {
-        return array('view' => false, 'collection' => true, 'artefact' => false);
+        return array('view' => true, 'artefact' => false);
     }
     require_once(get_config('docroot') . 'artefact/lib.php');
-    return array('view' => false, 'collection' => false, 'artefact' => artefact_get_types_from_filter($filter));
+    return array('view' => false, 'artefact' => artefact_get_types_from_filter($filter));
 }
 
 function get_portfolio_items_by_tag($tag, $owner, $limit, $offset, $sort='name', $type=null, $returntags=true) {
@@ -652,16 +544,11 @@ function get_search_plugins() {
 
     if ($searchplugins = plugins_installed('search')) {
         foreach ($searchplugins as $plugin) {
-            safe_require_plugin('search', $plugin->name, 'lib.php');
-            if (!call_static_method(generate_class_name('search', $plugin->name), 'is_available_for_site_setting')) {
-                continue;
-            }
-
             $searchpluginoptions[$plugin->name] = $plugin->name;
 
             $config_path = get_config('docroot') . 'search/' . $plugin->name . '/version.php';
             if (is_readable($config_path)) {
-                $config = new stdClass();
+                $config = new StdClass;
                 require_once($config_path);
                 if (isset($config->name)) {
                     $searchpluginoptions[$plugin->name] = $config->name;

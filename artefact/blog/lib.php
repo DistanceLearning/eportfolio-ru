@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-blog
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -31,10 +47,6 @@ class PluginArtefactBlog extends PluginArtefact {
         return 'blog';
     }
 
-    public static function is_active() {
-        return get_field('artefact_installed', 'active', 'name', 'blog');
-    }
-
     public static function menu_items() {
         global $USER;
         $tab = array(
@@ -42,11 +54,11 @@ class PluginArtefactBlog extends PluginArtefact {
             'weight' => 40,
         );
         if ($USER->get_account_preference('multipleblogs')) {
-            $tab['url']   = 'artefact/blog/index.php';
+            $tab['url']   = 'artefact/blog/';
             $tab['title'] = get_string('blogs', 'artefact.blog');
         }
         else {
-            $tab['url']   = 'artefact/blog/view/index.php';
+            $tab['url']   = 'artefact/blog/view/';
             $tab['title'] = get_string('blog', 'artefact.blog');
         }
         return array('content/blogs' => $tab);
@@ -104,10 +116,6 @@ class PluginArtefactBlog extends PluginArtefact {
         return array(
             'blogpost' => array('text'),
         );
-    }
-
-    public static function progressbar_link($artefacttype) {
-        return 'artefact/blog/view/index.php';
     }
 }
 
@@ -239,13 +247,6 @@ class ArtefactTypeBlog extends ArtefactType {
             $smarty->assign('artefacttitle', hsc($this->get('title')));
         }
 
-        if (!empty($options['details']) and get_config('licensemetadata')) {
-            $smarty->assign('license', render_license($this));
-        }
-        else {
-            $smarty->assign('license', false);
-        }
-
         $options['hidetitle'] = true;
         $smarty->assign('options', $options);
         $smarty->assign('description', $this->get('description'));
@@ -260,7 +261,7 @@ class ArtefactTypeBlog extends ArtefactType {
                 
     public static function get_icon($options=null) {
         global $THEME;
-        return $THEME->get_url('images/journal.png', false);
+        return $THEME->get_url('images/blog.gif', false, 'artefact/blog');
     }
 
     public static function is_singular() {
@@ -288,7 +289,7 @@ class ArtefactTypeBlog extends ArtefactType {
 
         foreach ($result as &$r) {
             if (!$r->locked) {
-                $r->deleteform = ArtefactTypeBlog::delete_form($r->id, $r->title);
+                $r->deleteform = ArtefactTypeBlog::delete_form($r->id);
             }
         }
 
@@ -334,11 +335,6 @@ class ArtefactTypeBlog extends ArtefactType {
         $artefact->set('description', $values['description']);
         $artefact->set('owner', $user->get('id'));
         $artefact->set('tags', $values['tags']);
-        if (get_config('licensemetadata')) {
-            $artefact->set('license', $values['license']);
-            $artefact->set('licensor', $values['licensor']);
-            $artefact->set('licensorurl', $values['licensorurl']);
-        }
         $artefact->commit();
     }
 
@@ -357,15 +353,10 @@ class ArtefactTypeBlog extends ArtefactType {
         if ($user->get('id') != $artefact->get('owner')) {
             return;
         }
-
+        
         $artefact->set('title', $values['title']);
         $artefact->set('description', $values['description']);
         $artefact->set('tags', $values['tags']);
-        if (get_config('licensemetadata')) {
-            $artefact->set('license', $values['license']);
-            $artefact->set('licensor', $values['licensor']);
-            $artefact->set('licensorurl', $values['licensorurl']);
-        }
         $artefact->commit();
     }
 
@@ -373,8 +364,8 @@ class ArtefactTypeBlog extends ArtefactType {
         $wwwroot = get_config('wwwroot');
 
         return array(
-            '_default'                                  => $wwwroot . 'artefact/blog/view/index.php?id=' . $id,
-            get_string('blogsettings', 'artefact.blog') => $wwwroot . 'artefact/blog/settings/index.php?id=' . $id,
+            '_default'                                  => $wwwroot . 'artefact/blog/view/?id=' . $id,
+            get_string('blogsettings', 'artefact.blog') => $wwwroot . 'artefact/blog/settings/?id=' . $id,
         );
     }
 
@@ -399,33 +390,8 @@ class ArtefactTypeBlog extends ArtefactType {
             AND bp.published = 1", array($this->get('id')));
     }
 
-    public static function delete_form($id, $title = '') {
+    public static function delete_form($id) {
         global $THEME;
-
-        $confirm = get_string('deleteblog?', 'artefact.blog');
-
-        // Check if this blog has posts.
-        $postcnt = count_records_sql("
-            SELECT COUNT(*)
-            FROM {artefact} a
-            INNER JOIN {artefact_blog_blogpost} bp ON a.id = bp.blogpost
-            WHERE a.parent = ?
-            ", array($id));
-        if ($postcnt > 0) {
-            $confirm = get_string('deletebloghaspost?', 'artefact.blog', $postcnt);
-
-            // Check if this blog posts used in views.
-            $viewscnt = count_records_sql("
-                SELECT COUNT(DISTINCT(va.view))
-                FROM {artefact} a
-                INNER JOIN {view_artefact} va ON a.id = va.artefact
-                WHERE a.parent = ? OR a.id = ?
-                ", array($id, $id));
-            if ($viewscnt > 0) {
-                $confirm = get_string('deletebloghasview?', 'artefact.blog', $viewscnt);
-            }
-        }
-
         return pieform(array(
             'name' => 'delete_' . $id,
             'successcallback' => 'delete_blog_submit',
@@ -437,11 +403,9 @@ class ArtefactTypeBlog extends ArtefactType {
                 ),
                 'submit' => array(
                     'type' => 'image',
-                    'src' => $THEME->get_url('images/btn_deleteremove.png'),
-                    'alt' => get_string('deletespecific', 'mahara', $title),
-                    'elementtitle' => get_string('delete'),
-                    'confirm' => $confirm,
-                    'value' => get_string('delete'),
+                    'src' => $THEME->get_url('images/icon_close.gif'),
+                    'elementtitle' => get_string('delete', 'artefact.blog'),
+                    'confirm' => get_string('deleteblog?', 'artefact.blog'),
                 ),
             ),
         ));
@@ -463,7 +427,7 @@ class ArtefactTypeBlog extends ArtefactType {
             $SESSION->add_ok_msg(get_string('copiedblogpoststonewjournal', 'collection'));
         }
         catch (Exception $e) {
-            $SESSION->add_error_msg(get_string('unabletosetmultipleblogs', 'error', $user->username, $viewid, get_config('wwwroot') . 'account/index.php'), false);
+            $SESSION->add_error_msg(get_string('unabletosetmultipleblogs', 'error', $user->username, $viewid, get_config('wwwroot') . 'account/'), false);
         }
 
         try {
@@ -651,13 +615,6 @@ class ArtefactTypeBlogPost extends ArtefactType {
         }
         $smarty->assign('artefactdescription', $postcontent);
         $smarty->assign('artefact', $this);
-        if (!empty($options['details']) and get_config('licensemetadata')) {
-            $smarty->assign('license', render_license($this));
-        }
-        else {
-            $smarty->assign('license', false);
-        }
-
         $attachments = $this->get_attachments();
         if ($attachments) {
             $this->add_to_render_path($options);
@@ -689,7 +646,7 @@ class ArtefactTypeBlogPost extends ArtefactType {
 
     public static function get_icon($options=null) {
         global $THEME;
-        return $THEME->get_url('images/journal_entry.png', false);
+        return $THEME->get_url('images/blogpost.gif', false, 'artefact/blog');
     }
 
     public static function is_singular() {
@@ -775,7 +732,7 @@ class ArtefactTypeBlogPost extends ArtefactType {
             if (is_null($viewoptions)) {
                 // My Blogs area: create forms for changing post status & deleting posts.
                 $post->changepoststatus = ArtefactTypeBlogpost::changepoststatus_form($post->id, $post->published);
-                $post->delete = ArtefactTypeBlogpost::delete_form($post->id, $post->title);
+                $post->delete = ArtefactTypeBlogpost::delete_form($post->id);
             }
             else {
                 $by = $post->author ? display_default_name($post->author) : $post->authorname;
@@ -867,11 +824,6 @@ class ArtefactTypeBlogPost extends ArtefactType {
         $artefact->set('description', $values['description']);
         $artefact->set('published', $values['published']);
         $artefact->set('tags', $values['tags']);
-        if (get_config('licensemetadata')) {
-            $artefact->set('license', $values['license']);
-            $artefact->set('licensor', $values['licensor']);
-            $artefact->set('licensorurl', $values['licensorurl']);
-        }
         $artefact->commit();
         return true;
     }
@@ -912,7 +864,7 @@ class ArtefactTypeBlogPost extends ArtefactType {
         ));
     }
 
-    public static function delete_form($id, $title = '') {
+    public static function delete_form($id) {
         global $THEME;
         return pieform(array(
             'name' => 'delete_' . $id,
@@ -928,11 +880,9 @@ class ArtefactTypeBlogPost extends ArtefactType {
                 ),
                 'submit' => array(
                     'type' => 'image',
-                    'src' => $THEME->get_url('images/btn_deleteremove.png'),
-                    'alt' => get_string('deletespecific', 'mahara', $title),
-                    'elementtitle' => get_string('delete'),
+                    'src' => $THEME->get_url('images/icon_close.gif'),
+                    'elementtitle' => get_string('delete', 'artefact.blog'),
                     'confirm' => get_string('deleteblogpost?', 'artefact.blog'),
-                    'value' => get_string('delete'),
                 ),
             ),
         ));
@@ -1023,7 +973,7 @@ class ArtefactTypeBlogPost extends ArtefactType {
             $SESSION->add_ok_msg(get_string('copiedblogpoststonewjournal', 'collection'));
         }
         catch (Exception $e) {
-            $SESSION->add_error_msg(get_string('unabletosetmultipleblogs', 'error', $user->username, $viewid, get_config('wwwroot') . 'account/index.php'), false);
+            $SESSION->add_error_msg(get_string('unabletosetmultipleblogs', 'error', $user->username, $viewid, get_config('wwwroot') . 'account/'), false);
         }
 
         try {
@@ -1042,9 +992,5 @@ class ArtefactTypeBlogPost extends ArtefactType {
      */
     public function get_referenced_artefacts_from_postbody() {
         return artefact_get_references_in_html($this->get('description'));
-    }
-
-    public static function is_countable_progressbar() {
-        return true;
     }
 }

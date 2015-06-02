@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-blog
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -19,9 +35,7 @@ require(dirname(dirname(dirname(dirname(__FILE__)))) . '/init.php');
 define('TITLE', get_string('viewblog','artefact.blog'));
 safe_require('artefact', 'blog');
 require_once(get_config('libroot') . 'pieforms/pieform.php');
-if (!PluginArtefactBlog::is_active()) {
-    throw new AccessDeniedException(get_string('plugindisableduser', 'mahara', get_string('blog','artefact.blog')));
-}
+
 if ($changepoststatus = param_integer('changepoststatus', null)) {
     ArtefactTypeBlogpost::changepoststatus_form($changepoststatus);
 }
@@ -67,14 +81,10 @@ $strchangepoststatusunpublish = json_encode(get_string('unpublish', 'artefact.bl
 $js = <<<EOF
 function changepoststatus_success(form, data) {
     if ($('changepoststatus_' + data.id + '_currentpoststatus').value == 0) {
-        removeElementClass($('posttitle_' + data.id), 'draft');
-        addElementClass($('posttitle_' + data.id), 'published');
         $('poststatus' + data.id).innerHTML = {$strpublished};
         $('changepoststatus_' + data.id + '_submit').value = {$strchangepoststatusunpublish};
     }
     else {
-        removeElementClass($('posttitle_' + data.id), 'published');
-        addElementClass($('posttitle_' + data.id), 'draft');
         $('poststatus' + data.id).innerHTML = {$strdraft};
         $('changepoststatus_' + data.id + '_submit').value = {$strchangepoststatuspublish};
     }
@@ -86,15 +96,10 @@ function delete_success(form, data) {
     }
     addElementClass('postdescription_' + data.id, 'hidden');
     addElementClass('posttitle_' + data.id, 'hidden');
-    var results = \$j('#blogpost_pagination div.results').html();
-    var oldcount = parseInt(results);
-    var newcount = oldcount - 1;
-    \$j('#blogpost_pagination div.results').html(results.replace(oldcount, newcount));
-    progressbarUpdate('blogpost', true);
 }
 EOF;
 
-$smarty = smarty(array('paginator', 'expandable'));
+$smarty = smarty(array('paginator'));
 $smarty->assign('PAGEHEADING', $blog->get('title'));
 $smarty->assign('INLINEJAVASCRIPT', $js);
 
@@ -126,7 +131,7 @@ function changepoststatus_submit(Pieform $form, $values) {
     }
     $form->reply(PIEFORM_OK, array(
         'message' => $strmessage,
-        'goto' => get_config('wwwroot') . 'artefact/blog/view/index.php?id=' . $blogpost->get('parent'),
+        'goto' => get_config('wwwroot') . 'artefact/blog/view/?id=' . $blogpost->get('parent'),
         'id' => $values['changepoststatus'],
     ));
 }
@@ -140,7 +145,7 @@ function delete_submit(Pieform $form, $values) {
     $blogpost->delete();
     $form->reply(PIEFORM_OK, array(
         'message' => get_string('blogpostdeleted', 'artefact.blog'),
-        'goto' => get_config('wwwroot') . 'artefact/blog/view/index.php?id=' . $blogpost->get('parent'),
+        'goto' => get_config('wwwroot') . 'artefact/blog/view/?id=' . $blogpost->get('parent'),
         'id' => $values['delete'],
     ));
 }

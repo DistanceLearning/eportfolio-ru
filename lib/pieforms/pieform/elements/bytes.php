@@ -19,8 +19,8 @@
  * @package    pieform
  * @subpackage element
  * @author     Martyn Smith <martyn@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -68,17 +68,9 @@ function pieform_element_bytes(Pieform $form, $element) {/*{{{*/
     $numberinput = '<input';
     $numberinput .= ' type="text" size="6" name="' . $name . '"';
     $numberinput .= ' id="' . $formname . '_' . $name . '" value="' . Pieform::hsc($values['number']) . '" tabindex="' . Pieform::hsc($element['tabindex']) . '"';
-    $numberinput .= (isset($element['error']) ? ' class="error"' : '');
-    if (isset($element['description'])) {
-        $numberinput .= ' aria-describedby="' . $form->element_descriptors($element) . '"';
-    }
-    $numberinput .= ">\n";
+    $numberinput .= (isset($element['error']) ? ' class="error"' : '') . ">\n";
 
-    $uselect = '<select name="' . $name . '_units" id="' . $formname . '_' . $name . '_units"' . ' tabindex="' . Pieform::hsc($element['tabindex']) . '"';
-    if (isset($element['description'])) {
-        $uselect .= ' aria-describedby="' . $form->element_descriptors($element) . '"';
-    }
-    $uselect .= ">\n";
+    $uselect = '<select name="' . $name . '_units" id="' . $formname . '_' . $name . '_units"' . ' tabindex="' . Pieform::hsc($element['tabindex']) . "\">\n";
     foreach (pieform_element_bytes_get_bytes_units() as $u) {
         $uselect .= "\t<option value=\"$u\"" . (($values['units'] == $u) ? ' selected="selected"' : '') . '>'
             . $form->i18n('element', 'bytes', $u, $element) . "</option>\n";

@@ -1,23 +1,32 @@
 /**
  * CSS rules for the resume artefact plugin
  *
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * Copyright (C) 2006-2012 Catalyst IT
+ * This file is distributed under the same terms as Mahara itself
  */
-.planstatus a {
-    margin-left: 5px;
-}
 #container #planswrap table td.errmsg {
    padding-left: 20px;
 }
-/* plan tasks */
-#taskslist th.completed,
-#taskslist td.completed,
-#taskslist td.incomplete {
-    text-align: center;
-    padding-top: 8px;
+fieldset legend.plansh3 a {
+	background: none;
+	padding: 0;
 }
-.plantaskdescription p {
-    margin: 0 0 5px;
+ul.planslist {
+	margin: 0;
+}
+ul.planslist li {
+	list-style: none;
+	margin: 0 0 3px 0;
+}
+.codesc {
+	font-size: .9167em;
+	margin: 3px 0 0 0;
+	line-height: 1.25em;
+}
+/* plan tasks */
+#taskslist td {
+	padding: 5px 5px 3px 5px;
+}
+#taskslist th.completed, #taskslist td.completed {
+	text-align: center;
 }

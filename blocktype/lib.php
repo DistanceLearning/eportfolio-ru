@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -169,11 +185,6 @@ abstract class PluginBlocktype extends Plugin {
         }
         // else we're an artefact
         return get_string('pluginname', 'artefact.' . $name);
-    }
-
-    public static function category_description_from_name($name) {
-        $description = get_string('blocktypecategorydesc.'. $name, 'view');
-        return $description;
     }
 
     public static function get_blocktypes_for_category($category, View $view) {
@@ -420,7 +431,6 @@ class BlockInstance {
     private $dirty;
     private $view;
     private $view_obj;
-    private $row;
     private $column;
     private $order;
     private $canmoveleft;
@@ -498,31 +508,8 @@ class BlockInstance {
         throw new ParamOutOfRangeException("Field $field wasn't found in class " . get_class($this));
     }
 
-    // returns false if it finds a bad attachment
-    // returns true if all attachments are allowed
-    private function verify_attachment_permissions($id) {
-        global $USER;
-
-        if (is_array($id)) {
-            foreach ($id as $id) {
-                $file = artefact_instance_from_id($id);
-                if (!$USER->can_view_artefact($file)) {
-                    // bail out now as at least one attachment is bad
-                    return false;
-                }
-            }
-        }
-        else {
-            $file = artefact_instance_from_id($id);
-            if (!$USER->can_view_artefact($file)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public function instance_config_store(Pieform $form, $values) {
-        global $SESSION, $USER;
+        global $SESSION;
 
         // Destroy form values we don't care about
         unset($values['sesskey']);
@@ -532,22 +519,6 @@ class BlockInstance {
         unset($values['id']);
         unset($values['change']);
         unset($values['new']);
-
-        // make sure that user is allowed to publish artefact. This is to stop
-        // hacking of form value to attach other users private data.
-        $badattachment = false;
-        if (!empty($values['artefactid'])) {
-            $badattachment = !$this->verify_attachment_permissions($values['artefactid']);
-        }
-        if (!empty($values['artefactids'])) {
-            $badattachment = !$this->verify_attachment_permissions($values['artefactids']);
-        }
-        if ($badattachment) {
-            $result['message'] = get_string('unrecoverableerror', 'error');
-            $form->set_error(null, $result['message']);
-            $form->reply(PIEFORM_ERR, $result);
-            exit();
-        }
 
         $redirect = '/view/blocks.php?id=' . $this->get('view');
         if (param_boolean('new', false)) {
@@ -723,7 +694,6 @@ class BlockInstance {
         $smarty->assign('id',     $this->get('id'));
         $smarty->assign('viewid', $this->get('view'));
         $smarty->assign('title',  $title);
-        $smarty->assign('row',    $this->get('row'));
         $smarty->assign('column', $this->get('column'));
         $smarty->assign('order',  $this->get('order'));
 
@@ -734,21 +704,8 @@ class BlockInstance {
         $smarty->assign('content', $content);
         $smarty->assign('javascript', defined('JSON'));
         $smarty->assign('strnotitle', get_string('notitle', 'view'));
-        $smarty->assign('strmovetitletext', $title == '' ? get_string('movethisblock', 'view') : get_string('moveblock', 'view', "'$title'"));
         $smarty->assign('strconfigtitletext', $title == '' ? get_string('configurethisblock', 'view') : get_string('configureblock', 'view', "'$title'"));
         $smarty->assign('strremovetitletext', $title == '' ? get_string('removethisblock', 'view') : get_string('removeblock', 'view', "'$title'"));
-
-        if (!$configure && $title) {
-            $configdata = $this->get('configdata');
-            if (isset($configdata['retractable']) && $configdata['retractable']) {
-                $smarty->assign('retractable', true);
-                if (defined('JSON') || $jsreply) {
-                    $jssmarty = smarty_core();
-                    $jssmarty->assign('id', $this->get('id'));
-                    $js .= $jssmarty->fetch('view/retractablejs.tpl');
-                }
-            }
-        }
 
         return array('html' => $smarty->fetch('view/blocktypecontainerediting.tpl'), 'javascript' => $js);
     }
@@ -797,7 +754,7 @@ class BlockInstance {
         if (!empty($configdata['artefactid'])) {
             if (call_static_method($classname, 'has_title_link')) {
                 $smarty->assign('viewartefacturl', get_config('wwwroot') . 'view/artefact.php?artefact='
-                    . $configdata['artefactid'] . '&view=' . $this->get('view') . '&block=' . $this->get('id'));
+                    . $configdata['artefactid'] . '&view=' . $this->get('view'));
             }
         }
 
@@ -805,12 +762,6 @@ class BlockInstance {
             $smarty->assign('feedlink', call_static_method($classname, 'feed_url', $this));
         }
         $smarty->assign('content', $content);
-        if (isset($configdata['retractable']) && $title) {
-            $smarty->assign('retractable', $configdata['retractable']);
-            if (isset($configdata['retractedonload'])) {
-                $smarty->assign('retractedonload', $configdata['retractedonload']);
-            }
-        }
 
         return $smarty->fetch('view/blocktypecontainerviewing.tpl');
     }
@@ -842,9 +793,6 @@ class BlockInstance {
         $hasdefault = method_exists($blocktypeclass, 'get_instance_title');
 
         $title = $this->get('title');
-        $configdata = $this->get('configdata');
-        $retractable = (isset($configdata['retractable']) ? $configdata['retractable'] : false);
-        $retractedonload = (isset($configdata['retractedonload']) ? $configdata['retractedonload'] : $retractable);
 
         $elements = array_merge(
             array(
@@ -874,22 +822,7 @@ class BlockInstance {
                     'value' => $new,
                 ),
             ),
-            $elements,
-            array (
-                'retractable' => array(
-                    'type'         => 'checkbox',
-                    'title'        => get_string('retractable', 'view'),
-                    'description'  => get_string('retractabledescription', 'view'),
-                    'defaultvalue' => $retractable,
-                ),
-                'retractedonload' => array(
-                    'type'         => 'checkbox',
-                    'title'        => get_string('retractedonload', 'view'),
-                    'description'  => get_string('retractedonloaddescription', 'view'),
-                    'defaultvalue' => $retractedonload,
-                    'disabled'     => !$retractable,
-                ),
-            )
+            $elements
         );
 
         if ($new) {
@@ -973,20 +906,6 @@ class BlockInstance {
         else if (is_string($configjs)) {
             $js .= $configjs;
         }
-        $js .= '
-        $j(function() {
-            $j("#instconf_retractable").click(function() {
-                if (this.checked) {
-                    $j("#instconf_retractedonload").removeAttr("disabled");
-                    $j("#instconf_retractedonload").removeAttr("checked");
-                }
-                else {
-                    $j("#instconf_retractedonload").removeAttr("checked");
-                    $j("#instconf_retractedonload").attr("disabled", true);
-                }
-            });
-        });
-        ';
 
         $renderedform = array('html' => $html, 'javascript' => $js);
         return $renderedform;
@@ -1095,8 +1014,7 @@ class BlockInstance {
             case 'left':
                 return ($this->column > 1);
             case 'right':
-                $colsperrow = $this->get_view()->get('columnsperrow');
-                return ($this->column < $colsperrow[$this->row]->columns);
+                return ($this->column < $this->get_view()->get('numcolumns'));
             case 'up':
                 return ($this->order > 1);
                 break;
@@ -1112,10 +1030,6 @@ class BlockInstance {
             $this->dirty = false;
             return;
         }
-
-        //Propagate the deletion of the block
-        handle_event('deleteblockinstance', $this);
-
         db_begin();
         safe_require('blocktype', $this->get('blocktype'));
         call_static_method(generate_class_name('blocktype', $this->get('blocktype')), 'delete_instance', $this);
@@ -1188,7 +1102,6 @@ class BlockInstance {
             }
         }
         foreach ($blocklist as $blockid => $blockdata) {
-            $change = false;
             if (isset($blockdata->configdata['artefactid'])) {
                 if ($change = $blockdata->configdata['artefactid'] == $blockdata->artefacts[0]) {
                     $blockdata->configdata['artefactid'] = null;
@@ -1279,7 +1192,6 @@ class BlockInstance {
             'title'      => $this->get('title'),
             'view'       => $view->get('id'),
             'view_obj'   => $view,
-            'row'        => $this->get('row'),
             'column'     => $this->get('column'),
             'order'      => $this->get('order'),
         ));

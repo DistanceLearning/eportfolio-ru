@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype-image
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -56,56 +72,6 @@ class PluginBlocktypeFolder extends PluginBlocktype {
         return $result;
     }
 
-    public static function has_config() {
-        return true;
-    }
-
-    public static function get_config_options() {
-        $elements = array();
-        $elements['foldersettings'] = array(
-            'type' => 'fieldset',
-            'legend' => get_string('foldersettings', 'blocktype.file/folder'),
-            'collapsible' => false,
-            'elements' => array(
-                'sortorder' => array(
-                    'type'         => 'select',
-                    'labelhtml'    => get_string('defaultsortorder', 'blocktype.file/folder'),
-                    'defaultvalue' => get_config_plugin('blocktype', 'folder', 'sortorder'),
-                    'options'      => array(
-                        'asc' => get_string('ascending'),
-                        'desc' => get_string('descending'),
-                    )
-                )
-            ),
-        );
-        $elements['downloadfolderzip'] = array(
-            'type' => 'fieldset',
-            'legend' => get_string('zipdownloadheading', 'artefact.file'),
-            'elements' => array(
-                'folderdownloadzip' => array(
-                    'type' => 'checkbox',
-                    'title' => get_string('downloadfolderzip', 'artefact.file'),
-                    'description' => get_string('downloadfolderzipdescription1', 'artefact.file'),
-                    'defaultvalue' => get_config_plugin('blocktype', 'folder', 'folderdownloadzip'),
-                ),
-            ),
-        );
-        return array(
-            'elements' => $elements,
-        );
-    }
-
-    public static function save_config_options($values) {
-        set_config_plugin('blocktype', 'folder', 'sortorder', $values['sortorder']);
-        set_config_plugin('blocktype', 'folder', 'folderdownloadzip', $values['folderdownloadzip']);
-    }
-
-    public static function postinst($prevversion) {
-        if ($prevversion < 2013120900) {
-            set_config_plugin('blocktype', 'folder', 'sortorder', 'asc');
-        }
-    }
-
     public static function has_instance_config() {
         return true;
     }
@@ -114,24 +80,9 @@ class PluginBlocktypeFolder extends PluginBlocktype {
         $configdata = $instance->get('configdata');
         safe_require('artefact', 'file');
         $instance->set('artefactplugin', 'file');
-        $elements = array(
+        return array(
             'artefactid' => self::filebrowser_element($instance, (isset($configdata['artefactid'])) ? array($configdata['artefactid']) : null),
-            'sortorder' => array(
-                'type' => 'select',
-                'labelhtml' => get_string('sortorder'),
-                'defaultvalue' => isset($configdata['sortorder']) ? $configdata['sortorder'] : get_config_plugin('blocktype', 'folder', 'sortorder'),
-                'options' => array('asc' => get_string('ascending'), 'desc' => get_string('descending')),
-            ),
         );
-        if (get_config_plugin('blocktype', 'folder', 'folderdownloadzip')) {
-            $elements['folderdownloadzip'] = array(
-                'type' => 'checkbox',
-                'labelhtml' => get_string('downloadfolderzipblock', 'artefact.file'),
-                'description' => get_string('downloadfolderzipdescriptionblock', 'artefact.file'),
-                'defaultvalue' => isset($configdata['folderdownloadzip']) ? $configdata['folderdownloadzip'] : get_config_plugin('blocktype', 'folder', 'folderdownloadzip'),
-            );
-        }
-        return $elements;
     }
 
     public static function artefactchooser_element($default=null) {

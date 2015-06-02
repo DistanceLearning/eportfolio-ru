@@ -1,175 +1,121 @@
 <?php
-/**
- *
- * @package    mahara
- * @subpackage interaction-forum
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
- *
- */
 
 defined('INTERNAL') || die();
 
-$string['addpostsuccess'] = 'Added post successfully';
-$string['addtitle'] = 'Add forum';
-$string['addtopic'] = 'Add topic';
-$string['addtopicsuccess'] = 'Added topic successfully';
-$string['autosubscribeusers'] = 'Automatically subscribe users';
-$string['autosubscribeusersdescription'] = 'Choose whether group users will automatically be subscribed to this forum';
-$string['Body'] = 'Message';
-$string['cantaddposttoforum'] = 'You are not allowed to post in this forum';
-$string['cantaddposttotopic'] = 'You are not allowed to post in this topic';
-$string['cantaddtopic'] = 'You are not allowed to add topics to this forum';
-$string['cantdeletepost'] = 'You are not allowed to delete posts in this forum';
-$string['cantdeletethispost'] = 'You are not allowed to delete this post';
-$string['cantdeletetopic'] = 'You are not allowed to delete topics in this forum';
-$string['canteditpost'] = 'You are not allowed to edit this post';
-$string['cantedittopic'] = 'You are not allowed to edit this topic';
-$string['cantfindforum'] = 'Could not find forum with id %s';
-$string['cantfindpost'] = 'Could not find post with id %s';
-$string['cantfindtopic'] = 'Could not find topic with id %s';
-$string['cantviewforums'] = 'You are not allowed to view forums in this group';
-$string['cantviewtopic'] = 'You are not allowed to view topics in this forum';
-$string['chooseanaction'] = 'Choose an action';
-$string['clicksetsubject'] = 'Click to set a subject';
-$string['Closed'] = 'Closed';
-$string['Close'] = 'Close';
-$string['closeddescription'] = 'Closed topics can only be replied to by moderators and the group administrators';
-$string['Count'] = 'Count';
-$string['createtopicusersdescription'] = 'If set to "All group members", anyone can create new topics and reply to existing topics. If set to "Moderators and group administrators", only moderators and group administrators can start new topics, but once topics exist, all users can post replies to them.';
-$string['currentmoderators'] = 'Current moderators';
-$string['defaultforumtitle'] = 'General discussion';
-$string['defaultforumdescription'] = '%s general discussion forum';
-$string['deleteforum'] = 'Delete forum';
-$string['deletepost'] = 'Delete post';
-$string['deletepostsuccess'] = 'Post deleted successfully';
-$string['deletepostsure'] = 'Are you sure you want to do this? It cannot be undone.';
-$string['deletetopic'] = 'Delete topic';
-$string['deletetopicspecific'] = 'Delete topic "%s"';
-$string['deletetopicsuccess'] = 'Topic deleted successfully';
-$string['deletetopicsure'] = 'Are you sure you want to do this? It cannot be undone.';
-$string['editpost'] = 'Edit post';
-
-$string['editpostsuccess'] = 'Post edited successfully';
-$string['editstothispost'] = 'Edits to this post:';
-$string['edittitle'] = 'Edit forum';
-$string['edittopic'] = 'Edit topic';
-$string['edittopicspecific'] = 'Edit topic "%s"';
-$string['edittopicsuccess'] = 'Topic edited successfully';
-$string['forumname'] = 'Forum name';
-$string['forumposthtmltemplate'] = "<div style=\"padding: 0.5em 0; border-bottom: 1px solid #999;\"><strong>Forum: %s (%s)</strong></div>
-
-<div style=\"margin: 1em 0;\">%s</div>
-
-<div style=\"font-size: smaller; border-top: 1px solid #999;\">
-<p><a href=\"%s\">Reply to this post online</a></p>
-<p><a href=\"%s\">Unsubscribe from this %s</a></p>
-</div>";
-$string['forumposttemplate'] = "Forum: %s (%s)
-------------------------------------------------------------------------
-
-%s
-
-------------------------------------------------------------------------
-To see and reply to the post online, follow this link:
-%s
-
-To unsubscribe from this %s, visit:
-%s";
-$string['forumsuccessfulsubscribe'] = 'Forum subscribed successfully';
-$string['forumsuccessfulunsubscribe'] = 'Forum unsubscribed successfully';
-$string['gotoforums'] = 'Go to forums';
-$string['groupadmins'] = 'Group administrators';
-$string['groupadminlist'] = 'Group administrators:';
-$string['Key'] = 'Key';
-$string['lastpost'] = 'Last post';
-$string['latestforumposts'] = 'Latest forum posts';
-$string['Moderators'] = 'Moderators';
-$string['moderatorsandgroupadminsonly'] = 'Moderators and group administrators only';
-$string['moderatorslist'] = 'Moderators:';
-$string['moderatorsdescription'] = 'Moderators can edit and delete topics and posts. They can also open, close, set and unset topics as sticky.';
-$string['name'] = 'Forum';
-$string['nameplural'] = 'Forums';
-$string['newforum'] = 'New forum';
-$string['newforumpostnotificationsubjectline'] = '%s';
-$string['newpost'] = 'New post: ';
-$string['newtopic'] = 'New topic';
-$string['noforumpostsyet'] = 'There are no posts in this group yet';
-$string['noforums'] = 'There are no forums in this group';
-$string['notopics'] = 'There are no topics in this forum';
-$string['Open'] = 'Open';
-$string['Order'] = 'Order';
-$string['orderdescription'] = 'Choose where you want the forum to be ordered compared to the other forums';
-$string['Post'] = 'Post';
-$string['postaftertimeout'] = 'You have submitted your change after timeout of %s minutes. Your change has not been applied.';
-$string['postbyuserwasdeleted'] = 'A post by %s was deleted';
-$string['postsbyuserweredeleted'] = '%s posts by %s were deleted';
-$string['postdelay'] = 'Post delay';
-$string['postdelaydescription'] = 'The minimum time (in minutes) that must pass before a new post can be mailed out to forum subscribers. The author of a post may make edits during this time.';
-$string['postedin'] = '%s posted in %s';
-$string['Poster'] = 'Poster';
-$string['postreply'] = 'Post reply';
-$string['Posts'] = 'Posts';
-$string['allposts'] = 'All posts';
-$string['postsvariable'] = 'Posts: %s';
-$string['potentialmoderators'] = 'Potential moderators';
-$string['re'] ='Re: %s';
-$string['regulartopics'] = 'Regular topics';
-$string['Reply'] = 'Reply';
-$string['replyforumpostnotificationsubjectline'] = 'Re: %s';
-$string['Re:'] = 'Re: ';
-$string['replyto'] = 'Reply to: ';
-$string['sendnow'] = 'Send message now';
-$string['sendnowdescription'] = 'Send message immediately instead of waiting at least %s minutes for it to be sent.';
-$string['Sticky'] = 'Sticky';
-$string['stickydescription'] = 'Sticky topics are at the top of every page';
-$string['stickytopics'] = 'Sticky topics';
-$string['Subscribe'] = 'Subscribe';
-$string['Subscribed'] = 'Subscribed';
-$string['subscribetoforum'] = 'Subscribe to forum';
-$string['subscribetotopic'] = 'Subscribe to topic';
-$string['Subject'] = 'Subject';
-$string['Topic'] = 'Topic';
-$string['Topics'] = 'Topics';
-$string['topiclower'] = 'topic';
-$string['topicslower'] = 'topics';
-$string['topicclosedsuccess'] = 'Topics closed successfully';
-$string['topicisclosed'] = 'This topic is closed. Only moderators and the group administrators can post new replies.';
-$string['topicopenedsuccess'] = 'Topics opened successfully';
-$string['topicstickysuccess'] = 'Topics set as sticky successfully';
-$string['topicsubscribesuccess'] = 'Topics subscribed successfully';
-$string['topicsuccessfulunsubscribe'] = 'Topic unsubscribed successfully';
-$string['topicunstickysuccess'] = 'Topic unset as sticky successfully';
-$string['topicunsubscribesuccess'] = 'Topics unsubscribed successfully';
-$string['topicupdatefailed'] = 'Topics update failed';
-$string['typenewpost'] = 'New forum post';
-$string['Unsticky'] = 'Unsticky';
-$string['Unsubscribe'] = 'Unsubscribe';
-$string['unsubscribefromforum'] = 'Unsubscribe from forum';
-$string['unsubscribefromtopic'] = 'Unsubscribe from topic';
-$string['updateselectedtopics'] = 'Update selected topics';
-$string['whocancreatetopics'] = 'Who can create topics';
-$string['youcannotunsubscribeotherusers'] = 'You cannot unsubscribe other users';
-$string['youarenotsubscribedtothisforum'] = 'You are not subscribed to this forum';
-$string['youarenotsubscribedtothistopic'] = 'You are not subscribed to this topic';
-
-$string['today'] = 'Today';
-$string['yesterday'] = 'Yesterday';
-$string['strftimerecentrelative'] = '%%v, %%k:%%M';
+$string['Body'] = 'Тело';
+$string['Close'] = 'Закрыть';
+$string['Closed'] = 'Закрыто';
+$string['Count'] = 'Подсчитать';
+$string['Key'] = 'Ключ';
+$string['Moderators'] = 'Модераторы';
+$string['Open'] = 'Открыть';
+$string['Order'] = 'Порядок';
+$string['Post'] = 'Сообщение';
+$string['Poster'] = 'Постер';
+$string['Posts'] = 'Сообщения';
+$string['Reply'] = 'Ответить';
+$string['Sticky'] = 'Липкий';
+$string['Subject'] = 'Тема';
+$string['Subscribe'] = 'Подписаться';
+$string['Subscribed'] = 'Подписано';
+$string['Topic'] = 'Тема';
+$string['Topics'] = 'Темы';
+$string['Unsticky'] = 'Отклеить';
+$string['Unsubscribe'] = 'Прекратить подписку';
+$string['addpostsuccess'] = 'Пост добавлен успешно';
+$string['addtitle'] = 'Добавить форум';
+$string['addtopic'] = 'Добавить тему';
+$string['addtopicsuccess'] = 'Тема добавлена успешно';
+$string['autosubscribeusers'] = 'Автоматически подписывать пользователей?';
+$string['autosubscribeusersdescription'] = 'Выберите, будут ли пользователи группы автоматически подписаны на этот форум';
+$string['cantaddposttoforum'] = 'Вы не можете оставлять сообщения на этом форуме';
+$string['cantaddposttotopic'] = 'Вы не можете оставлять сообщения в этой теме';
+$string['cantaddtopic'] = 'Вы не можете добавлять тему на этом форуме';
+$string['cantdeletepost'] = 'Вы не можете удалять сообщения на этом форуме';
+$string['cantdeletethispost'] = 'Вы не можете удалить это сообщение';
+$string['cantdeletetopic'] = 'Вы не можете удалить темы на этом форуме';
+$string['canteditpost'] = 'Вы не можете редактировать это сообщение';
+$string['cantedittopic'] = 'Вы не можете редактировать эту тему';
+$string['cantfindforum'] = 'Форум с идентификатором %s не найден';
+$string['cantfindpost'] = 'Сообщение с идентификатором %s не найдено';
+$string['cantfindtopic'] = 'Тема с идентификаторм %s не нейдена';
+$string['cantviewforums'] = 'Вы не можете просматривать форумы в этой группе';
+$string['cantviewtopic'] = 'Вы не можете просматривать темы на этом форуме';
+$string['chooseanaction'] = 'Выберите действие';
+$string['clicksetsubject'] = 'Нажмите, чтобы установить тему';
+$string['closeddescription'] = 'Отвечать в закрытых темах могут только модераторы или администраторы группы';
+$string['createtopicusersdescription'] = 'Если установлено значение "Все участники группы", любой может создавать новые темы и отвечать на существующие темы.  Если установлено "Модераторы и администраторы группы", то только модераторы и администраторы могут начинать новые темы, но если темы уже существуют, то все пользователи могут отвечать на них.';
+$string['currentmoderators'] = 'Текущие модераторы';
+$string['defaultforumdescription'] = '%s форум общих обсуждений';
+$string['defaultforumtitle'] = 'Общие обсуждения';
+$string['deleteforum'] = 'Удалить форум';
+$string['deletepost'] = 'Удалить сообщение';
+$string['deletepostsuccess'] = 'Сообщение удалено успешно';
+$string['deletepostsure'] = 'Вы уверены, что хотите это сделать? Операция не сможет быть отменена.';
+$string['deletetopic'] = 'Удалить тему';
+$string['deletetopicsuccess'] = 'Тема удалена успешно';
+$string['deletetopicsure'] = 'Вы уверены, что хотите это сделать? Операция не сможет быть отменена.';
+$string['deletetopicvariable'] = 'Удалить тему \'%s\'';
+$string['editpost'] = 'Редактировать сообщение';
+$string['editpostsuccess'] = 'Сообщение отредактировано успешно';
+$string['editstothispost'] = 'Изменения в этом сообщении:';
+$string['edittitle'] = 'Редактировать форум';
+$string['edittopic'] = 'Редактировать тему';
+$string['edittopicsuccess'] = 'Тема отредактирована успешно';
+$string['forumname'] = 'Название форума';
+$string['forumsuccessfulsubscribe'] = 'Подписка на форуме произошла успешно';
+$string['forumsuccessfulunsubscribe'] = 'Отмена от подписки на форуме произошла успешно';
+$string['gotoforums'] = 'Перейти на форум';
+$string['groupadminlist'] = 'Администраторы группы:';
+$string['groupadmins'] = 'Администраторы группы';
+$string['lastpost'] = 'Последнее сообщение';
+$string['latestforumposts'] = 'Последние сообщения форума';
+$string['moderatorsandgroupadminsonly'] = 'Только модераторы и администраторы группы';
+$string['moderatorsdescription'] = 'Модераторы могут редактировать и удалять темы и сообщения. Также они могут открыть, закрыть, включить и отключить тему';
+$string['moderatorslist'] = 'Модераторы:';
+$string['name'] = 'Форум';
+$string['nameplural'] = 'Форумы';
+$string['newforum'] = 'Новый форум';
+$string['newpost'] = 'Новое сообщение: ';
+$string['newtopic'] = 'Новая тема';
+$string['noforumpostsyet'] = 'В этой группе еще нет сообщений';
+$string['noforums'] = 'В этой группе нет форумов';
+$string['notopics'] = 'В этой группе нет тем';
+$string['orderdescription'] = 'Выберите, где форум можно сравнить с другими форумами';
+$string['postbyuserwasdeleted'] = 'Сообщение %s удалено';
+$string['postdelay'] = 'Задержка сообщения';
+$string['postdelaydescription'] = 'Минимальное время (в минутах), которое должно пройти перед тем, как новое сообщение будет разослано пользователям форума. В это время автор может редактировать сообщение.';
+$string['postedin'] = '%s размещены в %s';
+$string['postreply'] = 'Ответить';
+$string['postsvariable'] = 'Сообщения: %s';
+$string['potentialmoderators'] = 'Потенциальные модераторы';
+$string['re'] = 'Re: %s';
+$string['regulartopics'] = 'Регулярные темы';
+$string['replyto'] = 'Ответить: ';
+$string['stickydescription'] = 'Прилепленные темы находятся наверху каждой страницы';
+$string['stickytopics'] = 'Липкие темы';
 $string['strftimerecentfullrelative'] = '%%v, %%l:%%M %%p';
-
-$string['indentmode'] = 'Forum indent mode';
-$string['indentfullindent'] = 'Fully expand';
-$string['indentmaxindent'] = 'Expand to maximum';
-$string['indentflatindent'] = 'No indents';
-$string['indentmodedescription'] = 'Specify how topics in this forum should be indented.';
-$string['maxindent'] = 'Maximum indent level';
-$string['maxindentdescription'] = 'Set the maximum indentation level for a topic. This only applies if the indent mode has been set to "Expand to maximum".';
-
-$string['closetopics'] = 'Close new topics';
-$string['closetopicsdescription'] = 'If checked, all new topics in this forum will be closed by default. Only moderators and group administrators can reply to closed topics.';
-
-$string['activetopicsdescription'] = 'Recently updated topics in your groups.';
-
-$string['timeleftnotice'] = 'You have %s minutes left to finish editing.';
+$string['strftimerecentrelative'] = '%%v, %%k:%%M';
+$string['subscribetoforum'] = 'Подписаться на форум';
+$string['subscribetotopic'] = 'Подписаться на тему';
+$string['today'] = 'Сегодня';
+$string['topicclosedsuccess'] = 'Темы закрыты успешно';
+$string['topicisclosed'] = 'Эта тема закрыта. Только модераторы и администраторы группы могут размещать новые сообщения';
+$string['topiclower'] = 'тема';
+$string['topicopenedsuccess'] = 'Темы открыты успешно';
+$string['topicslower'] = 'темы';
+$string['topicstickysuccess'] = 'Темы установлены как липкие успешно';
+$string['topicsubscribesuccess'] = 'Подписка на темы произошла успешно';
+$string['topicsuccessfulunsubscribe'] = 'Отмена от подписки на тему произошла успешно';
+$string['topicunstickysuccess'] = 'Тема установлена как липкая успешно';
+$string['topicunsubscribesuccess'] = 'Отмена он подписки тем произошла успешно';
+$string['topicupdatefailed'] = 'Произошел сбой при обновлении тем';
+$string['typenewpost'] = 'Новые сообщений форума';
+$string['unsubscribefromforum'] = 'Прекратить подписку на форум';
+$string['unsubscribefromtopic'] = 'Прекратить подписку на тему';
+$string['updateselectedtopics'] = 'Обновить выбранные темы';
+$string['whocancreatetopics'] = 'Кто может создавать темы';
+$string['yesterday'] = 'Вчера';
+$string['youarenotsubscribedtothisforum'] = 'Вы не подписаны на этот форум';
+$string['youarenotsubscribedtothistopic'] = 'Вы не подписаны на эту тему';
+$string['youcannotunsubscribeotherusers'] = 'Вы не можете прекратить подписку других пользователей';

@@ -19,8 +19,8 @@
  * @package    pieform
  * @subpackage core
  * @author     Nigel McNie <nigel@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -92,6 +92,14 @@ class Pieform {/*{{{*/
     /*{{{ Fields */
 
     /**
+     * Maintains a tab index across all created forms, to make it easy for
+     * people to forget about it and have it just work for all of their forms.
+     *
+     * @var int
+     */
+    public static $formtabindex = 1;
+
+    /**
      * The form name. This is required.
      *
      * @var string
@@ -138,15 +146,6 @@ class Pieform {/*{{{*/
      * @var bool
      */
     private $submitted_by_js = false;
-
-    /*}}}*/
-
-    /**
-     * Whether the form has been submitted by dropzone.
-     *
-     * @var bool
-     */
-    private $submitted_by_dropzone = false;
 
     /*}}}*/
 
@@ -225,7 +224,7 @@ class Pieform {/*{{{*/
 
 
         if (empty($this->data['tabindex'])) {
-            $this->data['tabindex'] = 0;
+            $this->data['tabindex'] = self::$formtabindex++;
         }
 
         if (!is_array($this->data['elements']) || count($this->data['elements']) == 0) {
@@ -417,13 +416,6 @@ class Pieform {/*{{{*/
                 $function = 'pieform_element_' . $element['type'] . '_set_attributes';
                 if (function_exists($function)) {
                     $element = $function($element);
-
-                    // Allow an element to remove itself from the form
-                    if (!$element) {
-                        unset($this->data['elements'][$name]);
-                        unset($this->elementrefs[$name]);
-                        continue;
-                    }
                 }
 
                 // Force the form method to post if there is a file to upload
@@ -468,11 +460,6 @@ class Pieform {/*{{{*/
                     $this->submitted_by_js = true;
                 }
 
-                // If the form was submitted via the dropzone
-                if (!empty($global['dropzone'])) {
-                    $this->submitted_by_dropzone = true;
-                }
-
                 // Check if the form has been cancelled
                 if ($this->data['iscancellable']) {
                     foreach ($global as $key => $value) {
@@ -513,8 +500,8 @@ class Pieform {/*{{{*/
                             $function = "{$this->data['successcallback']}_{$name}";
                             if (function_exists($function)) {
                                 $function($this, $values);
-                                log_debug('button-submit form ' . $function . ' should provide a redirect.');
-                                return;
+                                $submitted = true;
+                                break;
                             }
                         }
                     }
@@ -569,10 +556,6 @@ class Pieform {/*{{{*/
                 //}
                 $message = $this->get_property('jserrormessage');
                 $this->json_reply(PIEFORM_ERR, array('message' => $message));
-            }
-            else {
-                global $SESSION;
-                $SESSION->add_error_msg($this->get_property('errormessage'));
             }
         }
     }/*}}}*/
@@ -799,7 +782,6 @@ class Pieform {/*{{{*/
                 'globalJsErrorCallback' => $this->data['globaljserrorcallback'],
                 'postSubmitCallback'    => $this->data['postsubmitcallback'],
                 'newIframeOnSubmit'     => $this->data['newiframeonsubmit'],
-                'checkDirtyChange'      => $this->data['checkdirtychange'],
             ));
             $result .= "<script type=\"text/javascript\">new Pieform($data);</script>\n";
         }
@@ -815,9 +797,6 @@ class Pieform {/*{{{*/
      *                        is available for the element.
      */
     public function get_value($element) {/*{{{*/
-        if (isset($element['readonly']) && $element['readonly'] && isset($element['defaultvalue'])) {
-            return $element['defaultvalue'];
-        }
         $function = 'pieform_element_' . $element['type'] . '_get_value';
         if (function_exists($function)) {
             return $function($this, $element);
@@ -927,10 +906,7 @@ class Pieform {/*{{{*/
         }
 
         $result = json_encode($data);
-        if ($this->submitted_by_dropzone) {
-            echo $result;
-            exit;
-        }
+
         echo <<<EOF
 <html><head><script type="text/javascript">function sendResult() { parent.pieformHandlers["{$this->name}"]($result); }</script></head><body onload="sendResult(); "></body></html>
 EOF;
@@ -966,12 +942,11 @@ EOF;
      * This method should be used to set an error on an element in a custom
      * validation function, if one has occurred.
      *
-     * @param string $name      The name of the element to set an error on
-     * @param string $message   The error message
-     * @param bool   $isescaped Whether to display error string as escaped or not
+     * @param string $name    The name of the element to set an error on
+     * @param string $message The error message
      * @throws PieformException  If the element could not be found
      */
-    public function set_error($name, $message, $isescaped = true) {/*{{{*/
+    public function set_error($name, $message) {/*{{{*/
         if (is_null($name) && !empty($message)) {
             $this->error = $message;
             return;
@@ -981,8 +956,6 @@ EOF;
                 foreach ($element['elements'] as &$subelement) {
                     if ($subelement['name'] == $name) {
                         $subelement['error'] = $message;
-                        $subelement['isescaped'] = ($isescaped) ? true : false;
-                        $this->data['haserror'] = true;
                         return;
                     }
                 }
@@ -990,8 +963,6 @@ EOF;
             else {
                 if ($key == $name) {
                     $element['error'] = $message;
-                    $element['isescaped'] = ($isescaped) ? true : false;
-                    $this->data['haserror'] = true;
                     return;
                 }
             }
@@ -1119,12 +1090,9 @@ EOF;
         foreach ($elementattributes as $attribute) {
             if (isset($element[$attribute]) && $element[$attribute] !== '') {
                 if ($attribute == 'id') {
-                    $value = $this->name . '_' . $element[$attribute];
+                    $element[$attribute] = $this->name . '_' . $element[$attribute];
                 }
-                else {
-                    $value = $element[$attribute];
-                }
-                $result .= ' ' . $attribute . '="' . self::hsc($value) . '"';
+                $result .= ' ' . $attribute . '="' . self::hsc($element[$attribute]) . '"';
             }
         }
 
@@ -1136,35 +1104,14 @@ EOF;
             $result .= ' maxlength="' . intval($element['rules']['maxlength']) . '"';
         }
 
-        if (!in_array('aria-describedby', $exclude)) {
-            $result .= ' aria-describedby="' . $this->element_descriptors($element) . '"';
-        }
-
         foreach (array_diff(array('disabled', 'readonly'), $exclude) as $attribute) {
             if (!empty($element[$attribute])) {
-                $result .= ($attribute == 'readonly') ? ' readonly="readonly" disabled="disabled"' : " $attribute=\"$attribute\"";
+                $result .= " $attribute=\"$attribute\"";
             }
         }
         
         return $result;
     }/*}}}*/
-
-    /**
-     * Returns a space-separated list of IDs of nodes which describe the given element
-     * Intended for use as the value of the aria-describedby attribute
-     *
-     * @param array $element The element to find descriptors for
-     */
-    public function element_descriptors($element) {
-        $result = '';
-        if (!empty($element['error'])) {
-            $result .= $this->name . '_' . $element['id'] . '_error ';
-        }
-        if ((!$this->has_errors() || $this->get_property('showdescriptiononerror')) && !empty($element['description'])) {
-            $result .= $this->name . '_' . $element['id'] . '_description ';
-        }
-        return $result;
-    }
 
     /**
      * Includes a plugin file, checking any configured plugin directories.
@@ -1433,41 +1380,16 @@ EOF;
         // Element title
         if (isset($element['title']) && $element['title'] !== '') {
             $title = (!empty($element['labelescaped'])) ? $element['title'] : self::hsc($element['title']);
-
-            if ($this->get_property('requiredmarker') && !empty($element['rules']['required'])) {
-                $requiredmarker = ' <span class="requiredmarker">*</span>';
-            }
-            else {
-                $requiredmarker = '';
-            }
-
-            if (!empty($element['hiddenlabel'])) {
-                $labelclass = ' class="accessible-hidden"';
-            }
-            else {
-                $labelclass = '';
-            }
-
             if (!empty($element['nolabel'])) {
                 // Don't bother with a label for the element
-                $element['labelhtml'] = $title . $requiredmarker;
+                $element['labelhtml'] = $title;
             }
             else {
-                $element['labelhtml'] = '<label' . $labelclass . ' for="' . $this->name . '_' . $element['id'] . '">' . $title . $requiredmarker . '</label>';
+                $element['labelhtml'] = '<label for="' . $this->name . '_' . $element['id'] . '">' . $title . '</label>';
             }
-        }
-
-        // Element description
-        if (isset($element['description']) && $element['description'] !== '') {
-            $descriptionid = $this->name . '_' . $element['id'] . '_description';
-            $element['descriptionhtml'] = '<span id="' . $descriptionid . '">' . $element['description'] . '</span>';
-        }
-
-        // Error message
-        if (isset($element['error']) && $element['error'] !== '') {
-            $errorid = $this->name . '_' . $element['id'] . '_error';
-            $errortext = (!empty($element['isescaped'])) ? hsc($element['error']) : $element['error'];
-            $element['errorhtml'] = '<span id="' . $errorid . '">' . $errortext . '</span>';
+            if ($this->get_property('requiredmarker') && !empty($element['rules']['required'])) {
+                $element['labelhtml'] .= ' <span class="requiredmarker">*</span>';
+            }
         }
 
         // Help icon
@@ -1577,10 +1499,6 @@ EOF;
             // you choose.
             'jserrormessage' => '',
 
-            // A message to add to the list of global error messages if form submission
-            // fails (and the form isn't a jsform)
-            'errormessage' => '',
-
             // Whether this form can be cancelled, regardless of the presence of
             // 'cancel' buttons or form inputs mischeviously named as to behave
             // like cancel buttons
@@ -1622,9 +1540,6 @@ EOF;
             // Whether to show the description as well as the error message 
             // when displaying errors
             'showdescriptiononerror' => true,
-
-            // Check dirty change when leaving away
-            'checkdirtychange' => true,
         );
     }/*}}}*/
 
@@ -1735,7 +1650,7 @@ function pieform_get_headdata() {/*{{{*/
     // TODO: jsdirectory should be independent of ANY form
     if ($GLOBALS['_PIEFORM_REGISTRY']) {
         array_unshift($htmlelements, '<script type="text/javascript" src="'
-            . Pieform::hsc($form->get_property('jsdirectory')) . 'pieforms.js?v=' . get_config('release'). '"></script>');
+            . Pieform::hsc($form->get_property('jsdirectory')) . 'pieforms.js"></script>');
         array_unshift($htmlelements, '<script type="text/javascript">pieformPath = "'
             . Pieform::hsc($form->get_property('jsdirectory')) . '";</script>');
     }

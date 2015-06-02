@@ -2,193 +2,222 @@
  * 'Speeds up' the user search if the user has javascript enabled in
  * their browser
  * @source: http://gitorious.org/mahara/mahara
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
  *
+ * @licstart
+ * Copyright (C) 2006-2010  Catalyst IT Ltd
+ *
+ * The JavaScript code in this page is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GNU GPL) as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.  The code is distributed WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+ *
+ * As additional permission under GNU GPL version 3 section 7, you
+ * may distribute non-source (e.g., minimized or compacted) forms of
+ * that code without the copy of the GNU GPL normally required by
+ * section 4, provided you include this license notice and a URL
+ * through which recipients can access the Corresponding Source.
+ * @licend
  */
 
-function UserSearch(pager) {
+function UserSearch() {
     var self = this;
 
-    this.init = function() {
-        self.selectusers = {};
-
-        self.rewriteHeaders();
+    this.init = function () {
         self.rewriteInitials();
         self.rewriteQueryButton();
+        self.rewritePaging();
+        self.rewriteSorting();
+        self.rewriteSetLimit();
+        self.selectusers = {};
         self.rewriteCheckboxes();
-        self.rewriteLoggedInFilter();
-        self.rewriteDuplicateEmailFilter();
-
-        paginatorProxy.addObserver(self);
-        var oldparams = $j.extend({}, pager.params);
-        connect(self, 'pagechanged', function(data) {
-            if (!data.changedPage) {
-                self.selectusers = {};
-            }
-            oldparams = $j.extend({}, pager.params);
-            self.rewriteCheckboxes();
-        });
-
-        $j.each(['bulkactions', 'report'], self.connectSelectedUsersForm);
-    };
-
-    this.rewriteHeaders = function() {
-        $j('#searchresults th.search-results-sort-column a').each(function() {
-            var href = $j(this).attr('href');
-            var index = href.indexOf('?');
-            var querystring = parseQueryString(href.substr(index));
-            var sortby = querystring.sortby;
-            var sortdir = querystring.sortdir;
-
-            $j(this).click(function() {
-                var header = $j(this).parent();
-                if (!(header.hasClass('asc') || header.hasClass('desc'))) {
-                    sortdir = 'asc';
-                }
-
-                pager.params.sortby = sortby;
-                pager.params.sortdir = sortdir;
-
-                $j(this).closest('thead').find('th').removeClass('asc').removeClass('desc');
-                $j(this).parent().addClass(sortdir);
-                var re1 = new RegExp(strings.descending);
-                var re2 = new RegExp(strings.ascending);
-                $j(this).closest('tr').find('span').each(function(i, el) {
-                    el.innerHTML = el.innerHTML.replace(re1, strings.ascending);
-                });
-                if (sortdir == 'asc') {
-                    $j(this).find('span').html($j(this).find('span').html().replace(re2, strings.descending));
-                }
-                sortdir = (sortdir == 'desc') ? 'asc' : 'desc';
-
-                pager.sendQuery();
-                return false;
-            });
-        });
+        self.params = {};
     };
 
     this.rewriteInitials = function() {
-        $j('#firstnamelist span.first-initial').each(function() {
-            $j(this).click(function() {
-                self.searchInitial('f', $j(this));
-                return false;
-            });
+        forEach(getElementsByTagAndClassName('span', 'first-initial', 'firstnamelist'), function(i) {
+            self.rewriteInitial('f', i);
         });
-        $j('#lastnamelist span.last-initial').each(function() {
-            $j(this).click(function() {
-                self.searchInitial('l', $j(this));
-                return false;
-            });
+        forEach(getElementsByTagAndClassName('span', 'last-initial', 'lastnamelist'), function(i) {
+            self.rewriteInitial('l', i);
         });
     };
 
-    this.searchInitial = function(initialtype, el) {
+    this.rewriteInitial = function(t, i) {
+        connect(i, 'onclick', partial(self.searchInitial, t));
+    };
+
+    this.resetInitials = function() {
+        forEach(getElementsByTagAndClassName('span', 'selected', 'initials'), function (i) {
+            removeElementClass(i, 'selected');
+        });
+        forEach(getElementsByTagAndClassName('span', 'all', 'initials'), function (i) {
+            addElementClass(i, 'selected');
+        });
+    };
+
+    this.searchInitial = function(initialtype, e) {
         // Clear all search params except for the other initial
         if (initialtype == 'f') {
-            $j('#firstnamelist span.selected').removeClass('selected');
+            if (self.params.l) {
+                self.params = {'l' : self.params.l};
+            } else {
+                self.params = {};
+            }
+            forEach(getElementsByTagAndClassName('span', 'selected', 'firstnamelist'), function (i) {
+                removeElementClass(i, 'selected');
+            });
+        } else if (initialtype == 'l') {
+            if (self.params.f) {
+                self.params = {'f' : self.params.f};
+            } else {
+                self.params = {};
+            }
+            forEach(getElementsByTagAndClassName('span', 'selected', 'lastnamelist'), function (i) {
+                removeElementClass(i, 'selected');
+            });
         }
-        else if (initialtype == 'l') {
-            $j('#lastnamelist span.selected').removeClass('selected');
+        addElementClass(this, 'selected');
+        if (!hasElementClass(this, 'all')) {
+            self.params[initialtype] = scrapeText(this).replace(/\s+/g, '');
         }
-        el.addClass('selected');
-        if (el.hasClass('all')) {
-            delete pager.params[initialtype];
+        self.doSearch();
+        e.stop();
+    };
+
+    this.searchByChildLink = function (element) {
+        var children = getElementsByTagAndClassName('a', null, element);
+        if (children.length == 1) {
+            var href = getNodeAttribute(children[0], 'href');
+            self.params = parseQueryString(href.substring(href.indexOf('?')+1, href.length));
+            // Assume this is only changing the page or the order of results,
+            // so pass true here to avoid clearing the selected users.
+            self.doSearch(true);
         }
-        else {
-            pager.params[initialtype] = el.text().replace(/\s+/g, '');
-        }
-        pager.params.offset = 0;
-        pager.sendQuery();
+    };
+
+    this.changePage = function(e) {
+        e.stop();
+        self.searchByChildLink(this);
+    };
+
+    this.rewritePaging = function() {
+        forEach(getElementsByTagAndClassName('span', 'pagination', 'searchresults'), function(i) {
+            connect(i, 'onclick', self.changePage);
+        });
+    };
+
+    this.sortColumn = function(e) {
+        e.stop();
+        self.searchByChildLink(this);
+    };
+
+    this.rewriteSorting = function() {
+        forEach(getElementsByTagAndClassName('th', 'search-results-sort-column', 'searchresults'), function(i) {
+            connect(i, 'onclick', self.sortColumn);
+        });
     };
 
     this.rewriteQueryButton = function() {
-        $j('#query-button').click(function() {
-            pager.params.query = $j('#query').val();
-            var institution = $j('#institution');
-            if (institution) {
-                pager.params.institution = institution.val();
+        connect($('query-button'), 'onclick', self.newQuery);
+    };
+
+    this.newQuery = function(e) {
+        self.params = {};
+        self.resetInitials();
+        self.params.query = $('query').value;
+        var institution = $('institution');
+        if (institution) {
+            self.params.institution = institution.value;
+        }
+        var institution_requested = $('institution_requested');
+        if (institution_requested) {
+            self.params.institution_requested = institution_requested.value;
+        }
+        self.doSearch();
+        e.stop();
+    };
+
+    this.doSearch = function(saveselected) {
+        self.params.action = 'search';
+        sendjsonrequest('search.json.php', self.params, 'POST', function(data) {
+            $('results').innerHTML = data.data;
+            if (!saveselected) {
+                self.selectusers = {};
             }
-            var institution_requested = $j('#institution_requested');
-            if (institution_requested) {
-                pager.params.institution_requested = institution_requested.val();
+            if ($('searchresults')) {
+                self.rewritePaging();
+                self.rewriteSorting();
+                self.rewriteCheckboxes();
+                self.rewriteSetLimit();
             }
-            pager.sendQuery();
-            return false;
         });
     };
 
     this.rewriteCheckboxes = function() {
-        $j('#searchresults input.selectusers').each(function() {
-            var value = $j(this).val();
-            $j(this).change(function() {
-                if ($j(this).prop('checked')) {
-                    self.selectusers[value] = 1;
+        forEach(getElementsByTagAndClassName('input', 'selectusers', 'searchresults'), function(i) {
+            connect(i, 'onclick', function() {
+                if (i.checked) {
+                    self.selectusers[i.value] = 1;
                 }
                 else {
-                    delete self.selectusers[value];
+                    delete self.selectusers[i.value];
                 }
             });
-            if (self.selectusers[value]) {
-                $j(this).prop('checked', true);
+            if (self.selectusers[i.value]) {
+                i.checked = true;
             }
         });
-        if ($j('#selectall')) {
-            $j('#selectall').click(function() {
-                $j('#searchresults input.selectusers').each(function() {
-                    self.selectusers[$j(this).val()] = 1;
-                    $j(this).prop('checked', true);
+        if ($('selectall')) {
+            connect('selectall', 'onclick', function(e) {
+                e.stop();
+                forEach(getElementsByTagAndClassName('input', 'selectusers', 'searchresults'), function(i) {
+                    self.selectusers[i.value] = 1;
+                    i.checked = true;
                 });
-                return false;
             });
-            $j('#selectnone').click(function() {
-                $j('#searchresults input.selectusers').each(function() {
-                    delete self.selectusers[$j(this).val()];
-                    $j(this).prop('checked', false);
+            connect('selectnone', 'onclick', function(e) {
+                e.stop();
+                forEach(getElementsByTagAndClassName('input', 'selectusers', 'searchresults'), function(i) {
+                    delete self.selectusers[i.value];
+                    i.checked = false;
                 });
-                return false;
             });
         }
     };
 
-    this.rewriteLoggedInFilter = function() {
-        $j('#loggedin').change(function() {
-            var type = $j(this).val();
-            pager.params.offset = 0;
-            pager.params.loggedin = type;
-            if (type === 'since' || type === 'notsince') {
-                $j('#loggedindate_container').removeClass('js-hidden');
-            }
-            else {
-                $j('#loggedindate_container').addClass('js-hidden');
-            }
-            pager.sendQuery();
-            return false;
-        });
-        $j('#loggedinform_loggedindate').change(function() {
-            // Set handler directly so that calendar works
-            pager.params.offset = 0;
-            pager.params.loggedindate = $j(this).val();
-            pager.sendQuery();
-        });
+    this.rewriteSetLimit = function() {
+        if ($('setlimit')) {
+            forEach(getElementsByTagAndClassName('a', null, 'setlimit'), function(i) {
+                connect(i, 'onclick', function(e) {
+                    e.stop();
+                    if (!self.params.offset) {
+                        self.params.offset = 0;
+                    }
+                    self.params.limit = scrapeText(i);
+                    self.params.offset = Math.floor(self.params.offset / self.params.limit) * self.params.limit;
+                    self.doSearch(true);
+                });
+            });
+        }
     };
 
-    this.rewriteDuplicateEmailFilter = function() {
-        $j('#duplicateemail').click(function() {
-            pager.params.offset = 0;
-            pager.params.duplicateemail = $j(this).prop('checked');
-            pager.sendQuery();
-        });
-    };
+    addLoadEvent(self.init);
+}
 
-    this.connectSelectedUsersForm = function(i, formid) {
-        $j('#' + formid + ' input.button').click(function() {
+userSearch = new UserSearch();
+
+function connectSelectedUsersForm(formid) {
+    forEach(getElementsByTagAndClassName('input', 'button', formid), function(input) {
+        connect(input, 'onclick', function() {
             // Some of the selected users aren't on the page, so just add them all to the
             // form now.
             var count = 0;
-            if (self.selectusers) {
-                for (var j in self.selectusers) {
-                    $j('#' + formid).append($j('<input>', {
+            if (userSearch.selectusers) {
+                for (j in userSearch.selectusers) {
+                    appendChildNodes(formid, INPUT({
                         'type': 'checkbox',
                         'name': 'users[' + j + ']',
                         'value': j,
@@ -199,19 +228,21 @@ function UserSearch(pager) {
                 }
             }
             if (count) {
-                $j('#nousersselected').addClass('hidden');
-                $j('#' + formid).append($j('<input>', {
+                addElementClass('nousersselected', 'hidden');
+                appendChildNodes(formid, INPUT({
                     'type': 'hidden',
                     'name': 'action',
-                    'value': $j(this).attr('name')
+                    'value': input.name
                 }));
-                $j('#' + formid).submit();
+                $(formid).submit();
                 return false;
             }
-            $j('#nousersselected').removeClass('hidden');
+            removeElementClass('nousersselected', 'hidden');
             return false;
         });
-    };
-
-    this.init();
+    });
 }
+
+addLoadEvent(function() {
+    forEach(['bulkactions', 'report'], connectSelectedUsersForm);
+});

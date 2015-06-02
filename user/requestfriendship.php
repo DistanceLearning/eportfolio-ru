@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -27,14 +43,13 @@ $user->introduction = get_field('artefact', 'title', 'artefacttype', 'introducti
 define('TITLE', get_string('sendfriendshiprequest', 'group', display_name($id)));
 
 $returnto = param_alpha('returnto', 'myfriends');
-$offset = param_integer('offset', 0);
+
 switch ($returnto) {
 case 'find': $goto = 'user/find.php'; break;
 case 'view': $goto = profile_url($user, false); break;
 default:
     $goto = 'user/myfriends.php';
 }
-$goto .= (strpos($goto,'?')) ? '&offset=' . $offset : '?offset=' . $offset;
 $goto = get_config('wwwroot') . $goto;
 
 if (is_friend($id, $USER->get('id'))) {
@@ -54,7 +69,7 @@ $form = pieform(array(
             'type'  => 'textarea',
             'title' => get_string('message'),
             'cols'  => 50,
-            'rows'  => 4,
+            'rows'  => 4,       
         ),
         'submit' => array(
             'type' => 'submitcancel',
@@ -72,14 +87,14 @@ $smarty->display('user/requestfriendship.tpl');
 
 function requestfriendship_submit(Pieform $form, $values) {
     global $USER, $SESSION, $id, $goto;
-
+    
     $loggedinid = $USER->get('id');
     $user = get_record('usr', 'id', $id);
 
     // friend db record
     $f = new StdClass;
     $f->ctime = db_format_timestamp(time());
-
+    
     // notification info
     $n = new StdClass;
     $n->url = profile_url($USER, false);
@@ -87,7 +102,6 @@ function requestfriendship_submit(Pieform $form, $values) {
     $n->fromuser = $loggedinid;
     $lang = get_user_language($user->id);
     $displayname = display_name($USER, $user);
-    $n->strings = new stdClass;
     $n->strings->urltext = (object) array('key' => 'Requests');
 
     $f->owner     = $id;
@@ -96,10 +110,10 @@ function requestfriendship_submit(Pieform $form, $values) {
     insert_record('usr_friend_request', $f);
     $n->subject = get_string_from_language($lang, 'requestedfriendlistsubject', 'group');
     if (isset($values['message']) && !empty($values['message'])) {
-        $n->message = get_string_from_language($lang, 'requestedfriendlistmessageexplanation', 'group', $displayname) . $values['message'];
+        $n->message = get_string_from_language($lang, 'requestedfriendlistmessagereason', 'group', $displayname) . $values['message'];
     }
     else {
-        $n->message = get_string_from_language($lang, 'requestedfriendlistinboxmessage', 'group', $displayname);
+        $n->message = get_string_from_language($lang, 'requestedfriendlistmessage', 'group', $displayname);
     }
     require_once('activity.php');
     activity_occurred('maharamessage', $n);

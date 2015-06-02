@@ -1,11 +1,26 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2008 Catalyst IT Ltd (http://www.catalyst.net.nz)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-plans
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -28,30 +43,17 @@ class PluginArtefactPlans extends PluginArtefact {
         return 'plans';
     }
 
-    public static function is_active() {
-        return get_field('artefact_installed', 'active', 'name', 'plans');
-    }
-
     public static function menu_items() {
         return array(
             'content/plans' => array(
                 'path' => 'content/plans',
-                'url'  => 'artefact/plans/index.php',
+                'url'  => 'artefact/plans/',
                 'title' => get_string('Plans', 'artefact.plans'),
                 'weight' => 60,
             ),
         );
     }
 
-    public static function get_artefact_type_content_types() {
-        return array(
-            'task' => array('text'),
-        );
-    }
-
-    public static function progressbar_link($artefacttype) {
-        return 'artefact/plans/index.php';
-    }
 }
 
 class ArtefactTypePlan extends ArtefactType {
@@ -64,9 +66,7 @@ class ArtefactTypePlan extends ArtefactType {
     }
 
     public static function get_links($id) {
-        return array(
-            '_default' => get_config('wwwroot') . 'artefact/plans/plan.php?id=' . $id,
-        );
+        return array();
     }
 
     public function delete() {
@@ -80,8 +80,6 @@ class ArtefactTypePlan extends ArtefactType {
     }
 
     public static function get_icon($options=null) {
-        global $THEME;
-        return $THEME->get_url('images/plan.png', false, 'artefact/plans');
     }
 
     public static function is_singular() {
@@ -103,12 +101,6 @@ class ArtefactTypePlan extends ArtefactType {
                                         WHERE owner = ? AND artefacttype = 'plan'
                                         ORDER BY title ASC", array($USER->get('id')), $offset, $limit))
                                         || ($plans = array());
-        foreach ($plans as &$plan) {
-            if (!isset($plan->tags)) {
-                $plan->tags = ArtefactType::artefact_get_tags($plan->id);
-            }
-            $plan->description = '<p>' . preg_replace('/\n\n/','</p><p>', $plan->description) . '</p>';
-        }
         $result = array(
             'count'  => count_records('artefact', 'owner', $USER->get('id'), 'artefacttype', 'plan'),
             'data'   => $plans,
@@ -177,12 +169,6 @@ class ArtefactTypePlan extends ArtefactType {
 
         $artefact->set('title', $values['title']);
         $artefact->set('description', $values['description']);
-        if (get_config('licensemetadata')) {
-            $artefact->set('license', $values['license']);
-            $artefact->set('licensor', $values['licensor']);
-            $artefact->set('licensorurl', $values['licensorurl']);
-        }
-        $artefact->set('tags', $values['tags']);
         $artefact->commit();
 
         $SESSION->add_ok_msg(get_string('plansavedsuccessfully', 'artefact.plans'));
@@ -191,7 +177,7 @@ class ArtefactTypePlan extends ArtefactType {
             redirect('/artefact/plans/plan.php?id='.$artefact->get('id'));
         }
         else {
-            redirect('/artefact/plans/index.php');
+            redirect('/artefact/plans/');
         }
     }
 
@@ -201,12 +187,11 @@ class ArtefactTypePlan extends ArtefactType {
     */
     public static function get_form($plan=null) {
         require_once(get_config('libroot') . 'pieforms/pieform.php');
-        require_once('license.php');
         $elements = call_static_method(generate_artefact_class_name('plan'), 'get_planform_elements', $plan);
         $elements['submit'] = array(
             'type' => 'submitcancel',
             'value' => array(get_string('saveplan','artefact.plans'), get_string('cancel')),
-            'goto' => get_config('wwwroot') . 'artefact/plans/index.php',
+            'goto' => get_config('wwwroot') . 'artefact/plans/',
         );
         $planform = array(
             'name' => empty($plan) ? 'addplan' : 'editplan',
@@ -243,11 +228,6 @@ class ArtefactTypePlan extends ArtefactType {
                 'defaultvalue' => null,
                 'title' => get_string('description', 'artefact.plans'),
             ),
-            'tags'        => array(
-                'type'        => 'tags',
-                'title'       => get_string('tags'),
-                'description' => get_string('tagsdescprofile'),
-            ),
         );
 
         if (!empty($plan)) {
@@ -258,11 +238,6 @@ class ArtefactTypePlan extends ArtefactType {
                 'type' => 'hidden',
                 'value' => $plan->id,
             );
-        }
-
-        if (get_config('licensemetadata')) {
-            $elements['license'] = license_form_el_basic($plan);
-            $elements['license_advanced'] = license_form_el_advanced($plan);
         }
 
         return $elements;
@@ -302,20 +277,7 @@ class ArtefactTypePlan extends ArtefactType {
         }
         $smarty->assign('plan', $this);
 
-        if (!empty($options['details']) and get_config('licensemetadata')) {
-            $smarty->assign('license', render_license($this));
-        }
-        else {
-            $smarty->assign('license', false);
-        }
-        $smarty->assign('owner', $this->get('owner'));
-        $smarty->assign('tags', $this->get('tags'));
-
         return array('html' => $smarty->fetch('artefact:plans:viewplan.tpl'), 'javascript' => '');
-    }
-
-    public static function is_countable_progressbar() {
-        return true;
     }
 }
 
@@ -349,14 +311,10 @@ class ArtefactTypeTask extends ArtefactType {
     }
 
     public static function get_links($id) {
-        return array(
-            '_default' => get_config('wwwroot') . 'artefact/plans/edit/task.php?id=' . $id,
-        );
+        return array();
     }
 
     public static function get_icon($options=null) {
-        global $THEME;
-        return $THEME->get_url('images/plantask.png', false, 'artefact/plans');
     }
 
     public static function is_singular() {
@@ -443,7 +401,6 @@ class ArtefactTypeTask extends ArtefactType {
     */
     public static function get_form($parent, $task=null) {
         require_once(get_config('libroot') . 'pieforms/pieform.php');
-        require_once('license.php');
         $elements = call_static_method(generate_artefact_class_name('task'), 'get_taskform_elements', $parent, $task);
         $elements['submit'] = array(
             'type' => 'submitcancel',
@@ -499,11 +456,6 @@ class ArtefactTypeTask extends ArtefactType {
                 'defaultvalue' => null,
                 'title' => get_string('description', 'artefact.plans'),
             ),
-            'tags'        => array(
-                'type'        => 'tags',
-                'title'       => get_string('tags'),
-                'description' => get_string('tagsdescprofile'),
-            ),
             'completed' => array(
                 'type' => 'checkbox',
                 'defaultvalue' => null,
@@ -520,10 +472,6 @@ class ArtefactTypeTask extends ArtefactType {
                 'type' => 'hidden',
                 'value' => $task->id,
             );
-        }
-        if (get_config('licensemetadata')) {
-            $elements['license'] = license_form_el_basic($task);
-            $elements['license_advanced'] = license_form_el_advanced($task);
         }
 
         $elements['parent'] = array(
@@ -562,12 +510,6 @@ class ArtefactTypeTask extends ArtefactType {
         $artefact->set('description', $values['description']);
         $artefact->set('completed', $values['completed'] ? 1 : 0);
         $artefact->set('completiondate', $values['completiondate']);
-        if (get_config('licensemetadata')) {
-            $artefact->set('license', $values['license']);
-            $artefact->set('licensor', $values['licensor']);
-            $artefact->set('licensorurl', $values['licensorurl']);
-        }
-        $artefact->set('tags', $values['tags']);
         $artefact->commit();
 
         $SESSION->add_ok_msg(get_string('plansavedsuccessfully', 'artefact.plans'));
@@ -604,7 +546,6 @@ class ArtefactTypeTask extends ArtefactType {
                     }
                     $result->completiondate = format_date($result->completiondate, 'strftimedate');
                 }
-                $result->description = '<p>' . preg_replace('/\n\n/','</p><p>', $result->description) . '</p>';
             }
         }
 
@@ -673,9 +614,5 @@ class ArtefactTypeTask extends ArtefactType {
             $tasks['pagination'] = $pagination['html'];
             $tasks['pagination_js'] = $pagination['javascript'];
         }
-    }
-
-    public static function is_countable_progressbar() {
-        return true;
     }
 }

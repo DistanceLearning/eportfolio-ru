@@ -10,16 +10,16 @@
       <tr class="{cycle values='r0,r1'}">
           <td class="pendinginfo">
               <div id="pendinginfo_{$registration->id}">
-                <h3 class="title">{$registration->firstname} {$registration->lastname}</h3>
-                <div class="detail">{$registration->email}</div>
+                    <h3>{$registration->firstname} {$registration->lastname}</h3>
+                    <p>{$registration->email}</p>
               </div>
           </td>
           <td class="pendinginfo">
-              <div class="detail">{$registration->reason}</div>
+                  <p>{$registration->reason}</p>
           </td>
           <td class="right">
-              <a class="btn" href="{$WWWROOT}admin/users/actionregistration.php?r={$registration->id}&action=approve"><span class="btn-approve">{str tag=approve section=admin}</span></a>
-              <a class="btn" href="{$WWWROOT}admin/users/actionregistration.php?r={$registration->id}&action=deny"><span class="btn-deny">{str tag=deny section=admin}</span></a>
+              <a class="btn" href="{$WWWROOT}admin/users/actionregistration.php?r={$registration->id}&action=approve">{str tag=approve section=admin}</a>
+                <a class="btn" href="{$WWWROOT}admin/users/actionregistration.php?r={$registration->id}&action=deny">{str tag=deny section=admin}</a>
           </td>
       </tr>
 {/foreach}

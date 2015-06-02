@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -28,14 +44,13 @@ $offset = (int)($offset / $groupsperpage) * $groupsperpage;
 $results = group_get_associated_groups($USER->get('id'), $filter, $groupsperpage, $offset, $groupcategory);
 $elements = array();
 $elements['options'] = array(
-            'title' => get_string('filter'),
-            'hiddenlabel' => true,
             'type' => 'select',
             'options' => array(
                 'all'     => get_string('allmygroups', 'group'),
                 'admin'   => get_string('groupsiown', 'group'),
                 'member'  => get_string('groupsimin', 'group'),
-                'invite'  => get_string('groupsiminvitedto', 'group')
+                'invite'  => get_string('groupsiminvitedto', 'group'),
+                'request' => get_string('groupsiwanttojoin', 'group')
             ),
             'defaultvalue' => $filter);
 if (get_config('allowgroupcategories')
@@ -45,8 +60,6 @@ if (get_config('allowgroupcategories')
     $options[-1] = get_string('categoryunassigned', 'group');
     $options += $groupcategories;
     $elements['groupcategory'] = array(
-                'title'        => get_string('groupcategory', 'group'),
-                'hiddenlabel'  => true,
                 'type'         => 'select',
                 'options'      => $options,
                 'defaultvalue' => $groupcategory,
@@ -57,7 +70,6 @@ $elements['submit'] = array(
             'value' => get_string('filter'));
 $form = pieform(array(
     'name'   => 'filter',
-    'checkdirtychange' => false,
     'method' => 'post',
     'renderer' => 'oneline',
     'elements' => $elements
@@ -72,7 +84,7 @@ if ($groupcategory != 0) {
 }
 
 $pagination = build_pagination(array(
-    'url' => get_config('wwwroot') . 'group/mygroups.php' . (!empty($params) ? ('?' . http_build_query($params)) : ''),
+    'url' => get_config('wwwroot') . 'group/mygroups.php' . ($params ? ('?' . http_build_query($params)) : ''),
     'count' => $results['count'],
     'limit' => $groupsperpage,
     'offset' => $offset,

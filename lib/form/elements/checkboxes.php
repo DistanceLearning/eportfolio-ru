@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage form-element
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -21,9 +37,9 @@ function pieform_element_checkboxes(Pieform $form, $element) {/*{{{*/
 
     if (count($element['elements']) > 1) {
         $id = hsc($form->get_name() . '_' . $element['name']) . '_container';
-        $result .= '<a href="" onclick="pieform_element_checkboxes_update(\'' . $id . '\', true); return false;">' . get_string('selectall') . '</a>'
+        $result .= '<a href="" onclick="pieform_element_checkboxes_update(\'' . $id . '\', true); return false;">' . get_string('All') . '</a>'
             . '&nbsp;'
-            . ' <a href="" onclick="pieform_element_checkboxes_update(\'' . $id . '\', false); return false;">' . get_string('selectnone') . '</a>';
+            . ' <a href="" onclick="pieform_element_checkboxes_update(\'' . $id . '\', false); return false;">' . get_string('none') . '</a>';
     }
 
     $result .= '<div class="cl"></div>';
@@ -33,26 +49,19 @@ function pieform_element_checkboxes(Pieform $form, $element) {/*{{{*/
     // Number of characters in checkbox labels (use 0 or false for no limit).
     $labelwidth = isset($element['labelwidth']) ? (int) $element['labelwidth'] : 17;
 
-    $elementtitle = '';
-    if (isset($element['title'])) {
-        $elementtitle = '<span class="accessible-hidden">' . $element['title'] . ': </span>';
-    }
-
     foreach ($element['elements'] as $e) {
-        $id = $form->get_name() . '_' . $element['id'];
-        $idsuffix = substr(md5(microtime()), 0, 4);
         if (!$submitted || !empty($e['disabled'])) {
             $checked = $e['defaultvalue'];
         }
         else {
             $checked = !empty($value[$e['value']]) || in_array($e['value'], $value);
         }
-        $attributes = $form->element_attributes($element);
-        $attributes = preg_replace("/\bid=\"{$id}\"/", "id=\"{$id}{$idsuffix}\"", $attributes);
         $title = $labelwidth ? str_shorten_text($e['title'], $labelwidth, true) : $e['title'];
         $result .= '<div class="checkboxes-option"><input type="checkbox" value="' . $e['value'] . '" '
-            . $attributes . ($checked ? ' checked="checked"' : '') . (!empty($e['disabled']) ? ' disabled' : '') . '>'
-            . ' <label class="checkbox" for="' . $id . $idsuffix . '">' . $elementtitle . Pieform::hsc($title) . '</label></div>';
+        . $form->element_attributes($element)
+        . ($checked ? ' checked="checked"' : '')
+        . (!empty($e['disabled']) ? ' disabled' : '')
+        . '>' . Pieform::hsc($title) . '</div>';
     }
     $result .= '<div class="cl"></div>';
 
@@ -85,10 +94,6 @@ function pieform_element_checkboxes_update(p, v) {
             e.checked = v;
         }
     });
-    if (typeof formchangemanager !== 'undefined') {
-        var form = jQuery('div#' + p).closest('form')[0];
-        formchangemanager.setFormState(form, FORM_CHANGED);
-    }
 }
 EOF;
 }/*}}}*/

@@ -1,12 +1,26 @@
 <?php
 
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2011 Andrew Nicols <andrew.nicols@luns.net.uk>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage lib
  * @author     Andrew Nicols
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
  */
 
 /**
@@ -358,10 +372,9 @@ class cli {
      * Exit the program with a message and set the exit status appropriately
      *
      * @param string $message The message to output
-     * @param int|bool $error (default boolean false) Indicates whether this is an error exit.
-     *     If boolean false, exit code 0 (success).
-     *     If boolean true, exit code 127 (failure)
-     *     If an integer value is passed, use the integer as the exit code.
+     * @param mixed $error false if exiting normally; true or the expected
+     * error code if exiting abnormally. If true is used, then an exit code of
+     * 127 is used
      * @return void
      */
     public function cli_exit($message = null, $error = false) {
@@ -369,13 +382,10 @@ class cli {
             print($message . "\n");
         }
 
-        if (is_int($error)) {
-            $exitcode = $error;
-        }
-        else if ($error === false) {
+        if ($error === false) {
             $exitcode = 0;
         }
-        else {
+        else if ($error === true || !is_int($error)) {
             $exitcode = 127;
         }
         exit($exitcode);

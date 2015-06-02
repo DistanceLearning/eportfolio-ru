@@ -19,8 +19,8 @@
  * @package    pieform
  * @subpackage element
  * @author     Richard Mansfield <richard.mansfield@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -69,17 +69,10 @@ function pieform_element_expiry(Pieform $form, $element) {/*{{{*/
     $numberinput .= ($values['units'] == 'noenddate' && empty($element['rules']['required'])) ? ' disabled="disabled"' : '';
     $numberinput .= ' type="text" size="4" name="' . $name . '"';
     $numberinput .= ' id="' . $formname . '_' . $name . '" value="' . Pieform::hsc($values['number']) . '" tabindex="' . Pieform::hsc($element['tabindex']) . '"';
-    if (isset($element['description'])) {
-        $numberinput .= ' aria-describedby="' . $form->element_descriptors($element) . '"';
-    }
     $numberinput .= (isset($element['error']) ? ' class="error"' : '') . ">\n";
 
     $uselect = '<select onchange="' . $name . '_change()" ';
-    $uselect .= 'name="' . $name . '_units" id="' . $formname . '_' . $name . '_units"' . ' tabindex="' . Pieform::hsc($element['tabindex']) . '"';
-    if (isset($element['description'])) {
-        $uselect .= ' aria-describedby="' . $form->element_descriptors($element) . '"';
-    }
-    $uselect .= ">\n";
+    $uselect .= 'name="' . $name . '_units" id="' . $formname . '_' . $name . '_units"' . ' tabindex="' . Pieform::hsc($element['tabindex']) . "\">\n";
     foreach (pieform_element_expire_get_expiry_units() as $u) {
         // Don't allow 'no end date' if the element is required
         if ($u == 'noenddate' && !empty($element['rules']['required'])) {

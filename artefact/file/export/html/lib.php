@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-file-export-html
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -25,7 +41,6 @@ class HtmlExportFile extends HtmlExportArtefactPlugin {
     private $otherfiles = array();
 
     public function dump_export_data() {
-        global $SESSION;
 
         $this->owner = $this->exporter->get('user')->get('id');
 
@@ -74,7 +89,7 @@ class HtmlExportFile extends HtmlExportArtefactPlugin {
             }
             $dest = $this->extrafileroot . $id . '-' . PluginExportHtml::sanitise_path($this->artefactdata[$id]->get('title'));
             if (!copy($this->artefactdata[$id]->get_path(), $dest)) {
-                $SESSION->add_error_msg(get_string('unabletocopyartefact', 'export', $this->artefactdata[$id]->get('title')));
+                throw new SystemException("Unable to copy artefact $id's file");
             }
         }
     }
@@ -99,27 +114,21 @@ class HtmlExportFile extends HtmlExportArtefactPlugin {
      * Puts all profile icons in the static/profileicons/ directory
      */
     private function populate_profileicons() {
-        global $SESSION;
         $profileiconsdir = $this->exporter->get('exportdir') . '/' . $this->exporter->get('rootdir') . '/static/profileicons/';
         $removekeys = array();
         foreach ($this->artefactdata as $artefactid => $artefact) {
             if ($artefact->get('artefacttype') == 'profileicon') {
                 $removekeys[] = $artefactid;
 
-                if (!$profileiconpath = $artefact->get_path()) {
-                    $SESSION->add_error_msg(get_string('nonexistentprofileicon', 'export', $artefact->get('title')));
-                }
-                else if (!copy($profileiconpath, $profileiconsdir . PluginExportHtml::sanitise_path($artefact->get('title')))) {
-                    $SESSION->add_error_msg(get_string('unabletocopyprofileicon', 'export', $artefact->get('title')));
+                if (!copy($artefact->get_path(), $profileiconsdir . PluginExportHtml::sanitise_path($artefact->get('title')))) {
+                    throw new SystemException("Unable to copy profile icon $artefactid into export");
                 }
 
                 // Make sure we grab a nicely resized version too
                 $maxdimension = 200;
-                if (!$resizedpath = get_dataroot_image_path('artefact/file/profileicons/', $artefactid, $maxdimension)) {
-                    $SESSION->add_error_msg(get_string('nonexistentresizedprofileicon', 'export', $maxdimension . 'px-' . $artefact->get('title')));
-                }
-                else if (!copy($resizedpath, $profileiconsdir . $maxdimension . 'px-' . PluginExportHtml::sanitise_path($artefact->get('title')))) {
-                    $SESSION->add_error_msg(get_string('unabletocopyresizedprofileicon', 'export', $maxdimension . 'px-' . $artefact->get('title')));
+                $resizedpath = get_dataroot_image_path('artefact/file/profileicons/', $artefactid, $maxdimension);
+                if (!copy($resizedpath, $profileiconsdir . $maxdimension . 'px-' . PluginExportHtml::sanitise_path($artefact->get('title')))) {
+                    throw new SystemException("Unable to copy resized profile icon {$maxdimension}px-{$artefact->get('title')} into export");
                 }
             }
         }
@@ -140,7 +149,6 @@ class HtmlExportFile extends HtmlExportArtefactPlugin {
      * @param int    $parentid            The folder to start from - can be null
      */
     private function populate_filedir($filesystemdirectory, $level, $parentid) {
-        global $SESSION;
         foreach ($this->artefactdata as $artefactid => $artefact) {
             if ($artefact->get('parent') == $parentid && $artefact->get('owner') == $this->owner) {
                 if ($artefact->get('artefacttype') == 'folder') {
@@ -152,7 +160,7 @@ class HtmlExportFile extends HtmlExportArtefactPlugin {
                 else {
                     $artefact = artefact_instance_from_id($artefactid);
                     if (!$artefact->get_path() || !copy($artefact->get_path(), $filesystemdirectory . PluginExportHtml::sanitise_path($artefact->get('title')))) {
-                        $SESSION->add_error_msg(get_string('nonexistentfile', 'export', $artefact->get('title')));
+                        throw new SystemException(get_string('nonexistentfile', 'export', $artefact->get('title')));
                     }
                 }
             }

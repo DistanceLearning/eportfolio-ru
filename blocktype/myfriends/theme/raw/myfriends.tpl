@@ -1,6 +1,6 @@
 <div class="friends">
 {if $friends}
-    <div id="userfriendstable" class="fullwidth">
+    <div id="userfriendstable" class="center fullwidth">
       {$friends.tablerows|safe}
     </div>
 	<div id="myfriends_page_container" class="hidden">{$friends.pagination|safe}</div>
@@ -13,7 +13,7 @@ addLoadEvent(function() {literal}{{/literal}
 {else}
     {if $lookingatownpage}
         <div class="message">{str tag="trysearchingforfriends" section=group args=$searchingforfriends}</div>
-    {elseif $loggedin}
+    {else}
         {if $relationship == 'none' && $friendscontrol == 'auto'}
             <div class="message">{$newfriendform|safe}</div>
         {elseif $relationship == 'none' && $friendscontrol == 'auth'}

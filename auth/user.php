@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -81,7 +97,6 @@ class User {
             'showhomeinfo'     => 1,
             'unread'           => 0,
             'urlid'            => null,
-            'probation'        => 0,
         );
         $this->attributes = array();
 
@@ -517,14 +532,13 @@ class User {
             'title' => get_field('view', 'title', 'id', $systemprofileviewid),
             'description' => get_string('profiledescription'),
             'type'  => 'profile',
-        ), $systemprofileviewid, $this->get('id'), false);
+        ), $systemprofileviewid, $this->get('id'));
 
         // Add about me block
         $aboutme = new BlockInstance(0, array(
             'blocktype'  => 'profileinfo',
             'title'      => get_string('aboutme', 'blocktype.internal/profileinfo'),
             'view'       => $view->get('id'),
-            'row'        => 1,
             'column'     => 1,
             'order'      => 1,
         ));
@@ -593,7 +607,7 @@ class User {
             'title' => get_field('view', 'title', 'id', $systemdashboardviewid),
             'description' => get_string('dashboarddescription'),
             'type'  => 'dashboard',
-        ), $systemdashboardviewid, $this->get('id'), false);
+        ), $systemdashboardviewid, $this->get('id'));
 
         db_commit();
 
@@ -713,45 +727,6 @@ class User {
             $institution = new Institution($institution);
             $institution->removeMember($this->to_stdclass());
         }
-    }
-
-    /**
-     * Get institution name by checking which 'institution theme' a user is allocated to see
-     * and if that theme has sitepages set.
-     * Or if a lastinstitution cookie is set. Or if an institution url parameter is set.
-     * Defaults to 'mahara'.
-     *
-     * @return string   Institution name
-     */
-    public function sitepages_institutionname_by_theme($page) {
-        // get institution when logged in
-        if ($this->is_logged_in()) {
-            if ($theme = $this->get('institutiontheme')) {
-                if (!empty($theme->institutionname)) {
-                    // check to see if institution is using it's own site pages or default site pages
-                    if ($institution = get_record('institution', 'name', $theme->institutionname)) {
-                        if (get_config_institution($institution->name, 'sitepages_' . $page)) {
-                            return get_config_institution($institution->name, 'sitepages_' . $page);
-                        }
-                    }
-                    else {
-                        return $theme->institutionname;
-                    }
-                }
-                else {
-                    return 'mahara';
-                }
-            }
-        }
-        // or from url
-        if ($institution = param_alphanum('institution', null)) {
-            return $institution;
-        }
-        // or from cookie
-        if ($institution = get_cookie('lastinstitution')) {
-            return $institution;
-        }
-        return 'mahara';
     }
 
     public function in_institution($institution, $role = null) {
@@ -968,53 +943,11 @@ class User {
         $this->set('grouproles', $roles);
     }
 
-    /**
-     * Indicates whether the user can see the artefact *in the artefact chooser*, and use
-     * it in Pages within its ownership context. In other words, if it's a group file, they
-     * can use it in Pages for that group, but not in their own personal Pages. The function
-     * name refers to the "view" permission for group files.
-     *
-     * WARNING: Despite the similarity in name to can_view_view(), this method DOESN'T
-     * check for general permission to "see" an artefact, i.e. to download it or view
-     * its artefact detail page. For that, you need to use artefact_in_view() followed by
-     * can_view_view().
-     *
-     * TODO: Rename this to something less misleading?
-     *
-     * @param ArtefactType $a
-     */
     public function can_view_artefact($a) {
-        global $USER;
-
-        // Files in the public site folder and its subfolders
-        if ($a instanceof ArtefactTypeFileBase) {
-            $publicfolderid = ArtefactTypeFolder::admin_public_folder_id();
-            $fileispublic = ($a->get('id') == $publicfolderid)
-                         || (($a->get('institution') == 'mahara') && (bool)get_field('artefact_parent_cache', 'artefact', 'artefact', $a->get('id'), 'parent', $publicfolderid));
-            if ($fileispublic) {
-                return true;
-            }
-        }
-
-        $parent = $a->get_parent_instance();
-        if ($parent) {
-            if (!$this->can_view_artefact($parent)) {
-                return false;
-            }
-        }
         if ($this->get('admin')
             || ($this->get('id') and $this->get('id') == $a->get('owner'))
             || ($a->get('institution') and $this->is_institutional_admin($a->get('institution')))) {
             return true;
-        }
-        // public site files
-        else if ($a->get('institution') == 'mahara') {
-            $thisparent = $a->get('parent');
-            // if we are looking at the public folder or items in it
-            if (($a->get('id') == ArtefactTypeFolder::admin_public_folder_id())
-                ||  (!empty($thisparent) && $thisparent == ArtefactTypeFolder::admin_public_folder_id())) {
-                return true;
-            }
         }
         if ($a->get('group')) {
             // Only group artefacts can have artefact_access_role & artefact_access_usr records
@@ -1026,31 +959,7 @@ class User {
         return false;
     }
 
-    /**
-     * Indicates whether the user has permission to edit an artefact's contents. The name refers
-     * to the "edit" permission for group files.
-     *
-     * If a user has "edit" permission, it is assumed they also have "view" permission (i.e.
-     * can view it in the artefact chooser -- see $USER->can_view_artefact())
-     *
-     * @param ArtefactType $a
-     * @param boolean $viewparent Whether the user must also be able to "view" the artefact's parent
-     * @return boolean
-     */
-    public function can_edit_artefact($a, $viewparent=false) {
-        $parent = $a->get_parent_instance();
-        if ($parent) {
-            if ($viewparent) {
-                if (!$this->can_view_artefact($parent)) {
-                    return false;
-                }
-            }
-            else {
-                if (!$this->can_edit_artefact($parent, true)) {
-                    return false;
-                }
-            }
-        }
+    public function can_edit_artefact($a) {
         if ($this->get('admin')
             || ($this->get('id') and $this->get('id') == $a->get('owner'))
             || ($a->get('institution') and $this->is_institutional_admin($a->get('institution')))) {
@@ -1078,23 +987,7 @@ class User {
         return $a->role_has_permission($role, 'edit');
     }
 
-    /**
-     * Indicates whether the user has permission to use the artefact in their own Pages. The name
-     * refers to the "publish" permission for group files.
-     *
-     * If a user has "publish" permission on an artefact, it is assumed the also have "edit" and
-     * "view" permission (i.e. can view it in the artefact chooser -- see $USER->can_view_artefact())
-     *
-     * @param ArtefactType $a
-     * @return boolean
-     */
     public function can_publish_artefact($a) {
-        $parent = $a->get_parent_instance();
-        if ($parent) {
-            if (!$this->can_view_artefact($parent)) {
-                return false;
-            }
-        }
         if (($this->get('id') and $this->get('id') == $a->get('owner'))) {
             return true;
         }
@@ -1103,7 +996,7 @@ class User {
             if ($i == 'mahara') {
                 return $this->get('admin');
             }
-            return $this->in_institution($i) || $this->can_edit_institution($i);
+            return $this->in_institution($i);
         }
 
         if (!$group = $a->get('group')) {
@@ -1204,11 +1097,6 @@ class User {
 
     public function can_delete_self() {
         if (!$this->get('admin')) {
-
-            if (get_config('alwaysallowselfdelete')) {
-                return true;
-            }
-
             // Users who belong to an institution that doesn't allow
             // registration cannot delete themselves.
             foreach ($this->get('institutions') as $i) {
@@ -1258,8 +1146,10 @@ class User {
      * Makes a literal copy of a list of views and collections for the new user.
      * All site views and collections which set to "copy to new user"
      * will be copied to this user's profile.
+     *
+     * @param $checkviewaccess.
      */
-    public function copy_site_views_collections_to_new_user() {
+    public function copy_site_views_collections_to_new_user($checkviewaccess=true) {
         // Get list of available views which are not in collections
         $templateviewids = get_column_sql("
             SELECT v.id
@@ -1268,7 +1158,7 @@ class User {
             WHERE cv.view IS NULL
                 AND v.institution = 'mahara'
                 AND v.copynewuser = 1", array());
-        $this->copy_views($templateviewids, false);
+        $this->copy_views($templateviewids, $checkviewaccess);
 
         // Get list of available collections
         $templatecollectionids = get_column_sql("
@@ -1281,7 +1171,7 @@ class User {
         if ($templatecollectionids) {
             require_once('collection.php');
             foreach ($templatecollectionids as $templateid) {
-                Collection::create_from_template(array('owner' => $this->get('id')), $templateid, null, false, true);
+                Collection::create_from_template(array('owner' => $this->get('id')), $templateid, null, null, true);
             }
         }
     }
@@ -1292,8 +1182,9 @@ class User {
      * will be copied to this user's profile.
      *
      * @param $institution: ID of the institution to join
+     * @param $checkviewaccess.
      */
-    public function copy_institution_views_collections_to_new_member($institution) {
+    public function copy_institution_views_collections_to_new_member($institution, $checkviewaccess=true) {
         if (empty($institution)) {
             return;
         }
@@ -1305,7 +1196,7 @@ class User {
             WHERE cv.view IS NULL
                 AND v.institution = ?
                 AND v.copynewuser = 1", array($institution));
-        $this->copy_views($templateviewids, false);
+        $this->copy_views($templateviewids, $checkviewaccess);
 
         // Get list of available collections
         $templatecollectionids = get_column_sql("
@@ -1318,7 +1209,7 @@ class User {
         if ($templatecollectionids) {
             require_once('collection.php');
             foreach ($templatecollectionids as $templateid) {
-                Collection::create_from_template(array('owner' => $this->get('id')), $templateid, null, false, true);
+                Collection::create_from_template(array('owner' => $this->get('id')), $templateid, null, null, true);
             }
         }
     }
@@ -1430,7 +1321,7 @@ class LiveUser extends User {
         // external application.
         if ($auth->authloginmsg != '') {
             global $SESSION;
-            $SESSION->add_error_msg(clean_html($auth->authloginmsg), false, 'loginbox');
+            $SESSION->add_info_msg(clean_html($auth->authloginmsg), false);
         }
 
         if (empty($user->logintries)) {
@@ -1450,9 +1341,6 @@ class LiveUser extends User {
      * Logs the current user out
      */
     public function logout () {
-        // add long-term cookie to record institution user last used
-        set_cookie('lastinstitution', $this->sitepages_institutionname_by_theme('loggedouthome'), '2240561472', true);
-
         require_once(get_config('libroot') . 'ddl.php');
 
         if ($this->changed == true) {
@@ -1542,10 +1430,6 @@ class LiveUser extends User {
      * @return void
      */
     protected function authenticate($user, $authinstance) {
-
-        // Before we update anything in the DB, we should make sure the user is allowed to log in
-        ensure_user_account_is_active($user);
-
         $this->authenticated  = true;
 
         // If the user has reauthenticated and they were an MNET user, we 

@@ -27,14 +27,7 @@ function connect_editbuttons() {
         $j("#" + t + "display_container").removeClass("nojs-hidden-block");
         $j("#" + t + "edit_container").addClass("hidden");
         $j("#" + t + "edit_container").removeClass("nojs-hidden-block");
-        if (typeof tinyMCE != 'undefined') {
-            var editor = tinyMCE.get(t);
-            editor.show()
-            editor.focus();
-        }
-        else {
-            $j("#" + t).removeClass("js-hidden").focus();
-        }
+        tinyMCE.get(t).show();
     });
 }
 
@@ -48,13 +41,7 @@ function connect_cancelbuttons() {
         $j("#cancel_" + t + "submit").addClass("js-hidden");
         $j("#" + t + "display_container").removeClass("hidden");
         $j("#" + t + "edit_container").removeClass("hidden");
-        if (typeof tinyMCE != 'undefined') {
-            tinyMCE.get(t).hide();
-        }
-        else {
-            $j("#" + t).addClass("js-hidden");
-        }
-        $j("#" + t + "edit_container").find('input.openedit').focus();
+        tinyMCE.get(t).hide();
     });
 }
 

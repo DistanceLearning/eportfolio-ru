@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage interaction-forum
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -99,18 +115,7 @@ function deletepost_submit(Pieform $form, $values) {
         array('id' => $values['post'])
     );
     $SESSION->add_ok_msg(get_string('deletepostsuccess', 'interaction.forum'));
-    // Figure out which parent record to redirect us to. If the parent record is deleted,
-    // keep moving up the chain until you find one that's not deleted.
-    $postrec = new stdClass();
-    $postrec->parent = $values['parent'];
-    do {
-        $postrec = get_record('interaction_forum_post', 'id', $postrec->parent, null, null, null, null, 'id, deleted, parent');
-    } while ($postrec && $postrec->deleted && $postrec->parent);
-    $redirecturl = get_config('wwwroot') . 'interaction/forum/topic.php?id=' . $values['topic'];
-    if ($postrec && $postrec->parent) {
-        $redirecturl .= '&post=' . $postrec->id;
-    }
-    redirect($redirecturl);
+    redirect(get_config('wwwroot') . 'interaction/forum/topic.php?id=' . $values['topic'] . '&post=' . $values['parent']);
 }
 
 $smarty = smarty();

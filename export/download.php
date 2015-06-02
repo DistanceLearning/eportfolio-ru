@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage export
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -28,7 +44,7 @@ if (function_exists('apache_setenv')) {
 }
 
 if (!$exportdata = $SESSION->get('exportdata')) {
-    redirect('/export/index.php');
+    redirect('/export/');
 }
 $SESSION->set('exportdata', '');
 
@@ -79,9 +95,6 @@ case 'all':
 case 'views':
     $exporter = new $class($user, $exportdata['views'], PluginExport::EXPORT_ARTEFACTS_FOR_VIEWS, 'export_iframe_progress_handler');
     break;
-case 'collections':
-    $exporter = new $class($user, $exportdata['views'], PluginExport::EXPORT_COLLECTIONS, 'export_iframe_progress_handler');
-    break;
 default:
     export_iframe_die(get_string('unabletoexportportfoliousingoptions', 'export'));
 }
@@ -91,21 +104,14 @@ $exporter->includefeedback = $exportdata['includefeedback'];
 try {
     $zipfile = $exporter->export();
 } catch (SystemException $e) {
-    export_iframe_die($e->getMessage(), get_config('wwwroot') . 'view/index.php');
+    export_iframe_die($e->getMessage(), get_config('wwwroot') . 'view/');
 }
 
 // Store the filename in the session, and redirect the iframe to it to trigger 
 // the download. Here it would be nice to trigger the download for everyone, 
 // but alas this is not possible for people without javascript.
 $SESSION->set('exportfile', $exporter->get('exportdir') . $zipfile);
-$continueurl = 'download.php';
-$continueurljs = get_config('wwwroot') . 'export/index.php';
-$result = $SESSION->get('messages');
-if (empty($result)) {
-    $strexport   = get_string('exportgeneratedsuccessfully1', 'export');
-}
-else {
-    $SESSION->clear('messages');
-    $strexport   = get_string('exportgeneratedwitherrors', 'export');
-}
-print_export_footer($strexport, $continueurl, $continueurljs, $result, 'download.php');
+$wwwroot = get_config('wwwroot');
+$strexportgeneratedsuccessfullyjs = get_string('exportgeneratedsuccessfullyjs', 'export', '<a href="' . $wwwroot . 'export/" target="_top">', '</a>');
+$strexportgeneratedsuccessfully   = get_string('exportgeneratedsuccessfully', 'export', '<a href="download.php" target="_top">', '</a>');
+print_export_footer($strexportgeneratedsuccessfully, $strexportgeneratedsuccessfullyjs, $exporter->get('messages'), 'download.php');

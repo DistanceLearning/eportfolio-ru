@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -18,7 +34,6 @@ define('SECTION_PLUGINTYPE', 'core');
 define('SECTION_PLUGINNAME', 'admin');
 require_once('pieforms/pieform.php');
 require_once('activity.php');
-require_once(get_config('docroot') . 'lib/antispam.php');
 
 $id = param_integer('id');
 $user = new User;
@@ -62,7 +77,7 @@ if (method_exists($authobj, 'change_username')) {
 if (method_exists($authobj, 'change_password')) {
     // Only show the password options if the plugin allows for the functionality
     $elements['password'] = array(
-        'type'         => 'password',
+        'type'         => 'text',
         'title'        => get_string('resetpassword','admin'),
         'description'  => get_string('resetpassworddescription','admin'),
     );
@@ -122,40 +137,23 @@ else {
     );
 }
 
-// Probation points
-if (is_using_probation($user->id)) {
-    $elements['probationpoints'] = array(
-        'type' => 'select',
-        'title' => get_string('probationtitle', 'admin'),
-        'help' => true,
-        'options' => probation_form_options(),
-        'defaultvalue' => ensure_valid_probation_points($user->probation),
-    );
-}
-
 $authinstances = auth_get_auth_instances();
 if (count($authinstances) > 1) {
     $options = array();
 
-    // NOTE: This is a little broken at the moment. The "username in the remote
-    // system" setting is only actively used by the XMLRPC authentication
-    // plugin, and thus only makes sense when the user is authenticating in
+    // NOTE: This is a little broken at the moment. The "username in the remote 
+    // system" setting is only actively used by the XMLRPC authentication 
+    // plugin, and thus only makes sense when the user is authenticating in 
     // this manner.
     //
-    // We hope to one day make it possible for users to get into accounts via
-    // multiple methods, at which time we can tie the username-in-remote-system
+    // We hope to one day make it possible for users to get into accounts via 
+    // multiple methods, at which time we can tie the username-in-remote-system 
     // setting to the XMLRPC plugin only, making the UI a bit more consistent
     $external = false;
-    $externalauthjs = array();
     foreach ($authinstances as $authinstance) {
-        // If a user has a "No Institution" auth method (institution "mahara", id = 1) and he belongs to an Institution,
-        // his Institution Admin will be able to change his auth method away to one of the Institution's auth methods
-        // that's the second part of the "if"
-        if ($USER->can_edit_institution($authinstance->name) || ($authinstance->id == 1 && $user->authinstance == 1)) {
+        if ($USER->can_edit_institution($authinstance->name)) {
             $options[$authinstance->id] = $authinstance->displayname . ': ' . $authinstance->instancename;
-            $authobj = AuthFactory::create($authinstance->id);
-            if ($authobj->needs_remote_username()) {
-                $externalauthjs[] = $authinstance->id;
+            if ($authinstance->authname != 'internal') {
                 $external = true;
             }
         }
@@ -170,58 +168,18 @@ if (count($authinstances) > 1) {
             'defaultvalue' => $user->authinstance,
             'help'         => true,
         );
-        $un = get_field('auth_remote_user', 'remoteusername', 'authinstance', $user->authinstance, 'localusr', $user->id);
-        $elements['remoteusername'] = array(
-            'type'         => 'text',
-            'title'        => get_string('remoteusername', 'admin'),
-            'description'  => get_string('remoteusernamedescription1', 'admin', hsc(get_config('sitename'))),
-            'help'         => true,
-        );
-        if ($un) {
-            $elements['remoteusername']['defaultvalue'] = $un;
+        if ($external) {
+            $un = get_field('auth_remote_user', 'remoteusername', 'authinstance', $user->authinstance, 'localusr', $user->id);
+            $elements['remoteusername'] = array(
+                'type'         => 'text',
+                'title'        => get_string('remoteusername', 'admin'),
+                'description'  => get_string('remoteusernamedescription1', 'admin', hsc(get_config('sitename'))),
+                'defaultvalue' => $un ? $un : $user->username,
+                'help'         => true,
+            );
         }
     }
-    $remoteusernames = json_encode(get_records_menu('auth_remote_user', 'localusr', $id));
-    $js = "<script type='text/javascript'>
-          var externalauths = ['" . implode("','", $externalauthjs) . "'];
-          var remoteusernames = " . $remoteusernames . ";
-          jQuery(document).ready(function() {
-          // set up initial display
-          var authinstanceid = jQuery('#edituser_site_authinstance :selected').val();
-          is_external(authinstanceid);
 
-          // update display as auth method dropdown changes
-          jQuery('#edituser_site_authinstance').change(function() {
-              authinstanceid = jQuery('#edituser_site_authinstance :selected').val();
-              is_external(authinstanceid);
-          });
-
-          function is_external(id) {
-              if (jQuery.inArray(authinstanceid,externalauths) != -1) {
-                  // is external option so show external auth field and help text rows
-                  jQuery('#edituser_site_remoteusername_container').css('display','table-row');
-                  jQuery('#edituser_site_remoteusername_container').next('tr').css('display','table-row');
-                  if (remoteusernames[id]) {
-                      // if value exists in auth_remote_user display it
-                      jQuery('#edituser_site_remoteusername').val(remoteusernames[id]);
-                  }
-                  else {
-                      jQuery('#edituser_site_remoteusername').val('');
-                  }
-              }
-              else {
-                  // is internal option so hide external auth field and help text rows
-                  jQuery('#edituser_site_remoteusername_container').css('display','none');
-                  jQuery('#edituser_site_remoteusername_container').next('tr').css('display','none');
-              }
-          }
-      });
-      </script>";
-
-    $elements['externalauthjs'] = array(
-        'type'         => 'html',
-        'value'        => $js,
-    );
 }
 
 $tags = get_column_sql('SELECT tag FROM {usr_tag} WHERE usr = ? AND NOT tag ' . db_ilike() . " 'lastinstitution:%'", array($user->id));
@@ -341,11 +299,6 @@ function edituser_site_submit(Pieform $form, $values) {
         return false;
     }
 
-    if (is_using_probation()) {
-        // Value should be between 0 and 10 inclusive
-        $user->probation = ensure_valid_probation_points($values['probationpoints']);
-    }
-
     if ($USER->get('admin') || get_config_plugin('artefact', 'file', 'institutionaloverride')) {
         $user->quota = $values['quota'];
     }
@@ -389,29 +342,22 @@ function edituser_site_submit(Pieform $form, $values) {
         // old and new authinstances belong to the admin's institutions
         $authinst = get_records_select_assoc('auth_instance', 'id = ? OR id = ?',
                                              array($values['authinstance'], $user->authinstance));
-        // But don't bother if the auth instance doesn't take a remote username
-        $authobj = AuthFactory::create($values['authinstance']);
-        if (
-            $USER->get('admin')
-            || (
-                $USER->is_institutional_admin($authinst[$values['authinstance']]->institution)
-                && (
-                    $USER->is_institutional_admin($authinst[$user->authinstance]->institution)
-                    || $user->authinstance == 1
-                )
-            )
-        ) {
-            if ($authobj->needs_remote_username()) {
-                // determine the current remoteuser
-                $current_remotename = get_field('auth_remote_user', 'remoteusername',
-                                                'authinstance', $user->authinstance, 'localusr', $user->id);
-                if (!$current_remotename) {
-                    $current_remotename = $user->username;
-                }
-                // if the remoteuser is empty
-                if (strlen(trim($values['remoteusername'])) == 0) {
-                    delete_records('auth_remote_user', 'authinstance', $user->authinstance, 'localusr', $user->id);
-                }
+        if ($USER->get('admin') || 
+            ($USER->is_institutional_admin($authinst[$values['authinstance']]->institution) &&
+             $USER->is_institutional_admin($authinst[$user->authinstance]->institution))) {
+            // determine the current remoteuser
+            $current_remotename = get_field('auth_remote_user', 'remoteusername',
+                                            'authinstance', $user->authinstance, 'localusr', $user->id);
+            if (!$current_remotename) {
+                $current_remotename = $user->username;
+            }
+            // if the remoteuser is empty and the ai has changed - delete the old remoteuser record
+            if (strlen(trim($values['remoteusername'])) == 0 &&
+                $values['authinstance'] != $user->authinstance) {
+                delete_records('auth_remote_user', 'authinstance', $user->authinstance, 'localusr', $user->id);
+            }
+            // we do not create a remoteuser record for internal ai's
+            if ($authinst[$values['authinstance']]->authname != 'internal') {
                 // what should the new remoteuser be
                 $new_remoteuser = get_field('auth_remote_user', 'remoteusername',
                                             'authinstance', $values['authinstance'], 'localusr', $user->id);
@@ -504,7 +450,6 @@ function edituser_site_submit(Pieform $form, $values) {
 
     delete_records('usr_tag', 'usr', $user->id);
     if (is_array($values['tags'])) {
-        $values['tags'] = check_case_sensitive($values['tags'], 'usr_tag');
         foreach(array_unique($values['tags']) as $tag) {
             if (empty($tag)) {
                 continue;
@@ -568,8 +513,8 @@ else {
         )
     );
 
-    // Create two forms for unsuspension - one in the suspend message and the
-    // other where the 'suspend' button normally goes. This keeps the HTML IDs
+    // Create two forms for unsuspension - one in the suspend message and the 
+    // other where the 'suspend' button normally goes. This keeps the HTML IDs 
     // unique
     $suspendform  = pieform($suspendformdef);
     $suspendformdef['name'] = 'edituser_suspend2';
@@ -643,19 +588,8 @@ $elements = array(
      ),
 );
 
-function is_institute_admin($institution) {
-    return $institution->admin;
-}
-
-$institutions = $user->get('institutions');
-if ( !$USER->get('admin') ) { // for institution admins
-    $admin_institutions = $USER->get('institutions');
-    $admin_institutions = array_filter($admin_institutions, "is_institute_admin");
-    $institutions = array_intersect_key($institutions, $admin_institutions);
-}
-
 $allinstitutions = get_records_assoc('institution', '', '', 'displayname');
-foreach ($institutions as $i) {
+foreach ($user->get('institutions') as $i) {
     $elements[$i->institution.'_settings'] = array(
         'type' => 'fieldset',
         'legend' => $allinstitutions[$i->institution]->displayname,
@@ -699,7 +633,7 @@ foreach ($institutions as $i) {
 }
 
 // Only site admins can add institutions; institutional admins must invite
-if ($USER->get('admin')
+if ($USER->get('admin') 
     && (get_config('usersallowedmultipleinstitutions') || count($user->institutions) == 0)) {
     $options = array();
     foreach ($allinstitutions as $i) {

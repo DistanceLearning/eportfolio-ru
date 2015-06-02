@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -44,12 +60,8 @@ function activity_occurred($activitytype, $data, $plugintype=null, $pluginname=n
  * @param mixed $data must contain message to save.
  * each activity type has different requirements of $data - 
  *  - <b>viewaccess</b> must contain $owner userid of view owner AND $view (id of view) and $oldusers array of userids before access change was committed.
- * @param $cron = true if called by a cron job
- * @param object $queuedactivity  record of the activity in the queue (from the table activity_queue)
- * @return int The ID of the last processed user
- *      = 0 if all users get processed
  */
-function handle_activity($activitytype, $data, $cron=false, $queuedactivity=null) {
+function handle_activity($activitytype, $data, $cron=false) {
     $data = (object)$data;
     $activitytype = activity_locate_typerecord($activitytype);
 
@@ -62,17 +74,12 @@ function handle_activity($activitytype, $data, $cron=false, $queuedactivity=null
             ucfirst($activitytype->name);
     }
 
-    if ($cron && isset($queuedactivity)) {
-        $data->last_processed_userid = $queuedactivity->last_processed_userid;
-        $data->activity_queue_id = $queuedactivity->id;
-    }
-
     $activity = new $classname($data, $cron);
     if (!$activity->any_users()) {
-        return 0;
+        return;
     }
 
-    return $activity->notify_users();
+    $activity->notify_users();
 }
 
 /**
@@ -191,6 +198,14 @@ function activity_process_queue() {
         $watchlist = activity_locate_typerecord('watchlist');
         $viewsnotified = array();
         foreach ($toprocess as $activity) {
+            // Remove this activity from the queue to make sure we
+            // never send duplicate emails even if part of the
+            // activity handler fails for whatever reason
+            if (!delete_records('activity_queue', 'id', $activity->id)) {
+                log_warn("Unable to remove activity $activity->id from the queue. Skipping it.");
+                continue;
+            }
+
             $data = unserialize($activity->data);
             if ($activity->type == $watchlist->id && !empty($data->view)) {
                 if (isset($viewsnotified[$data->view])) {
@@ -199,254 +214,17 @@ function activity_process_queue() {
                 $viewsnotified[$data->view] = true;
             }
 
+            db_begin();
             try {
-                $last_processed_userid = handle_activity($activity->type, $data, true, $activity);
+                handle_activity($activity->type, $data, true);
             }
             catch (MaharaException $e) {
                 // Exceptions can happen while processing the queue, we just 
                 // log them and continue
                 log_debug($e->getMessage());
             }
-            // Update the activity queue
-            // or Remove this activity from the queue if all the users get processed
-            // to make sure we
-            // never send duplicate emails even if part of the
-            // activity handler fails for whatever reason
-            if (!empty($last_processed_userid)) {
-                update_record('activity_queue', array('last_processed_userid' => $last_processed_userid), array('id' => $activity->id));
-            }
-            else {
-                if (!delete_records('activity_queue', 'id', $activity->id)) {
-                    log_warn("Unable to remove activity $activity->id from the queue. Skipping it.");
-                }
-            }
+            db_commit();
         }
-    }
-}
-
-/**
- * event-listener is called when an artefact is changed or a block instance
- * is commited. Saves the view, the block instance, user and time into the
- * database
- *
- * @global User $USER
- * @param string $event
- * @param object $eventdata
- */
-function watchlist_record_changes($event){
-    global $USER;
-
-    // don't catch root's changes, especially not when installing...
-    if ($USER->get('id') <= 0) {
-        return;
-    }
-    if ($event instanceof BlockInstance) {
-        if (record_exists('usr_watchlist_view', 'view', $event->get('view'))) {
-            $whereobj = new stdClass();
-            $whereobj->block = $event->get('id');
-            $whereobj->view = $event->get('view');
-            $whereobj->usr = $USER->get('id');
-            $dataobj = clone $whereobj;
-            $dataobj->changed_on = date('Y-m-d H:i:s');
-            ensure_record_exists('watchlist_queue', $whereobj, $dataobj);
-        }
-    }
-    else if ($event instanceof ArtefactType) {
-        $blockid = $event->get('id');
-        $getcolumnquery = '
-            SELECT DISTINCT
-             "view", "block"
-            FROM
-             {view_artefact}
-            WHERE
-             artefact =' . $blockid;
-        $relations = get_records_sql_array($getcolumnquery, array());
-
-        // fix unnecessary type-inconsistency of get_records_sql_array
-        if (false === $relations) {
-            $relations = array();
-        }
-
-        foreach ($relations as $rel) {
-            if (!record_exists('usr_watchlist_view', 'view', $rel->view)) {
-                continue;
-            }
-            $whereobj = new stdClass();
-            $whereobj->block = $rel->block;
-            $whereobj->view = $rel->view;
-            $whereobj->usr = $USER->get('id');
-            $dataobj = clone $whereobj;
-            $dataobj->changed_on = date('Y-m-d H:i:s');
-            ensure_record_exists('watchlist_queue', $whereobj, $dataobj);
-        }
-    }
-    else if (!is_object($event) && !empty($event['id'])) {
-        $viewid = $event['id'];
-        if (record_exists('usr_watchlist_view', 'view', $viewid)) {
-            $whereobj = new stdClass();
-            $whereobj->view = $viewid;
-            $whereobj->usr = $USER->get('id');
-            $whereobj->block = null;
-            $dataobj = clone $whereobj;
-            $dataobj->changed_on = date('Y-m-d H:i:s');
-            ensure_record_exists('watchlist_queue', $whereobj, $dataobj);
-        }
-    }
-    else {
-        return;
-    }
-}
-
-/**
- * is triggered when a blockinstance is deleted. Deletes all watchlist_queue
- * entries that refer to this blockinstance
- *
- * @param BlockInstance $blockinstance
- */
-function watchlist_block_deleted(BlockInstance $block) {
-    global $USER;
-
-    // don't catch root's changes, especially not when installing...
-    if ($USER->get('id') <= 0) {
-        return;
-    }
-
-    delete_records('watchlist_queue', 'block', $block->get('id'));
-
-    if (record_exists('usr_watchlist_view', 'view', $block->get('view'))) {
-        $whereobj = new stdClass();
-        $whereobj->view = $block->get('view');
-        $whereobj->block = null;
-        $whereobj->usr = $USER->get('id');
-        $dataobj = clone $whereobj;
-        $dataobj->changed_on = date('Y-m-d H:i:s');
-        ensure_record_exists('watchlist_queue', $whereobj, $dataobj);
-    }
-}
-
-/**
- * is called by the cron-job to process the notifications stored into
- * watchlist_queue.
- */
-function watchlist_process_notifications() {
-    $delayMin = get_config('watchlistnotification_delay');
-    $comparetime = time() - $delayMin * 60;
-
-    $sql = "SELECT usr, view, MAX(changed_on) AS time
-            FROM {watchlist_queue}
-            GROUP BY usr, view";
-    $results = get_records_sql_array($sql, array());
-
-    if (false === $results) {
-        return;
-    }
-
-    foreach ($results as $viewuserdaterow) {
-        if ($viewuserdaterow->time > date('Y-m-d H:i:s', $comparetime)) {
-            continue;
-        }
-
-        // don't send a notification if only blockinstances are referenced
-        // that were deleted (block exists but corresponding
-        // block_instance doesn't)
-        $sendnotification = false;
-
-        $blockinstance_ids = get_column('watchlist_queue', 'block', 'usr', $viewuserdaterow->usr, 'view', $viewuserdaterow->view);
-        if (is_array($blockinstance_ids)) {
-            $blockinstance_ids = array_unique($blockinstance_ids);
-        }
-
-        $viewuserdaterow->blocktitles = array();
-
-        // need to check if view has an owner, group or institution
-        $view = get_record('view', 'id', $viewuserdaterow->view);
-        if (empty($view->owner) && empty($view->group) && empty($view->institution)) {
-            continue;
-        }
-        // ignore root pages, owner = 0, this account is not meant to produce content
-        if (isset($view->owner) && empty($view->owner)) {
-            continue;
-        }
-
-        foreach ($blockinstance_ids as $blockinstance_id) {
-            if (empty($blockinstance_id)) {
-                // if no blockinstance is given, assume that the form itself
-                // was changed, e.g. the theme, or a block was removed
-                $sendnotification = true;
-                continue;
-            }
-            require_once(get_config('docroot') . 'blocktype/lib.php');
-
-            try {
-                $block = new BlockInstance($blockinstance_id);
-            }
-            catch (BlockInstanceNotFoundException $exc) {
-                // maybe the block was deleted
-                continue;
-            }
-
-            $blocktype = $block->get('blocktype');
-            $title = '';
-
-            // try to get title rendered by plugin-class
-            safe_require('blocktype', $blocktype);
-            if (class_exists(generate_class_name('blocktype', $blocktype))) {
-                $title = $block->get_title();
-            }
-            else {
-                log_warn('class for blocktype could not be loaded: ' . $blocktype);
-                $title = $block->get('title');
-            }
-
-            // if no title was given to the blockinstance, try to get one
-            // from the artefact
-            if (empty($title)) {
-                $configdata = $block->get('configdata');
-
-                if (array_key_exists('artefactid', $configdata)) {
-                    try {
-                        $artefact = $block->get_artefact_instance($configdata['artefactid']);
-                        $title = $artefact->get('title');
-                    }
-                    catch(Exception $exc) {
-                        log_warn('couldn\'t identify title of blockinstance ' .
-                                 $block->get('id') . $exc->getMessage());
-                    }
-                }
-            }
-
-            // still no title, maybe the default-name for the blocktype
-            if (empty($title)) {
-                $title = get_string('title', 'blocktype.' . $blocktype);
-            }
-
-            // no title could be retrieved, so let's tell the user at least
-            // what type of block was changed
-            if (empty($title)) {
-                $title = '[' . $blocktype . '] (' .
-                    get_string('nonamegiven', 'activity') . ')';
-            }
-
-            $viewuserdaterow->blocktitles[] = $title;
-            $sendnotification = true;
-        }
-
-        // only send notification if there is something to talk about (don't
-        // send notification for example when new blockelement was aborted)
-        if ($sendnotification) {
-            try{
-                $watchlistnotification = new ActivityTypeWatchlistnotification($viewuserdaterow, false);
-                $watchlistnotification->notify_users();
-            }
-            catch (ViewNotFoundException $exc) {
-                // Seems like the view has been deleted, don't do anything
-            }
-            catch (SystemException $exc) {
-                // if the view that was changed doesn't have an owner
-            }
-        }
-
-        delete_records('watchlist_queue', 'usr', $viewuserdaterow->usr, 'view', $viewuserdaterow->view);
     }
 }
 
@@ -467,12 +245,12 @@ function activity_get_viewaccess_users($view, $owner, $type) {
                     JOIN {view_access} vg ON vg.group = m.group
                     JOIN {group} g ON (g.id = vg.group AND g.deleted = 0 AND g.viewnotify = 1)
                     JOIN {group_member} og ON (g.id = og.group AND og.member = ?)
-                        WHERE vg.view = ? AND (vg.role IS NULL OR vg.role = m.role) AND m.member <> ?
+                        WHERE vg.view = ? AND (vg.role IS NULL OR vg.role = m.role)
                 ) AS userlist
                 JOIN {usr} u ON u.id = userlist.userid
                 LEFT JOIN {usr_activity_preference} p ON p.usr = u.id AND p.activity = ?
                 LEFT JOIN {usr_account_preference} ap ON ap.usr = u.id AND ap.field = 'lang'";
-    $values = array($owner, $owner, $owner, $view, $view, $owner, $view, $owner, $type->id);
+    $values = array($owner, $owner, $owner, $view, $view, $owner, $view, $type->id);
     if (!$u = get_records_sql_assoc($sql, $values)) {
         $u = array();
     }
@@ -513,45 +291,9 @@ function generate_activity_class_name($name, $plugintype, $pluginname) {
     return 'ActivityType' . $name;
 }
 
-/**
- * To implement a new activity type, you must subclass this class. Your subclass
- * MUST at minimum include the following:
- *
- * 1. Override the __construct method with one which first calls parent::__construct
- *    and then populates $this->users with the list of recipients for this activity.
- *
- * 2. Implement the get_required_parameters method.
- */
+/** activity type classes **/
 abstract class ActivityType {
-
-    /**
-     * NOTE: Child classes MUST call the parent constructor, AND populate
-     * $this->users with a list of user records which should receive the message!
-     *
-     * @param array $data The data needed to send the notification
-     * @param boolean $cron Indicates whether this is being called by the cron job
-     */
-    public function __construct($data, $cron=false) {
-        $this->cron = $cron;
-        $this->set_parameters($data);
-        $this->ensure_parameters();
-        $this->activityname = strtolower(substr(get_class($this), strlen('ActivityType')));
-    }
-
-    /**
-     * This method should return an array which names the fields that must be present in the
-     * $data that was passed to the class's constructor. It should include all necessary data
-     * to determine the recipient(s) of the notification and to determine its content.
-     *
-     * @return array
-     */
-    abstract function get_required_parameters();
-
-    /**
-     * The number of users in a split chunk to notify
-     */
-    const USERCHUNK_SIZE = 1000;
-
+    
     /**
      * Who any notifications about this activity should appear to come from
      */
@@ -574,11 +316,9 @@ abstract class ActivityType {
     protected $type;
     protected $activityname;
     protected $cron;
-    protected $last_processed_userid;
-    protected $activity_queue_id;
     protected $overridemessagecontents;
     protected $parent;
-
+   
     public function get_id() {
         if (!isset($this->id)) {
             $tmp = activity_locate_typerecord($this->get_type());
@@ -600,12 +340,19 @@ abstract class ActivityType {
         return $this->users;
     }
 
+    public function __construct($data, $cron=false) {
+        $this->cron = $cron;
+        $this->set_parameters($data);
+        $this->ensure_parameters();
+        $this->activityname = strtolower(substr(get_class($this), strlen('ActivityType')));
+    }
+
     private function set_parameters($data) {
         foreach ($data as $key => $value) {
             if (property_exists($this, $key)) {
                 $this->{$key} = $value;
             }
-        }
+        }   
     }
 
     private function ensure_parameters() {
@@ -641,9 +388,6 @@ abstract class ActivityType {
     // Optional string to use for the link text.
     public function add_urltext(array $stringdef) {
         $def = $stringdef;
-        if (!is_object($this->strings)) {
-            $this->strings = new stdClass();
-        }
         $this->strings->urltext = (object) $def;
     }
 
@@ -672,6 +416,8 @@ abstract class ActivityType {
     protected function update_url() {
         return false;
     }
+
+    abstract function get_required_parameters();
 
     public function notify_user($user) {
         $changes = new stdClass;
@@ -752,47 +498,14 @@ abstract class ActivityType {
         // because of the db trigger on notification_internal_activity.
     }
 
-    /**
-     * Sound out notifications to $this->users.
-     * Note that, although this has batching properties built into it with USERCHUNK_SIZE,
-     * it's also recommended to update a bulk ActivityType's constructor to limit the total
-     * number of records pulled from the database.
-     */
     public function notify_users() {
         safe_require('notification', 'internal');
         $this->type = $this->get_id();
 
-        if ($this->cron) {
-            // Sort the list of users to notify by userid
-            uasort($this->users, function($a, $b) {return $a->id > $b->id;});
-            // Notify a chunk of users
-            $num_processed_users = 0;
-            $last_processed_userid = 0;
-            foreach ($this->users as $user) {
-                if ($this->last_processed_userid && ($user->id <= $this->last_processed_userid)) {
-                    continue;
-                }
-                if ($num_processed_users < ActivityType::USERCHUNK_SIZE) {
-                    // Immediately update the last_processed_userid in the activity_queue
-                    // to prevent duplicated notifications
-                    $last_processed_userid = $user->id;
-                    update_record('activity_queue', array('last_processed_userid' => $last_processed_userid), array('id' => $this->activity_queue_id));
-                    $this->notify_user($user);
-                    $num_processed_users++;
-                }
-                else {
-                    break;
-                }
-            }
-            return $last_processed_userid;
+        while (!empty($this->users)) {
+            $user = array_shift($this->users);
+            $this->notify_user($user);
         }
-        else {
-            while (!empty($this->users)) {
-                $user = array_shift($this->users);
-                $this->notify_user($user);
-            }
-        }
-        return 0;
     }
 
     public static function default_notification_method() {
@@ -1118,7 +831,7 @@ class ActivityTypeWatchlist extends ActivityType {
 
         require_once('view.php');
         if ($this->viewinfo = new View($this->view)) {
-            $this->ownerinfo = hsc($this->viewinfo->formatted_owner());
+            $this->ownerinfo = $this->viewinfo->get_owner_object();
         }
         if (empty($this->ownerinfo)) {
             if (!empty($this->cron)) { // probably deleted already
@@ -1130,8 +843,8 @@ class ActivityTypeWatchlist extends ActivityType {
 
         // mysql compatibility (sigh...)
         $casturl = 'CAST(? AS TEXT)';
-        if (is_mysql()) {
-            $casturl = '?';
+        if (get_config('dbtype') == 'mysql') {
+            $casturl = 'CAST(? AS CHAR)'; // note, NOT varchar
         }
         $sql = 'SELECT u.*, p.method, ap.value AS lang, ' . $casturl . ' AS url
                     FROM {usr_watchlist_view} wv
@@ -1175,68 +888,12 @@ class ActivityTypeWatchlist extends ActivityType {
     }
 
     public function get_message($user) {
-        return get_string_from_language($user->lang, 'newwatchlistmessageview1', 'activity',
-                                        $this->viewinfo->get('title'), $this->ownerinfo);
+        return get_string_from_language($user->lang, 'newwatchlistmessageview', 'activity', 
+                                        display_name($this->ownerinfo, $user), $this->viewinfo->get('title'));
     }
 
     public function get_required_parameters() {
         return array('view');
-    }
-}
-
-/**
- * extending ActivityTypeWatchlist to reuse the funcinality and structure
- */
-class ActivityTypeWatchlistnotification extends ActivityTypeWatchlist{
-    protected $view;
-    protected $viewinfo;
-    protected $blocktitles = array();
-    protected $usr;
-
-    /**
-     * @param array $data Parameters:
-     *                    - view (int)
-     *                    - blocktitles (array: int)
-     *                    - usr (int)
-     */
-    public function __construct($data, $cron) {
-        parent::__construct($data, $cron);
-
-        $this->blocktitles = $data->blocktitles;
-        $this->usr = $data->usr;
-
-
-        $this->viewinfo = new View($this->view);
-    }
-
-    /**
-     * override function get_message to add information about the changed
-     * blockinstances
-     *
-     * @param type $user
-     * @return type
-     */
-    public function get_message($user) {
-        $message = get_string_from_language($user->lang, 'newwatchlistmessageview1', 'activity',
-                                        $this->viewinfo->get('title'), display_name($this->usr, $user));
-
-        try {
-            foreach ($this->blocktitles as $blocktitle) {
-                $message .= "\n" . get_string_from_language($user->lang, 'blockinstancenotification', 'activity', $blocktitle);
-            }
-        }
-        catch(Exception $exc) {
-            var_log(var_export($exc, true));
-        }
-
-        return $message;
-    }
-
-    /**
-     * overwrite get_type to obfuscate that we are not really an Activity_type
-     */
-    public function get_type() {
-        return('watchlist');
     }
 }
 
@@ -1375,8 +1032,7 @@ abstract class ActivityTypePlugin extends ActivityType {
 
 
 function format_notification_whitespace($message, $type=null) {
-    $message = preg_replace('/<br( ?\/)?>/', '', $message);
-    $message = preg_replace('/^(\s|&nbsp;|\xc2\xa0)*/', '', $message);
+    $message = preg_replace('/^(\s|<br( ?\/)?>|&nbsp;|\xc2\xa0)*/', '', $message);
     $message = format_whitespace($message);
     // @todo: Sensibly distinguish html notifications, notifications where the full text
     // appears on another page and this is just an abbreviated preview, and text-only
@@ -1397,7 +1053,7 @@ function activitylist_html($type='all', $limit=10, $offset=0) {
     $typesql = '';
     if ($type != 'all') {
         // Treat as comma-separated list of activity type names
-        $types = explode(',', preg_replace('/[^a-z,]+/', '', $type));
+        $types = split(',', preg_replace('/[^a-z,]+/', '', $type));
         if ($types) {
             $typesql = ' at.name IN (' . join(',', array_map('db_quote', $types)) . ')';
             if (in_array('adminmessages', $types)) {
@@ -1417,7 +1073,7 @@ function activitylist_html($type='all', $limit=10, $offset=0) {
 
     $pagination = build_pagination(array(
         'id'         => 'activitylist_pagination',
-        'url'        => get_config('wwwroot') . 'account/activity/index.php?type=' . $type,
+        'url'        => get_config('wwwroot') . 'account/activity/index.php?type=' . hsc($type),
         'jsonscript' => 'account/activity/index.json.php',
         'datatable'  => 'activitylist',
         'count'      => $count,

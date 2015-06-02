@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage export-html
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -105,7 +121,7 @@ class PluginExportHtml extends PluginExport {
      * Main export routine
      */
     public function export() {
-        global $THEME, $SESSION;
+        global $THEME;
         raise_memory_limit('128M');
 
         $summaries = array();
@@ -156,8 +172,7 @@ class PluginExportHtml extends PluginExport {
             $artefactexporter = new $classname($this);
             $artefactexporter->dump_export_data();
             // If just exporting a list of views, we don't care about the summaries for each artefact plugin
-            if (!(($this->viewexportmode == PluginExport::EXPORT_LIST_OF_VIEWS || $this->viewexportmode == PluginExport::EXPORT_COLLECTIONS)
-                && $this->artefactexportmode == PluginExport::EXPORT_ARTEFACTS_FOR_VIEWS)) {
+            if (!($this->viewexportmode == PluginExport::EXPORT_LIST_OF_VIEWS && $this->artefactexportmode == PluginExport::EXPORT_ARTEFACTS_FOR_VIEWS)) {
                 $summaries[$plugin] = array($artefactexporter->get_summary_weight(), $artefactexporter->get_summary());
             }
         }
@@ -206,12 +221,13 @@ class PluginExportHtml extends PluginExport {
         foreach ($copydata as $from => $to) {
             $to = $this->get('exportdir') . '/' . $this->get('rootdir') . $to;
             if (!check_dir_exists(dirname($to))) {
-                $SESSION->add_error_msg(get_string('couldnotcreatedirectory', 'export', $todir));
+                throw new SystemException("Could not create directory $todir");
             }
             if (!copy($from, $to)) {
-                $SESSION->add_error_msg(get_string('couldnotcopystaticfile', 'export', $from));
+                throw new SystemException("Could not copy static file $from");
             }
         }
+        
 
         // zip everything up
         $this->notify_progress_callback(90, get_string('creatingzipfile', 'export'));
@@ -371,7 +387,7 @@ class PluginExportHtml extends PluginExport {
             }
 
             // Collection menu data
-            if (isset($this->viewcollection[$viewid]) && $this->viewexportmode == PluginExport::EXPORT_COLLECTIONS) {
+            if (isset($this->viewcollection[$viewid])) {
                 $smarty->assign_by_ref('collectionname', $this->collections[$this->viewcollection[$viewid]]->get('name'));
                 $smarty->assign_by_ref('collectionmenu', $this->collection_menu($this->viewcollection[$viewid]));
                 $smarty->assign('viewid', $viewid);
@@ -389,7 +405,7 @@ class PluginExportHtml extends PluginExport {
                 $smarty->assign('feedback', $feedback);
             }
 
-            $smarty->assign('view', $outputfilter->filter($view->build_rows()));
+            $smarty->assign('view', $outputfilter->filter($view->build_columns()));
             $content = $smarty->fetch('export:html:view.tpl');
             if (!file_put_contents("$directory/index.html", $content)) {
                 throw new SystemException("Could not write view page for view $viewid");
@@ -408,7 +424,6 @@ class PluginExportHtml extends PluginExport {
             );
         }
 
-        $ncollections = count($this->collections);
         $nviews = 0;
         foreach ($this->views as $id => $view) {
             if ($view->get('type') != 'profile') {
@@ -435,22 +450,9 @@ class PluginExportHtml extends PluginExport {
         $smarty->assign('list', $list);
 
         if ($list) {
-            if ($this->viewexportmode != PluginExport::EXPORT_COLLECTIONS) {
-                $stryouhaveviews = ($nviews == 1)
-                    ? get_string('youhaveoneview', 'view')
-                    : get_string('youhaveviews', 'view', $nviews);
-            }
-            else {
-                $stryouhavecollections = ($ncollections == 1)
-                    ? get_string('youhaveonecollection', 'collection')
-                    : get_string('youhavecollections', 'collection', $ncollections);
-
-                $smarty->assign('stryouhavecollections', $stryouhavecollections);
-                return array(
-                    'title' => get_string('Collections', 'collection'),
-                    'description' => $smarty->fetch('export:html:collectionsummary.tpl'),
-                );
-            }
+            $stryouhaveviews = ($nviews == 1)
+                ? get_string('youhaveoneview', 'view')
+                : get_string('youhaveviews', 'view', $nviews);
         }
         else {
             $stryouhaveviews = get_string('youhavenoviews', 'view');
@@ -467,7 +469,7 @@ class PluginExportHtml extends PluginExport {
      * Copies the static files (stylesheets etc.) into the export
      */
     private function copy_static_files() {
-        global $THEME, $SESSION;
+        global $THEME;
         require_once('file.php');
         $staticdir = $this->get('exportdir') . '/' . $this->get('rootdir') . '/static/';
         $directoriestocopy = array();
@@ -492,20 +494,20 @@ class PluginExportHtml extends PluginExport {
         foreach ($this->pluginstaticdirs as $dir) {
             $destinationdir = str_replace('export/html/', '', $dir);
             if (!check_dir_exists($staticdir . $destinationdir)) {
-                $SESSION->add_error_msg(get_string('couldnotcreatestaticdirectory', 'export', $destinationdir));
+                throw new SystemException("Could not create static directory $destinationdir");
             }
             $directoriestocopy[get_config('docroot') . 'artefact/' . $dir] = $staticdir . $destinationdir;
         }
 
         foreach ($directoriestocopy as $from => $to) {
             if (!copyr($from, $to)) {
-                $SESSION->add_error_msg(get_string('couldnotcopyfilesfromto', 'export', $from, $to));
+                throw new SystemException("Could not copy $from to $to");
             }
         }
 
         foreach ($filestocopy as $from => $to) {
-            if (!is_file($from) || !copy($from, $to)) {
-                $SESSION->add_error_msg(get_string('couldnotcopystaticfile', 'export', $from));
+            if (!copy($from, $to)) {
+                throw new SystemException("Could not copy static file $from");
             }
         }
     }
@@ -732,7 +734,7 @@ class HtmlExportOutputFilter {
         switch ($artefacttype) {
         case 'blog':
         case 'plan':
-            $dir = $artefacttype == 'plan' ? 'tests' : $artefacttype;
+            $dir = $artefacttype == 'plan' ? 'plans' : $artefacttype;
             $offset = ($matches[4]) ? intval(substr($matches[4], strlen('&amp;offset='))) : 0;
             $offset = ($offset == 0) ? 'index' : $offset;
             return '<a href="' . $this->basepath . "/files/$dir/" . PluginExportHtml::text_to_URLpath(PluginExportHtml::text_to_filename($artefact->get('title'))) . '/' . $offset . '.html">' . $matches[5] . '</a>';

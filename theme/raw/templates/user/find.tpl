@@ -1,8 +1,11 @@
 {include file="header.tpl"}
+<div id="friendslistcontainer">
             {$form|safe}
-            <h2 id="searchresultsheading" class="accessible-hidden hidden">{str tag=Results}</h2>
-            <div id="friendslist" class="fullwidth listing">
+            <table id="friendslist" class="fullwidth listing">
+                <tbody>
 {$results.tablerows|safe}
+                </tbody>
+            </table>
             </div>
 {$results.pagination|safe}
 {include file="footer.tpl"}

@@ -1,12 +1,16 @@
 {include file="header.tpl"}
+<div id="friendslistcontainer">
     {$form|safe}
 {if $message}
     <div class="message">{$message|safe}</div>
 {/if}
 {if $results}
-    <div id="friendslist" class="fullwidth listing">
+    <table id="friendslist" class="fullwidth listing">
+        <tbody>
         {$results.tablerows|safe}
-    </div>
+        </tbody>
+    </table>
 {$results.pagination|safe}
 {/if}
+</div>
 {include file="footer.tpl"}

@@ -1,18 +1,18 @@
 {include file="header.tpl"}
 
 {if !$allownew}
-    <div class="message info">{if $onprobation}{str tag=publicaccessnotallowedforprobation section=view}{else}{str tag=publicaccessnotallowed section=view}{/if}</div>
+  <div class="message info">{str tag=publicaccessnotallowed section=view}</div>
 {/if}
 
 {if $editurls}
-<table class="secreturls fullwidth">
+<table class="secreturls">
   <tbody>
   {foreach from=$editurls item=item name=urls}
     <tr class="{cycle values='r0,r1' advance=false}">
       <td><strong>{$item.url}</strong></td>
-      <td class="right buttons btns2">
+      <td class="buttons">
         <a id="edit-{$item.id}" class="url-open-editform nojs-hidden-inline" title="{str tag=edit}" href="">
-          <img src="{theme_url filename="images/btn_edit.png"}">
+          <img src="{theme_url filename="images/edit.gif"}">
         </a>
         {$item.deleteform|safe}
       </td>

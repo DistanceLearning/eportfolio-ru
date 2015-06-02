@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage import
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -16,19 +32,6 @@ defined('INTERNAL') || die();
  * handles queuing and sets up some basic helper functions
  */
 abstract class PluginImport extends Plugin {
-
-    // How to import a new entry
-    const DECISION_IGNORE  = 1;    // ignore imported entries and keep existing artefacts
-    const DECISION_REPLACE = 2;    // repalce existing artefacts by imported entries
-    const DECISION_ADDNEW  = 3;    // add imported entries as new artefacts
-    const DECISION_APPEND  = 4;    // append the content of existing artefacts with imported entries'
-
-    public $displaydecisions = array();
-
-    // Import steps
-    const STEP_NON_INTERACTIVE           = 0;    // non interactive
-    const STEP_INTERACTIVE_IMPORT_FORM   = 1;    // display import form for users to choose how to import new entries
-    const STEP_INTERACTIVE_IMPORT_RESULT = 2;    // display the import result
 
     protected $id;
     protected $data;
@@ -57,13 +60,6 @@ abstract class PluginImport extends Plugin {
         }
         $this->usrobj = new User();
         $this->usrobj->find_by_id($this->usr);
-
-        $this->displaydecisions = array(
-            PluginImport::DECISION_IGNORE  => get_string('ignore', 'import'),
-            PluginImport::DECISION_REPLACE => get_string('replace', 'import'),
-            PluginImport::DECISION_ADDNEW  => get_string('addnew', 'import'),
-            PluginImport::DECISION_APPEND  => get_string('append', 'import'),
-        );
     }
 
     /**
@@ -86,7 +82,7 @@ abstract class PluginImport extends Plugin {
     /**
     * process the files and adds them to the user's artefact area
     */
-    public abstract function process($step = PluginImport::STEP_NON_INTERACTIVE);
+    public abstract function process();
 
     /**
      * perform cleanup tasks, delete temp files etc
@@ -205,92 +201,6 @@ abstract class PluginImport extends Plugin {
     public function get_return_data() {
         return array();
     }
-
-    /**
-     * Add an import request of an interactive import entry as an Mahara view+collection or artefact.
-     * For view import
-     *    If the entry is for Profile or Dashboard page, the decision is APPEND(default), IGNORE or REPLACE
-     *    If there is a duplicated view (same title and description), the decision is APPEND(default), IGNORE, REPLACE, or ADDNEW
-     *    If else, the decision is IGNORE, or ADDNEW(default)
-     * For artefact import
-     *    If there are duplicated artefacts, the decision is IGNORE
-     *    If ELSE If there is $entrytype NOT is_singular, e.g. an user may have up to 5 email addresses
-     *                the decision is ADDNEW(default) or IGNORE
-     *            If there is $entrytype is_singular,
-     *                the decision is REPLACE(default) or APPEND
-     * Also update the list of
-     *   - duplicated artefacts which have same artefacttype and content
-     *   - existing artefacts which have same artefacttype but the content may be different to the entry data
-     *
-     * @param string $importid   ID of the import
-     * @param string $entryid    ID of the entry
-     * @param string $strategy   Strategy of entry import
-     * @param string $plugin
-     * @param array  $entrydata  Data the entry including the following fields:
-     *     owner     ID of the user who imports the entry (required)
-     *     type (required)
-     *     parent    ID of the parent entry (e.g. the blog entryid of the blogpost entry).
-     *     content (required)
-     *         - title  (required)
-     * @return updated DB table 'import_entry_requests'
-     */
-    public static function add_import_entry_request($importid, $entryid, $strategy, $plugin, $entrydata) {
-        $duplicatedartefactids = array();
-        $existingartefactids = array();
-        $title = $entrydata['content']['title'];
-        if ($plugin === 'core') {
-            // For view import
-            $decision = PluginImport::DECISION_ADDNEW;
-        }
-        else {
-            safe_require('artefact', $plugin);
-            $classname = generate_artefact_class_name($entrydata['type']);
-            if ($duplicatedartefactids = call_static_method($classname, 'get_duplicated_artefacts', $entrydata)) {
-                $decision = PluginImport::DECISION_IGNORE;
-            }
-            // If the import entry comes with a defaultdecision filled in,
-            // use that. (This provides a way for the plugins to override the usual
-            // decision logic)
-            else if (isset($entrydata['defaultdecision'])) {
-                $decision = $entrydata['defaultdecision'];
-            }
-            else {
-                $existingartefactids = call_static_method($classname, 'get_existing_artefacts', $entrydata);
-                if (call_static_method($classname, 'is_singular')
-                    && !empty($existingartefactids)) {
-                    if ($entrydata['type'] == 'email') {
-                        $decision = PluginImport::DECISION_ADDNEW;
-                    }
-                    else {
-                        $decision = PluginImport::DECISION_REPLACE;
-                    }
-                }
-                else {
-                    $decision = PluginImport::DECISION_ADDNEW;
-                }
-            }
-        }
-        // Update DB table
-        if (!record_exists_select('import_entry_requests', 'importid = ? AND entryid = ? AND ownerid = ? AND entrytype = ? AND entrytitle = ?',
-                                                    array($importid, $entryid, $entrydata['owner'], $entrydata['type'], $title))) {
-            return insert_record('import_entry_requests', (object) array(
-                'importid'   => $importid,
-                'entryid'    => $entryid,
-                'strategy'   => $strategy,
-                'plugin'     => $plugin,
-                'ownerid'    => $entrydata['owner'],
-                'entrytype'  => $entrydata['type'],
-                'entryparent'=> isset($entrydata['parent']) ? $entrydata['parent'] : null,
-                'entrytitle' => $title,
-                'entrycontent'      => serialize($entrydata['content']),
-                'duplicateditemids' => serialize($duplicatedartefactids),
-                'existingitemids'   => serialize($existingartefactids),
-                'decision'   => $decision,
-            ));
-        }
-        return false;
-    }
-
 }
 
 /**
@@ -377,7 +287,7 @@ abstract class ImporterTransport {
     /** the import queue record **/
     protected $importrecord;
 
-    /** indicates whether the file has been extracted already */
+    /** set when extract_files is called */
     protected $extracted;
 
     /** optional sha1 of the file we expect */
@@ -545,38 +455,19 @@ class LocalImporterTransport extends ImporterTransport {
      */
     public function __construct($import) {
         $this->set_import_data($import);
-        if (isset($this->importrecord->data['extracted']) && $this->importrecord->data['extracted']) {
-            $this->importid = $this->importrecord->data['importid'];
-            $this->mimetype = $this->importrecord->data['mimetype'];
-            $this->extracted = true;
-            $this->relativepath = 'temp/import/' . $this->importid . '/';
-            if ($tmpdir = get_config('unziptempdir')) {
-                $this->tempdir = $tmpdir . $this->relativepath;
+        foreach (array('importfile', 'importfilename', 'importid', 'mimetype') as $reqkey) {
+            if (!array_key_exists($reqkey, $this->importrecord->data)) {
+                throw new ImportException("Missing required information $reqkey");
             }
-            else {
-                $this->tempdir = get_config('dataroot') . $this->relativepath;
-            }
-            if (!check_dir_exists($this->tempdir)) {
-                throw new ImportException($this->importer, 'Failed to access the temporary directories to work in');
-            }
-            $this->tempdirprepared = true;
-        }
-        else {
-            foreach (array('importfile', 'importfilename', 'importid', 'mimetype') as $reqkey) {
-                if (!array_key_exists($reqkey, $this->importrecord->data)) {
-                    throw new ImportException("Missing required information $reqkey");
-                }
-                $this->{$reqkey} = $this->importrecord->data[$reqkey];
-            }
+            $this->{$reqkey} = $this->importrecord->data[$reqkey];
         }
     }
 
     public function validate_import_data() { }
 
 
-    public function cleanup() {
-        parent::cleanup();
-    }
+    // nothing to do, uploaded files live in /tmp
+    public function cleanup() { }
 
     // nothing to do, unzipping is handled elsewhere
     public function prepare_files() { }

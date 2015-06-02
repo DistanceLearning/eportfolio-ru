@@ -11,20 +11,25 @@
 </div>
 {/if}
 
+<div id="adminhome">
+{if $register}
+<div class="message" id="register-site">
+    <h3>{str tag=registeryourmaharasite section=admin}</h3>
+    {str tag=registeryourmaharasitesummary section=admin args=$WWWROOT}
+</div>
+{/if}
+
 {if $upgrades}
-<div class="message" id="runupgrade">
+<div id="runupgrade">
 <h3>{str tag="upgrades" section=admin}</h3>
-<div class="fr"><span class="upgrade"><a class="btn" href="upgrade.php">{str tag=runupgrade section=admin}</a></span></div>
+<div class="fr"><span class="upgradeicon"><a class="btn" href="upgrade.php">{str tag=runupgrade section=admin}</a></span></div>
 <h4>{str tag=thefollowingupgradesareready section=admin}</h4>
-<table id="upgradestable" class="fullwidth">
-    <thead>
+<table id="upgradestable">
     <tr>
         <th>{str tag=Plugin section=admin}</th>
         <th>{str tag=From}</th>
         <th>{str tag=To}</th>
     </tr>
-    </thead>
-    <tbody>
 {foreach from=$upgrades key=key item=upgrade}
 {if $key != 'disablelogin'}
     <tr>
@@ -34,16 +39,7 @@
     </tr>
 {/if}
 {/foreach}
-    </tbody>
 </table>
-</div>
-{/if}
-
-<div id="adminhome">
-{if $register}
-<div class="message" id="register-site">
-    <h3>{str tag=registeryourmaharasite section=admin}</h3>
-    {str tag=registeryourmaharasitesummary section=admin args=$WWWROOT}
 </div>
 {/if}
 
@@ -77,15 +73,11 @@
 <h3>{str tag=configsite section=admin}</h3>
     <ul>
         <li><strong><a href="{$WWWROOT}admin/site/options.php">{str tag=siteoptions section=admin}</a></strong> - {str tag=siteoptionsdescription section=admin}</li>
-        <li><strong><a href="{$WWWROOT}admin/site/pages.php">{str tag=staticpages section=admin}</a></strong> - {str tag=staticpagesdescription section=admin}</li>
-        <li><strong><a href="{$WWWROOT}admin/site/licenses.php">{str tag=sitelicenses section=admin}</a></strong> - {str tag=sitelicensesdescription section=admin}</li>
+        <li><strong><a href="{$WWWROOT}admin/site/pages.php">{str tag=editsitepages section=admin}</a></strong> - {str tag=editsitepagesdescription section=admin}</li>
         <li><strong><a href="{$WWWROOT}admin/site/menu.php">{str tag=menus section=admin}</a></strong> - {str tag=menusdescription section=admin}</li>
         <li><strong><a href="{$WWWROOT}admin/site/networking.php">{str tag=networking section=admin}</a></strong> - {str tag=networkingdescription section=admin}</li>
         <li><strong><a href="{$WWWROOT}admin/site/views.php">{str tag=siteviews section=admin}</a></strong> - {str tag=siteviewsdescription section=admin}</li>
         <li><strong><a href="{$WWWROOT}artefact/file/sitefiles.php">{str tag=sitefiles section=admin}</a></strong> - {str tag=sitefilesdescription section=admin}</li>
-        {ifconfig key=skins}<li><strong><a href="{$WWWROOT}admin/site/skins.php">{str tag=siteskins section=admin}</a></strong> - {str tag=siteskinsdescription section=admin}</li>{/ifconfig}
-        {ifconfig key=skins}<li><strong><a href="{$WWWROOT}admin/site/fonts.php">{str tag=sitefonts section=admin}</a></strong> - {str tag=sitefontsdescription section=admin}</li>{/ifconfig}
-        <li><strong><a href="{$WWWROOT}admin/site/cookieconsent.php">{str tag=cookieconsent section=admin}</a></strong> - {str tag=cookieconsentdescription section=admin}</li>
     </ul>
 
 <h3>{str tag=configusers section=admin}</h3>
@@ -113,7 +105,7 @@
 
 <h3>{str tag=manageinstitutions section=admin}</h3>
     <ul>
-        <li><strong><a href="{$WWWROOT}admin/users/institutions.php">{str tag=Institutions section=admin}</a></strong> - {str tag=institutionsdescription section=admin}</li>
+        <li><strong><a href="{$WWWROOT}admin/users/institutions.php">{str tag=institutions section=admin}</a></strong> - {str tag=institutionsdescription section=admin}</li>
         <li><strong><a href="{$WWWROOT}admin/users/institutionusers.php">{str tag=institutionmembers section=admin}</a></strong> - {str tag=institutionmembersdescription section=admin}</li>
         <li><strong><a href="{$WWWROOT}admin/users/institutionstaff.php">{str tag=institutionstaff section=admin}</a></strong> - {str tag=institutionstaffdescription section=admin}</li>
         <li><strong><a href="{$WWWROOT}admin/users/institutionadmins.php">{str tag=institutionadmins section=admin}</a></strong> - {str tag=institutionadminsdescription section=admin}</li>

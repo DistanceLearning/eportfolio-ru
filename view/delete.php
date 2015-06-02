@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -25,12 +41,6 @@ if ($groupid && !group_within_edit_window($groupid)) {
     throw new AccessDeniedException(get_string('cantdeleteview', 'view'));
 }
 
-$collectionnote = '';
-$collection = $view->get_collection();
-if ($collection) {
-    $collectionnote = get_string('deleteviewconfirmnote2', 'view', $collection->get_url(), $collection->get('name'));
-}
-
 $institution = $view->get('institution');
 View::set_nav($groupid, $institution);
 
@@ -41,10 +51,7 @@ else if ($institution) {
     $goto = 'institutionviews.php?institution=' . $institution;
 }
 else {
-    $query = get_querystring();
-    // remove the id
-    $query = preg_replace('/id=([0-9]+)\&/','',$query);
-    $goto = 'index.php?' . $query;
+    $goto = 'index.php';
 }
 
 define('TITLE', get_string('deletespecifiedview', 'view', $view->get('title')));
@@ -67,11 +74,10 @@ $smarty = smarty();
 $smarty->assign('PAGEHEADING', TITLE);
 $smarty->assign_by_ref('view', $view);
 $smarty->assign('form', $form);
-$smarty->assign('collectionnote', $collectionnote);
 $smarty->display('view/delete.tpl');
 
 function deleteview_submit(Pieform $form, $values) {
-    global $SESSION, $USER, $viewid, $groupid, $institution, $goto;
+    global $SESSION, $USER, $viewid, $groupid, $institution;
     $view = new View($viewid, null);
     if (View::can_remove_viewtype($view->get('type')) || $USER->get('admin')) {
         $view->delete();
@@ -86,5 +92,5 @@ function deleteview_submit(Pieform $form, $values) {
     if ($institution) {
         redirect('/view/institutionviews.php?institution='.$institution);
     }
-    redirect('/view/' . $goto);
+    redirect('/view/');
 }

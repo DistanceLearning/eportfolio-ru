@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -18,8 +34,8 @@ require_once(get_config('libroot') . 'group.php');
 $owner = param_integer('owner', 0);;
 $groupid = param_integer('group', null);
 $institution = param_alphanum('institution', null);
-$searchcollection = param_integer('searchcollection', false);
-View::set_nav($groupid, $institution, false, $searchcollection);
+
+View::set_nav($groupid, $institution);
 
 if ($usetemplate = param_integer('usetemplate', null)) {
     // If a form has been submitted, build it now and pieforms will
@@ -65,17 +81,6 @@ else {
     $views->copyableby->owner = $USER->get('id');
     $helptext = get_string('choosetemplatepageandcollectiondescription', 'view');
 }
-$sort[] = array('column' => 'title',
-                'desc' => 0,
-                );
-if ($searchcollection) {
-    array_unshift($sort, array('column' => 'collection',
-                               'desc' => 0,
-                               'tablealias' => 'cv'
-                               ));
-    $views->collection = $searchcollection;
-}
-$views->sort = (object) $sort;
 View::get_templatesearch_data($views);
 
 $strpreview = json_encode(get_string('Preview','view'));
@@ -132,7 +137,7 @@ EOF;
 
 $smarty = smarty(
     array('js/preview.js', 'searchtable'),
-    array('<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'theme/views.css?v=' . get_config('release'). '">'),
+    array('<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'theme/views.css">'),
     array(),
     array('stylesheets' => array('style/views.css'))
 );

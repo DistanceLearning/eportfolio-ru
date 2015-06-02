@@ -7,9 +7,9 @@
 	{/if}
 	{if $membership}{$forum->subscribe|safe}{/if}
 </div>
-<h2>{str tag=nameplural section=interaction.forum} &gt; {$subheading}{if $publicgroup}<a href="{$feedlink}"><img class="feedicon" src="{theme_url filename='images/feed.png'}"></a>{/if}</h2>
+<h2>{str tag=nameplural section=interaction.forum} &gt; {$subheading}{if $publicgroup}<a href="{$feedlink}"><img class="feedicon" src="{theme_url filename='images/rss.gif'}"></a>{/if}</h2>
 <div id="forumdescription">{$forum->description|clean_html|safe}</div>
-<div id="viewforum">
+<div id="viewforum" class="rel">
 	<h3>{str tag=Topics section="interaction.forum"}</h3>
     {if $membership && ($moderator || ($forum->newtopicusers != 'moderators') && $ineditwindow) }
     <div class="rbuttons">
@@ -38,7 +38,7 @@
     {/if}
     </table>
     {if $regulartopics}
-    	<div>{$pagination|safe}</div>
+    	<div class="right">{$pagination|safe}</div>
     {/if}
     {if $membership && (!$forum->subscribed || $moderator)}
     <div class="forumselectwrap"><select name="type">
@@ -70,7 +70,7 @@
 	<label>{str tag="groupadminlist" section="interaction.forum"}</label>
 	{foreach from=$groupadmins item=groupadmin}
     <span class="s inlinelist">
-        <a href="{profile_url($groupadmin)}"><img src="{$WWWROOT}thumb.php?type=profileicon&amp;maxsize=20&amp;id={$groupadmin}" alt="{str tag=profileimagetext arg1=$groupadmin|display_default_name}"></a>
+        <a href="{profile_url($groupadmin)}"><img src="{$WWWROOT}thumb.php?type=profileicon&amp;maxsize=20&amp;id={$groupadmin}" alt=""></a>
         <a href="{profile_url($groupadmin)}" class="groupadmin">{$groupadmin|display_name}</a>
     </span>
     {/foreach}

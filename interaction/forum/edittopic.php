@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage interaction-forum
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -65,7 +81,6 @@ $forumconfig = get_records_assoc('interaction_forum_instance_config', 'forum', $
 define('GROUP', $forum->groupid);
 $membership = user_can_access_forum((int)$forumid);
 $moderator = (bool)($membership & INTERACTION_FORUM_MOD);
-$admintutor = (bool) group_get_user_admintutor_groups();
 
 if (!$membership || ($forumconfig['createtopicusers']->value == 'moderators' && !$moderator)) {
     throw new AccessDeniedException(get_string('cantaddtopic', 'interaction.forum'));
@@ -136,16 +151,10 @@ $editform = array(
             'description'  => get_string('closeddescription', 'interaction.forum'),
             'defaultvalue' => isset($topic) ? $topic->closed : !empty($forumconfig['closetopics']->value),
         ),
-        'sendnow' => array(
-            'type'         => 'checkbox',
-            'title'        => get_string('sendnow', 'interaction.forum'),
-            'description'  => get_string('sendnowdescription', 'interaction.forum', get_config_plugin('interaction', 'forum', 'postdelay')),
-            'defaultvalue' => false,
-        ),
         'submit'   => array(
             'type'  => 'submitcancel',
             'value'       => array(
-                isset($topic) ? get_string('save') : get_string('Post','interaction.forum'),
+                isset($topic) ? get_string('edit') : get_string('Post','interaction.forum'),
                 get_string('cancel')
             ),
             'goto'      => get_config('wwwroot') . 'interaction/forum/' . (isset($topic) && $returnto != 'view'  ? 'topic.php?id='.$topicid : 'view.php?id='.$forumid)
@@ -161,10 +170,7 @@ $editform = array(
     ),
 );
 
-if (!$moderator) {
-    if (!group_sendnow($forum->groupid) && !$admintutor) {
-        unset($editform['elements']['sendnow']);
-    }
+if(!$moderator){
     unset($editform['elements']['sticky']);
     unset($editform['elements']['closed']);
 }
@@ -175,19 +181,11 @@ function addtopic_validate(Pieform $form, $values) {
     if ($baddomain = get_first_blacklisted_domain($values['body'])) {
         $form->set_error('body', get_string('blacklisteddomaininurl', 'mahara', $baddomain));
     }
-    $result = probation_validate_content($values['body']);
-    if ($result !== true) {
-        $form->set_error('body', get_string('newuserscantpostlinksorimages'));
-    }
 }
 
 function edittopic_validate(Pieform $form, $values) {
     if ($baddomain = get_first_blacklisted_domain($values['body'])) {
         $form->set_error('body', get_string('blacklisteddomaininurl', 'mahara', $baddomain));
-    }
-    $result = probation_validate_content($values['body']);
-    if ($result !== true) {
-        $form->set_error('body', get_string('newuserscantpostlinksorimages'));
     }
 }
 
@@ -203,7 +201,6 @@ function addtopic_submit(Pieform $form, $values) {
             'closed' => isset($values['closed']) && $values['closed'] ? 1 : 0
         ), 'id', true
     );
-    $sendnow = isset($values['sendnow']) && $values['sendnow'] ? 1 : 0;
     $post = (object)array(
         'topic'   => $topicid,
         'poster'  => $USER->get('id'),
@@ -227,12 +224,7 @@ function addtopic_submit(Pieform $form, $values) {
         ));
     }
     db_commit();
-    if ($sendnow == 0) {
-      $delay = get_config_plugin('interaction', 'forum', 'postdelay');
-    }
-    else {
-      $delay = 0;
-    }
+    $delay = get_config_plugin('interaction', 'forum', 'postdelay');
     if (!is_null($delay) && $delay == 0) {
         PluginInteractionForum::interaction_forum_new_post(array($postid));
     }

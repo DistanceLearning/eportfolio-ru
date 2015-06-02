@@ -1,11 +1,26 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2011 Catalyst IT Ltd and others; see:
+ *                    http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Richard Mansfield
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
  *
  */
 
@@ -13,7 +28,6 @@ define('INTERNAL', 1);
 define('INSTITUTIONALADMIN', 1);
 define('MENUITEM', 'configusers');
 require(dirname(dirname(dirname(__FILE__))) . '/init.php');
-require_once(get_config('docroot') . 'lib/antispam.php');
 
 define('TITLE', get_string('bulkactions', 'admin'));
 
@@ -35,8 +49,7 @@ if (!$USER->get('admin')) {
 $users = get_records_sql_assoc('
     SELECT
         u.id, u.username, u.email, u.firstname, u.lastname, u.suspendedcusr, u.authinstance, u.studentid,
-        u.preferredname, CHAR_LENGTH(u.password) AS haspassword, aru.remoteusername AS remoteuser, u.lastlogin,
-        u.probation
+        u.preferredname, CHAR_LENGTH(u.password) AS haspassword, aru.remoteusername AS remoteuser
     FROM {usr} u
         LEFT JOIN {auth_remote_user} aru ON u.id = aru.localusr AND u.authinstance = aru.authinstance
     WHERE id IN (' . join(',', array_fill(0, count($userids), '?')) . ')
@@ -75,12 +88,37 @@ else {
 
 $options = array();
 $default = null;
+
 foreach ($authinstances as $authinstance) {
     $options[$authinstance->id] = $authinstance->displayname. ': '.$authinstance->instancename;
     if (!$default && $authinstance->name == 'mahara') {
         $default = $authinstance->id;
     }
 }
+
+$changeauthform = pieform(array(
+    'name'           => 'changeauth',
+    'class'          => 'bulkactionform',
+    'renderer'       => 'oneline',
+    'dieaftersubmit' => false,
+    'elements'       => array(
+        'users' => $userelement,
+        'title'        => array(
+            'type'         => 'html',
+            'class'        => 'bulkaction-title',
+            'value'        => get_string('changeauthmethod', 'admin') . ': ',
+        ),
+        'authinstance' => array(
+            'type'         => 'select',
+            'options'      => $options,
+            'defaultvalue' => $default,
+        ),
+        'changeauth' => array(
+            'type'         => 'submit',
+            'value'        => get_string('submit'),
+        ),
+    ),
+));
 
 // Suspend users
 $suspendform = pieform(array(
@@ -89,68 +127,21 @@ $suspendform = pieform(array(
     'renderer' => 'oneline',
     'elements' => array(
         'users' => $userelement,
-        'reason' => array(
-            'type'        => 'text',
-            'title'       => get_string('suspendedreason', 'admin') . ': ',
+        'title'        => array(
+            'type'         => 'html',
+            'class'        => 'bulkaction-title',
+            'value'        => get_string('suspendusers', 'admin') . ': ',
         ),
         'suspend' => array(
             'type'        => 'submit',
             'value'       => get_string('Suspend', 'admin'),
         ),
+        'reason' => array(
+            'type'        => 'text',
+            'title'       => ' ' . get_string('reason') . ': ',
+        ),
     ),
 ));
-
-// Change authentication method
-$changeauthform = null;
-if (count($options) > 1) {
-    $changeauthform = pieform(array(
-        'name'           => 'changeauth',
-        'class'          => 'bulkactionform',
-        'renderer'       => 'oneline',
-        'dieaftersubmit' => false,
-        'elements'       => array(
-            'users' => $userelement,
-            'title'        => array(
-                'type'         => 'html',
-                'class'        => 'bulkaction-title',
-                'value'        => get_string('changeauthmethod', 'admin') . ': ',
-            ),
-            'authinstance' => array(
-                'type'         => 'select',
-                'options'      => $options,
-                'defaultvalue' => $default,
-            ),
-            'changeauth' => array(
-                'type'         => 'submit',
-                'value'        => get_string('submit'),
-            ),
-        ),
-    ));
-}
-
-// Set probation points
-$probationform = null;
-if (is_using_probation()) {
-    $probationform = pieform(array(
-        'name' => 'probation',
-        'class' => 'bulkactionform',
-        'renderer' => 'oneline',
-        'elements' => array(
-            'users' => $userelement,
-            'probationpoints' => array(
-                'type' => 'select',
-                'title' => get_string('probationbulksetspamprobation', 'admin') . ': ',
-                'options' => probation_form_options(),
-                'defaultvalue' => '0',
-            ),
-            'setprobation' => array(
-                'type' => 'submit',
-                'confirm' => get_string('probationbulkconfirm', 'admin'),
-                'value' => get_string('probationbulkset', 'admin'),
-            )
-        ),
-    ));
-}
 
 // Delete users
 $deleteform = pieform(array(
@@ -178,7 +169,6 @@ $smarty->assign('users', $users);
 $smarty->assign('changeauthform', $changeauthform);
 $smarty->assign('suspendform', $suspendform);
 $smarty->assign('deleteform', $deleteform);
-$smarty->assign('probationform', $probationform);
 $smarty->display('admin/users/bulk.tpl');
 
 function changeauth_validate(Pieform $form, $values) {
@@ -205,7 +195,7 @@ function changeauth_validate(Pieform $form, $values) {
 }
 
 function changeauth_submit(Pieform $form, $values) {
-    global $users, $SESSION, $authinstances, $USER;
+    global $users, $SESSION, $authinstances;
 
     $newauth = AuthFactory::create($values['authinstance']);
     $needspassword = method_exists($newauth, 'change_password');
@@ -215,40 +205,19 @@ function changeauth_submit(Pieform $form, $values) {
 
     db_begin();
 
-    $newauthinst = get_records_select_assoc('auth_instance', 'id = ?', array($values['authinstance']));
-    if ($USER->get('admin') || $USER->is_institutional_admin($newauthinst[$values['authinstance']]->institution)) {
-        foreach ($users as $user) {
-            if ($user->authinstance != $values['authinstance']) {
-                // Authinstance can be changed by institutional admins if both the
-                // old and new authinstances belong to the admin's institutions
-                $authinst = get_field('auth_instance', 'institution', 'id', $user->authinstance);
-                if ($USER->get('admin') || $USER->is_institutional_admin($authinst)) {
-                    // determine the current remoteusername
-                    $current_remotename = get_field('auth_remote_user', 'remoteusername',
-                                                    'authinstance', $user->authinstance, 'localusr', $user->id);
-                    if (!$current_remotename) {
-                        $current_remotename = $user->username;
-                    }
-                    // remove row if new authinstance row already exists to avoid doubleups
-                    delete_records('auth_remote_user', 'authinstance', $values['authinstance'], 'localusr', $user->id);
-                    insert_record('auth_remote_user', (object) array(
-                        'authinstance'   => $values['authinstance'],
-                        'remoteusername' => $current_remotename,
-                        'localusr'       => $user->id,
-                    ));
-                }
+    foreach ($users as $user) {
+        if ($user->authinstance != $values['authinstance']) {
 
-                if ($user->haspassword && !$needspassword) {
-                    $user->password = '';
-                }
-                else if ($needspassword && !$user->haspassword) {
-                    $needpassword++;
-                }
-
-                $user->authinstance = $values['authinstance'];
-                update_record('usr', $user, 'id');
-                $updated++;
+            if ($user->haspassword && !$needspassword) {
+                $user->password = '';
             }
+            else if ($needspassword && !$user->haspassword) {
+                $needpassword++;
+            }
+
+            $user->authinstance = $values['authinstance'];
+            update_record('usr', $user, 'id');
+            $updated++;
         }
     }
 
@@ -294,25 +263,5 @@ function delete_submit(Pieform $form, $values) {
     db_commit();
 
     $SESSION->add_ok_msg(get_string('bulkdeleteuserssuccess', 'admin', count($users)));
-    redirect('/admin/users/search.php');
-}
-
-function probation_submit(Pieform $form, $values) {
-    global $SESSION, $users;
-
-    $newpoints = ensure_valid_probation_points($values['probationpoints']);
-    $paramlist = array($newpoints);
-
-    $sql = '';
-    foreach ($users as $user) {
-        $paramlist[] = $user->id;
-        $sql .= '?,';
-    }
-    // Drop the last comma
-    $sql = substr($sql, 0, -1);
-
-    execute_sql('update {usr} set probation = ? where id in (' . $sql . ')', $paramlist);
-
-    $SESSION->add_ok_msg(get_string('bulkprobationpointssuccess', 'admin', count($users), $newpoints));
     redirect('/admin/users/search.php');
 }

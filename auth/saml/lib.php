@@ -1,11 +1,26 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd (http://www.catalyst.net.nz)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage auth-saml
  * @author     Piers Harding <piers@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2009 Catalyst IT Ltd http://catalyst.net.nz
  * @copyright  (C) portions from Moodle, (C) Martin Dougiamas http://dougiamas.com
  */
 
@@ -247,15 +262,11 @@ class AuthSaml extends Auth {
         $SESSION->set('wantsurl', null);
         
         // redirect for logout of SAML 2.0 IdP
-        redirect($CFG->wwwroot.'/auth/saml/index.php?logout=1');
+        redirect($CFG->wwwroot.'/auth/saml/?logout=1');
     }
 
     public function after_auth_setup_page_hook() {
         return;
-    }
-
-    public function needs_remote_username() {
-        return $this->config['remoteuser'] || parent::needs_remote_username();
     }
 }
 
@@ -600,7 +611,7 @@ class PluginAuthSaml extends PluginAuth {
     public static function login_form_elements() {
         $elements = array(
             'loginsaml' => array(
-                'value' => '<div class="login-externallink"><a class="btn" href="' . get_config('wwwroot') . 'auth/saml/index.php">' . get_string('login', 'auth.saml') . '</a></div>'
+                'value' => '<div class="login-externallink"><a class="btn" href="' . get_config('wwwroot') . 'auth/saml/">' . get_string('login', 'auth.saml') . '</a></div>'
             )
         );
         return $elements;

@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -13,10 +29,831 @@ defined('INTERNAL') || die();
 
 function xmldb_core_upgrade($oldversion=0) {
     global $SESSION;
-    raise_time_limit(120);
+    ini_set('max_execution_time', 120); // Let's be safe
     raise_memory_limit('256M');
 
+    $INNODB = (is_mysql()) ? ' TYPE=innodb' : '';
     $status = true;
+
+    // We discovered that username case insensitivity was not being enforced at 
+    // most of the entry points to the system at which users can be created. 
+    // This problem manifested itself as users who had the same LOWER(username) 
+    // as another not being able to log in. The fix is to implement the checks, 
+    // rename the "duplicate" users and add a constraint on the database so it 
+    // can't happen again
+    if ($oldversion < 2008040202) {
+        $renamed = $newusernames = $oldusernames = array();
+        $allusers = get_records_array('usr', '', '', 'id', 'id, username');
+
+        $usernamemapping = array();
+        foreach ($allusers as $user) {
+            $oldusernames[] = $user->username;
+            $usernamemapping[strtolower($user->username)][] = array('id' => $user->id, 'username' => $user->username);
+        }
+
+        foreach ($usernamemapping as $lcname => $users) {
+            if (count($users) == 1) {
+                continue;
+            }
+
+            // Uhohes. Rename the user(s) who were created last
+            $skippedfirst = false;
+            foreach ($users as $user) {
+                if (!$skippedfirst) {
+                    $skippedfirst = true;
+                    continue;
+                }
+
+                $userobj = new User();
+                $userobj->find_by_id($user['id']);
+
+                // Append digits keeping total length <= 30
+                $i = 1;
+                $newname = substr($user['username'], 0, 29) . $i;
+                while (isset($newusernames[$newname]) || isset($oldusernames[$newname])) {
+                    $i++;
+                    $newname = substr($user['username'], 0, 30 - floor(log10($i)+1)) . $i;
+                }
+                set_field('usr', 'username', $newname, 'id', $user['id']);
+                $newusernames[$newname] = true;
+
+                $renamed[$newname] = $userobj;
+                log_debug(" * Renamed {$user['username']} to $newname");
+            }
+        }
+
+        if (!empty($renamed)) {
+            // Notify changed usernames to administrator
+            $report = '# Each line in this file is in the form "old_username new_username"'."\n";
+            $message = "Mahara now requires usernames to be unique, case insensitively.\n";
+            $message .= "Some usernames on your site were changed during the upgrade:\n\n";
+            foreach ($renamed as $newname => $olduser) {
+                $report .= "$olduser->username $newname\n";
+                $message .= "Old username: $olduser->username\n"
+                    . "New username: $newname\n\n";
+            }
+            $sitename = get_config('sitename');
+            $file = get_config('dataroot') . 'user_migration_report_2.txt';
+            if (file_put_contents($file, $report)) {
+                $message .= "\n" . 'A copy of this list has been saved to the file ' . $file;
+            }
+            global $USER;
+            email_user($USER, null, $sitename . ': User migration', $message);
+            // Notify changed usernames to users
+            $usermessagestart = "Your username at $sitename has been changed:\n\n";
+            $usermessageend = "\n\nNext time you visit the site, please login using your new username.";
+            foreach ($renamed as $newname => $olduser) {
+                if ($olduser->email == '') {
+                    continue;
+                }
+                log_debug("Attempting to notify $newname ($olduser->email) of their new username...");
+                email_user($olduser, null, $sitename . ': User name changed', $usermessagestart
+                           . "Old username: $olduser->username\nNew username: $newname"
+                           . $usermessageend);
+            }
+        }
+
+        // Now we know all usernames are unique over their lowercase values, we 
+        // can put an index in so data doesn't get all inconsistent next time
+        if (is_postgres()) {
+            execute_sql('DROP INDEX {usr_use_uix}');
+            execute_sql('CREATE UNIQUE INDEX {usr_use_uix} ON {usr}(LOWER(username))');
+        }
+        else {
+            // MySQL cannot create indexes over functions of columns. Too bad 
+            // for it. We won't drop the existing index because that offers a 
+            // large degree of protection, but when MySQL finally supports this 
+            // we will be able to add it
+        }
+
+
+        // Install a cron job to delete old session files
+        $cron = new StdClass;
+        $cron->callfunction = 'auth_remove_old_session_files';
+        $cron->minute       = '30';
+        $cron->hour         = '20';
+        $cron->day          = '*';
+        $cron->month        = '*';
+        $cron->dayofweek    = '*';
+        insert_record('cron', $cron);
+    }
+
+    if ($oldversion < 2008040203) {
+        // Install a cron job to recalculate user quotas
+        $cron = new StdClass;
+        $cron->callfunction = 'recalculate_quota';
+        $cron->minute       = '15';
+        $cron->hour         = '2';
+        $cron->day          = '*';
+        $cron->month        = '*';
+        $cron->dayofweek    = '*';
+        insert_record('cron', $cron);
+    }
+
+    if ($oldversion < 2008040204) {
+        if (field_exists(new XMLDBTable('usr_friend_request'), new XMLDBField('reason'))) {
+            if (is_postgres()) {
+                execute_sql('ALTER TABLE {usr_friend_request} RENAME COLUMN reason TO message');
+            }
+            else if (is_mysql()) {
+                execute_sql('ALTER TABLE {usr_friend_request} CHANGE reason message TEXT');
+            }
+        }
+    }
+
+    if ($oldversion < 2008080400) {
+        // Group type refactor
+        log_debug('GROUP TYPE REFACTOR');
+
+        execute_sql('ALTER TABLE {group} ADD grouptype CHARACTER VARYING(20)');
+        execute_sql('ALTER TABLE {group_member} ADD role CHARACTER VARYING(255)');
+
+        $groups = get_records_array('group');
+        if ($groups) {
+            require_once(get_config('docroot') . 'grouptype/lib.php');
+            require_once(get_config('docroot') . 'grouptype/standard/lib.php');
+            require_once(get_config('docroot') . 'grouptype/course/lib.php');
+            foreach ($groups as $group) {
+                log_debug("Migrating group {$group->name} ({$group->id})");
+
+                // Establish the new group type
+                if ($group->jointype == 'controlled') {
+                    $group->grouptype = 'course';
+                }
+                else {
+                    $group->grouptype = 'standard';
+                }
+
+                execute_sql('UPDATE {group} SET grouptype = ? WHERE id = ?', array($group->grouptype, $group->id));
+                log_debug(' * new group type is ' . $group->grouptype);
+
+                // Convert group membership information to roles
+                foreach (call_static_method('GroupType' . $group->grouptype, 'get_roles') as $role) {
+                    if ($role == 'admin') {
+                        // It would be nice to use ensure_record_exists here, 
+                        // but because ctime is not null we have to provide it 
+                        // as data, which means the ctime would be updated if 
+                        // the record _did_ exist
+                        if (get_record('group_member', 'group', $group->id, 'member', $group->owner)) {
+                            execute_sql("UPDATE {group_member}
+                                SET role = 'admin'
+                                WHERE \"group\" = ?
+                                AND member = ?", array($group->id, $group->owner));
+                        }
+                        else {
+                            // In old versions of Mahara, there did not need to 
+                            // be a record in the group_member table for the 
+                            // owner
+                            $data = (object) array(
+                                'group'  => $group->id,
+                                'member' => $group->owner,
+                                'ctime'  => db_format_timestamp(time()),
+                                'role' => 'admin',
+                            );
+                            insert_record('group_member', $data);
+                        }
+                        log_debug(" * marked user {$group->owner} as having the admin role");
+                    }
+                    else {
+                        // Setting role instances for tutors and members
+                        $tutorflag = ($role == 'tutor') ? 1 : 0;
+                        execute_sql('UPDATE {group_member}
+                            SET role = ?
+                            WHERE "group" = ?
+                            AND member != ?
+                            AND tutor = ?', array($role, $group->id, $group->owner, $tutorflag));
+                        log_debug(" * marked appropriate users as being {$role}s");
+                    }
+                }
+            }
+        }
+
+
+        if (is_postgres()) {
+            execute_sql('ALTER TABLE {group} ALTER grouptype SET NOT NULL');
+            execute_sql('ALTER TABLE {group_member} ALTER role SET NOT NULL');
+        }
+        else if (is_mysql()) {
+            execute_sql('ALTER TABLE {group} MODIFY grouptype CHARACTER VARYING(20) NOT NULL');
+            execute_sql('ALTER TABLE {group_member} MODIFY role CHARACTER VARYING(255) NOT NULL');
+        }
+
+        if (is_mysql()) {
+            execute_sql('ALTER TABLE {group} DROP FOREIGN KEY {grou_own_fk}');
+        }
+
+        execute_sql('ALTER TABLE {group} DROP owner');
+        execute_sql('ALTER TABLE {group_member} DROP tutor');
+
+
+        // Adminfiles become "institution-owned artefacts"
+        execute_sql("ALTER TABLE {artefact} ADD COLUMN institution CHARACTER VARYING(255);");
+
+        if (is_postgres()) {
+            execute_sql("ALTER TABLE {artefact} ALTER COLUMN owner DROP NOT NULL;");
+        }
+        else if (is_mysql()) {
+            execute_sql("ALTER TABLE {artefact} MODIFY owner BIGINT(10) NULL;");
+        }
+
+        execute_sql("ALTER TABLE {artefact} ADD CONSTRAINT {arte_ins_fk} FOREIGN KEY (institution) REFERENCES {institution}(name);");
+        execute_sql("UPDATE {artefact} SET institution = 'mahara', owner = NULL WHERE id IN (SELECT artefact FROM {artefact_file_files} WHERE adminfiles = 1)");
+        execute_sql("ALTER TABLE {artefact_file_files} DROP COLUMN adminfiles");
+        execute_sql('ALTER TABLE {artefact} ADD COLUMN "group" BIGINT');
+        execute_sql('ALTER TABLE {artefact} ADD CONSTRAINT {arte_gro_fk} FOREIGN KEY ("group") REFERENCES {group}(id)');
+
+
+        // New artefact permissions for use with group-owned artefacts
+        execute_sql('CREATE TABLE {artefact_access_role} (
+            role VARCHAR(255) NOT NULL,
+            artefact INTEGER NOT NULL REFERENCES {artefact}(id),
+            can_view SMALLINT NOT NULL,
+            can_edit SMALLINT NOT NULL,
+            can_republish SMALLINT NOT NULL
+        )' . $INNODB);
+        execute_sql('CREATE TABLE {artefact_access_usr} (
+            usr INTEGER NOT NULL REFERENCES {usr}(id),
+            artefact INTEGER NOT NULL REFERENCES {artefact}(id),
+            can_republish SMALLINT
+        )' . $INNODB);
+
+
+        // grouptype tables
+        execute_sql("CREATE TABLE {grouptype} (
+            name VARCHAR(20) PRIMARY KEY,
+            submittableto SMALLINT NOT NULL,
+            defaultrole VARCHAR(255) NOT NULL DEFAULT 'member'
+        )" . $INNODB);
+        execute_sql("INSERT INTO {grouptype} (name,submittableto) VALUES ('standard',0)");
+        execute_sql("INSERT INTO {grouptype} (name,submittableto) VALUES ('course',1)");
+
+        execute_sql('CREATE TABLE {grouptype_roles} (
+            grouptype VARCHAR(20) NOT NULL REFERENCES {grouptype}(name),
+            edit_views SMALLINT NOT NULL DEFAULT 1,
+            see_submitted_views SMALLINT NOT NULL DEFAULT 0,
+            role VARCHAR(255) NOT NULL
+        )' . $INNODB);
+        execute_sql("INSERT INTO {grouptype_roles} (grouptype,edit_views,see_submitted_views,role) VALUES ('standard',1,0,'admin')");
+        execute_sql("INSERT INTO {grouptype_roles} (grouptype,edit_views,see_submitted_views,role) VALUES ('standard',1,0,'member')");
+        execute_sql("INSERT INTO {grouptype_roles} (grouptype,edit_views,see_submitted_views,role) VALUES ('course',1,0,'admin')");
+        execute_sql("INSERT INTO {grouptype_roles} (grouptype,edit_views,see_submitted_views,role) VALUES ('course',1,1,'tutor')");
+        execute_sql("INSERT INTO {grouptype_roles} (grouptype,edit_views,see_submitted_views,role) VALUES ('course',0,0,'member')");
+
+        if (is_postgres()) {
+            $table = new XMLDBTable('group');
+            $key = new XMLDBKey('grouptypefk');
+            $key->setAttributes(XMLDB_KEY_FOREIGN, array('grouptype'), 'grouptype', array('name'));
+            add_key($table, $key);
+        }
+        else if (is_mysql()) {
+            // Seems to refuse to create foreign key, not sure why yet
+            execute_sql("ALTER TABLE {group} ADD INDEX {grou_gro_ix} (grouptype);");
+            // execute_sql("ALTER TABLE {group} ADD CONSTRAINT {grou_gro_fk} FOREIGN KEY (grouptype) REFERENCES {grouptype} (name);");
+        }
+
+
+        // Group views
+        execute_sql('ALTER TABLE {view} ADD COLUMN "group" BIGINT');
+        execute_sql('ALTER TABLE {view} ADD CONSTRAINT {view_gro_fk} FOREIGN KEY ("group") REFERENCES {group}(id)');
+        if (is_postgres()) {
+            execute_sql('ALTER TABLE {view} ALTER COLUMN owner DROP NOT NULL');
+            execute_sql('ALTER TABLE {view} ALTER COLUMN ownerformat DROP NOT NULL');
+        }
+        else if (is_mysql()) {
+            execute_sql('ALTER TABLE {view} MODIFY owner BIGINT(10) NULL');
+            execute_sql('ALTER TABLE {view} MODIFY ownerformat TEXT NULL');
+        }
+        execute_sql('ALTER TABLE {view_access_group} ADD COLUMN role VARCHAR(255)');
+        execute_sql("UPDATE {view_access_group} SET role = 'tutor' WHERE tutoronly = 1");
+        execute_sql('ALTER TABLE {view_access_group} DROP COLUMN tutoronly');
+
+
+        // grouptype plugin tables
+        $table = new XMLDBTable('grouptype_installed');
+        $table->addFieldInfo('name', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('version', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('release', XMLDB_TYPE_TEXT, 'small', null, XMLDB_NOTNULL);
+        $table->addFieldInfo('active', XMLDB_TYPE_INTEGER,  1, null, XMLDB_NOTNULL, null, null, null, 1);
+        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('name'));
+        create_table($table);
+       
+        $table = new XMLDBTable('grouptype_cron');
+        $table->addFieldInfo('plugin', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('callfunction', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('minute', XMLDB_TYPE_CHAR, 25, null, XMLDB_NOTNULL, null, null, null, '*');
+        $table->addFieldInfo('hour', XMLDB_TYPE_CHAR, 25, null, XMLDB_NOTNULL, null, null, null, '*');
+        $table->addFieldInfo('day', XMLDB_TYPE_CHAR, 25, null, XMLDB_NOTNULL, null, null, null, '*');
+        $table->addFieldInfo('dayofweek', XMLDB_TYPE_CHAR, 25, null, XMLDB_NOTNULL, null, null, null, '*');
+        $table->addFieldInfo('month', XMLDB_TYPE_CHAR, 25, null, XMLDB_NOTNULL, null, null, null, '*');
+        $table->addFieldInfo('nextrun', XMLDB_TYPE_DATETIME, null, null);
+        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('plugin', 'callfunction'));
+        $table->addKeyInfo('pluginfk', XMLDB_KEY_FOREIGN, array('plugin'), 'grouptype_installed', array('name'));
+        create_table($table); 
+
+        $table = new XMLDBTable('grouptype_config');
+        $table->addFieldInfo('plugin', XMLDB_TYPE_CHAR, 100, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('field', XMLDB_TYPE_CHAR, 100, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('value', XMLDB_TYPE_TEXT, 'small', null, XMLDB_NOTNULL);
+        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('plugin', 'field'));
+        $table->addKeyInfo('pluginfk', XMLDB_KEY_FOREIGN, array('plugin'), 'grouptype_installed', array('name'));
+        create_table($table);
+
+        $table = new XMLDBTable('grouptype_event_subscription');
+        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, 
+            XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null, null);
+        $table->addFieldInfo('plugin', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('event', XMLDB_TYPE_CHAR, 50, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('callfunction', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
+        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->addKeyInfo('pluginfk', XMLDB_KEY_FOREIGN, array('plugin'), 'grouptype_installed', array('name'));
+        $table->addKeyInfo('eventfk', XMLDB_KEY_FOREIGN, array('event'), 'event_type', array('name'));
+        $table->addKeyInfo('subscruk', XMLDB_KEY_UNIQUE, array('plugin', 'event', 'callfunction'));
+        create_table($table);
+
+        if ($data = check_upgrades('grouptype.standard')) {
+            upgrade_plugin($data);
+        }
+        if ($data = check_upgrades('grouptype.course')) {
+            upgrade_plugin($data);
+        }
+
+
+        // Group invitations take a role
+        execute_sql('ALTER TABLE {group_member_invite} ADD COLUMN role VARCHAR(255)');
+
+
+    }
+
+    if ($oldversion < 2008081101) {
+        execute_sql("ALTER TABLE {view} ADD COLUMN institution CHARACTER VARYING(255);");
+        execute_sql("ALTER TABLE {view} ADD CONSTRAINT {view_ins_fk} FOREIGN KEY (institution) REFERENCES {institution}(name);");
+        execute_sql("ALTER TABLE {view} ADD COLUMN template SMALLINT NOT NULL DEFAULT 0;");
+    }
+
+    if ($oldversion < 2008081102) {
+        execute_sql("ALTER TABLE {view} ADD COLUMN copynewuser SMALLINT NOT NULL DEFAULT 0;");
+        execute_sql('CREATE TABLE {view_autocreate_grouptype} (
+            view INTEGER NOT NULL REFERENCES {view}(id),
+            grouptype VARCHAR(20) NOT NULL REFERENCES {grouptype}(name)
+        )' . $INNODB);
+    }
+
+    if ($oldversion < 2008090100) {
+        $table = new XMLDBTable('import_queue');
+        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null, null);
+        $table->addFieldInfo('host', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('usr', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('queue', XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, '1');
+        $table->addFieldInfo('ready', XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, '0');
+        $table->addFieldInfo('expirytime', XMLDB_TYPE_DATETIME, null, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('format', XMLDB_TYPE_CHAR, 50, null, null);
+        $table->addFieldInfo('data', XMLDB_TYPE_TEXT, 'large', null, null);
+        $table->addFieldInfo('token', XMLDB_TYPE_CHAR, 40, null, XMLDB_NOTNULL);
+        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->addKeyInfo('usrfk', XMLDB_KEY_FOREIGN, array('usr'), 'usr', array('id'));
+        $table->addKeyInfo('hostfk', XMLDB_KEY_FOREIGN, array('host'), 'host', array('wwwroot'));
+
+        create_table($table);
+        // Install a cron job to process the queue
+        $cron = new StdClass;
+
+        $cron->callfunction = 'import_process_queue';
+        $cron->minute       = '*/5';
+        $cron->hour         = '*';
+        $cron->day          = '*';
+        $cron->month        = '*';
+        $cron->dayofweek    = '*';
+        insert_record('cron', $cron);
+    }
+
+    if ($oldversion < 2008090800) {
+        $table = new XMLDBTable('artefact_log');
+        $table->addFieldInfo('artefact', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('usr', XMLDB_TYPE_INTEGER, 10, null, null);
+        $table->addFieldInfo('time', XMLDB_TYPE_DATETIME, null, null, XMLDB_NOTNULL);
+        $table->addFieldInfo('title', XMLDB_TYPE_TEXT, null);
+        $table->addFieldInfo('description', XMLDB_TYPE_TEXT, null);
+        $table->addFieldInfo('parent', XMLDB_TYPE_INTEGER, 10, null, null);
+        $table->addFieldInfo('created', XMLDB_TYPE_INTEGER, 1, null, null);
+        $table->addFieldInfo('deleted', XMLDB_TYPE_INTEGER, 1, null, null);
+        $table->addFieldInfo('edited', XMLDB_TYPE_INTEGER, 1, null, null);
+        $table->addIndexInfo('artefactix', XMLDB_INDEX_NOTUNIQUE, array('artefact'));
+        $table->addKeyInfo('usrfk', XMLDB_KEY_FOREIGN, array('usr'), 'usr', array('id'));
+        create_table($table);
+    }
+
+    if ($oldversion < 2008091500) {
+        // NOTE: Yes, this number is bigger than the number for the next upgrade
+        // The next upgrade got committed first. It deletes all users properly, 
+        // but the usr table has a 30 character limit on username, which can be 
+        // violated when people with long usernames are deleted
+        $table = new XMLDBTable('usr');
+        $field = new XMLDBField('username');
+        $field->setAttributes(XMLDB_TYPE_CHAR, 100, null, XMLDB_NOTNULL);
+        change_field_precision($table, $field);
+    }
+
+    if ($oldversion < 2008091200) {
+        // Some cleanups for deleted users, based on the new model of handling them
+        if ($userids = get_column('usr', 'id', 'deleted', 1)) {
+            foreach ($userids as $userid) {
+                // We want to append 'deleted.timestamp' to some unique fields in the usr 
+                // table, so they can be reused by new accounts
+                $fieldstomunge = array('username', 'email');
+                $datasuffix = '.deleted.' . time();
+
+                $user = get_record('usr', 'id', $userid, null, null, null, null, implode(', ', $fieldstomunge));
+
+                $deleterec = new StdClass;
+                $deleterec->id = $userid;
+                $deleterec->deleted = 1;
+                foreach ($fieldstomunge as $field) {
+                    if (!preg_match('/\.deleted\.\d+$/', $user->$field)) {
+                        $deleterec->$field = $user->$field . $datasuffix;
+                    }
+                }
+
+                // Set authinstance to default internal, otherwise the old authinstance can be blocked from deletion
+                // by deleted users.
+                $authinst = get_field('auth_instance', 'id', 'institution', 'mahara', 'instancename', 'internal');
+                if ($authinst) {
+                    $deleterec->authinstance = $deleterec->lastauthinstance = $authinst;
+                }
+
+                update_record('usr', $deleterec);
+
+                // Because the user is being deleted, but their email address may be wanted 
+                // for a new user, we change their email addresses to add 
+                // 'deleted.[timestamp]'
+                execute_sql("UPDATE {artefact_internal_profile_email}
+                             SET email = email || ?
+                             WHERE owner = ? AND NOT email LIKE '%.deleted.%'", array($datasuffix, $userid));
+
+                // Remove remote user records
+                delete_records('auth_remote_user', 'localusr', $userid);
+            }
+        }
+    }
+
+    if ($oldversion < 2008091601) {
+        $table = new XMLDBTable('event_subscription');
+        if (!table_exists($table)) {
+            $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED,
+                XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null, null);
+            $table->addFieldInfo('event', XMLDB_TYPE_CHAR, 50, XMLDB_UNSIGNED, XMLDB_NOTNULL);
+            $table->addFieldInfo('callfunction',  XMLDB_TYPE_CHAR, 255, XMLDB_UNSIGNED, XMLDB_NOTNULL);
+
+            $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
+            $table->addKeyInfo('eventfk', XMLDB_KEY_FOREIGN, array('event'), 'event_type', array('name'));
+            $table->addKeyInfo('subscruk', XMLDB_KEY_UNIQUE, array('event', 'callfunction'));
+
+            create_table($table);
+ 
+            insert_record('event_subscription', (object)array('event' => 'createuser', 'callfunction' => 'activity_set_defaults'));
+
+            $table = new XMLDBTable('view_type');
+            $table->addFieldInfo('type', XMLDB_TYPE_CHAR, 50, XMLDB_UNSIGNED, XMLDB_NOTNULL);
+            $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('type'));
+
+            create_table($table);
+
+            $viewtypes = array('portfolio', 'profile');
+            foreach ($viewtypes as $vt) {
+                insert_record('view_type', (object)array(
+                    'type' => $vt,
+                ));
+            }
+
+            $table = new XMLDBTable('blocktype_installed_viewtype');
+            $table->addFieldInfo('blocktype', XMLDB_TYPE_CHAR, 50, XMLDB_UNSIGNED, XMLDB_NOTNULL);
+            $table->addFieldInfo('viewtype', XMLDB_TYPE_CHAR, 50, XMLDB_UNSIGNED, XMLDB_NOTNULL);
+            $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('blocktype', 'viewtype'));
+            $table->addKeyInfo('blocktypefk', XMLDB_KEY_FOREIGN, array('blocktype'), 'blocktype_installed', array('name'));
+            $table->addKeyInfo('viewtypefk', XMLDB_KEY_FOREIGN, array('viewtype'), 'view_type', array('type'));
+
+            create_table($table);
+
+            $table = new XMLDBTable('view');
+            $field = new XMLDBField('type');
+            $field->setAttributes(XMLDB_TYPE_CHAR, 50, XMLDB_UNSIGNED, null);
+            add_field($table, $field);
+            $key = new XMLDBKey('typefk');
+            $key->setAttributes(XMLDB_KEY_FOREIGN, array('type'), 'view_type', array('type'));
+            add_key($table, $key);
+            set_field('view', 'type', 'portfolio');
+            $field->setAttributes(XMLDB_TYPE_CHAR, 50, XMLDB_UNSIGNED, XMLDB_NOTNULL);
+            change_field_notnull($table, $field);
+
+            if ($blocktypes = plugins_installed('blocktype', true)) {
+                foreach ($blocktypes as $bt) {
+                    install_blocktype_viewtypes_for_plugin(blocktype_single_to_namespaced($bt->name, $bt->artefactplugin));
+                }
+            }
+        }
+    }
+
+    if ($oldversion < 2008091603) {
+        foreach(array('myviews', 'mygroups', 'myfriends', 'wall') as $blocktype) {
+            $data = check_upgrades("blocktype.$blocktype");
+            if ($data) {
+                upgrade_plugin($data);
+            }
+        }
+        if (!get_record('view', 'owner', 0, 'type', 'profile')) {
+            // First ensure system user has id = 0; In older MySQL installations it may be > 0
+            $sysuser = get_record('usr', 'username', 'root');
+            if ($sysuser && $sysuser->id > 0 && !count_records('usr', 'id', 0)) {
+                set_field('usr', 'id', 0, 'id', $sysuser->id);
+            }
+            // Install system profile view
+            require_once(get_config('libroot') . 'view.php');
+            $dbtime = db_format_timestamp(time());
+            $viewdata = (object) array(
+                'type'        => 'profile',
+                'owner'       => 0,
+                'numcolumns'  => 2,
+                'ownerformat' => FORMAT_NAME_PREFERREDNAME,
+                'title'       => get_string('profileviewtitle', 'view'),
+                'description' => '',
+                'template'    => 1,
+                'ctime'       => $dbtime,
+                'atime'       => $dbtime,
+                'mtime'       => $dbtime,
+            );
+            $id = insert_record('view', $viewdata, 'id', true);
+            $accessdata = (object) array('view' => $id, 'accesstype' => 'loggedin');
+            insert_record('view_access', $accessdata);
+            $blocktypes = array('myviews' => 1, 'mygroups' => 1, 'myfriends' => 2, 'wall' => 2);  // column ids
+            $installed = get_column_sql('SELECT name FROM {blocktype_installed} WHERE name IN (' . join(',', array_map('db_quote', array_keys($blocktypes))) . ')');
+            $weights = array(1 => 0, 2 => 0);
+            foreach (array_keys($blocktypes) as $blocktype) {
+                if (in_array($blocktype, $installed)) {
+                    $weights[$blocktypes[$blocktype]]++;
+                    insert_record('block_instance', (object) array(
+                        'blocktype'  => $blocktype,
+                        'title'      => get_string('title', 'blocktype.' . $blocktype),
+                        'view'       => $id,
+                        'column'     => $blocktypes[$blocktype],
+                        'order'      => $weights[$blocktypes[$blocktype]],
+                    ));
+                }
+            }
+        }
+    }
+
+    if ($oldversion < 2008091604) {
+        $table = new XMLDBTable('usr');
+        $field = new XMLDBField('lastlastlogin');
+        $field->setAttributes(XMLDB_TYPE_DATETIME, null, null);
+        add_field($table, $field);
+    }
+
+    if ($oldversion < 2008092000) {
+        $table = new XMLDBTable('usr');
+        $field = new XMLDBField('lastaccess');
+        $field->setAttributes(XMLDB_TYPE_DATETIME, null, null);
+        add_field($table, $field);
+    }
+
+    // The previous upgrade forces the user to be logged out.  The
+    // next upgrade should probably set disablelogin = false and
+    // minupgradefrom = 2008092000 in version.php.
+
+    if ($oldversion < 2008101500) {
+        // Remove event subscription for new user accounts to have a default 
+        // profile view created, they're now created on demand
+        execute_sql("DELETE FROM {event_subscription} WHERE event = 'createuser' AND callfunction = 'install_default_profile_view';");
+    }
+
+    if ($oldversion < 2008101602) {
+        $artefactdata = get_config('dataroot') . 'artefact/';
+        if (is_dir($artefactdata . 'file/profileicons')) {
+            throw new SystemException("Upgrade 2008101602: $artefactdata/file/profileicons already exists!");
+        }
+
+        // Move artefact/internal/profileicons directory to artefact/file
+        set_field('artefact_installed_type', 'plugin', 'file', 'name', 'profileicon');
+        set_field('artefact_config', 'plugin', 'file', 'field', 'profileiconwidth');
+        set_field('artefact_config', 'plugin', 'file', 'field', 'profileiconheight');
+
+        if (is_dir($artefactdata . 'internal/profileicons')) {
+            if (!is_dir($artefactdata . 'file')) {
+                mkdir($artefactdata . 'file', get_config('directorypermissions'));
+            }
+            if (!rename($artefactdata . 'internal/profileicons', $artefactdata . 'file/profileicons')) {
+                throw new SystemException("Failed moving $artefactdata/internal/profileicons to $artefactdata/file/profileicons");
+            }
+
+            // Insert artefact_file_files records for all profileicons
+            $profileicons = get_column('artefact', 'id', 'artefacttype', 'profileicon');
+            if ($profileicons) {
+                foreach ($profileicons as $a) {
+                    $filename = $artefactdata . 'file/profileicons/originals/' . ($a % 256) . '/' . $a;
+                    if (file_exists($filename)) {
+                        $filesize = filesize($filename);
+                        $imagesize = getimagesize($artefactdata . 'file/profileicons/originals/' . ($a % 256) . '/' . $a);
+                        insert_record('artefact_file_files', (object) array('artefact' => $a, 'fileid' => $a, 'size' => $filesize));
+                        insert_record('artefact_file_image', (object) array('artefact' => $a, 'width' => $imagesize[0], 'height' => $imagesize[1]));
+                    } else {
+                        log_debug("Profile icon artefact $a has no file on disk at $filename");
+                    }
+                }
+            }
+        }
+    }
+
+    if ($oldversion < 2008102200) {
+        $table = new XMLDBTable('view_access_token');
+        $table->addFieldInfo('view', XMLDB_TYPE_INTEGER, 10, false, XMLDB_NOTNULL);
+        $table->addFieldInfo('token', XMLDB_TYPE_CHAR, 100, XMLDB_UNSIGNED, XMLDB_NOTNULL);
+        $table->addFieldInfo('startdate', XMLDB_TYPE_DATETIME, null, null);
+        $table->addFieldInfo('stopdate', XMLDB_TYPE_DATETIME, null, null);
+        $table->addKeyInfo('viewfk', XMLDB_KEY_FOREIGN, array('view'), 'view', array('id'));
+        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('token'));
+        create_table($table);
+    }
+
+    if ($oldversion < 2008102400) {
+        // Feedback can be left by anon users with a view token, so feedback author must be nullable
+        $table = new XMLDBTable('view_feedback');
+        if (is_mysql()) {
+            execute_sql("ALTER TABLE {view_feedback} DROP FOREIGN KEY {viewfeed_aut_fk}");
+            execute_sql('ALTER TABLE {view_feedback} MODIFY author BIGINT(10) NULL');
+        }
+        else {
+            $field = new XMLDBField('author');
+            $field->setAttributes(XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED);
+            change_field_notnull($table, $field);
+        }
+        $key = new XMLDBKEY('authorfk');
+        $key->setAttributes(XMLDB_KEY_FOREIGN, array('author'), 'usr', array('id'));
+        add_key($table, $key);
+
+        $table = new XMLDBTable('artefact_feedback');
+        if (is_mysql()) {
+            execute_sql("ALTER TABLE {artefact_feedback} DROP FOREIGN KEY {artefeed_aut_fk}");
+            execute_sql('ALTER TABLE {artefact_feedback} MODIFY author BIGINT(10) NULL');
+        }
+        else {
+            $field = new XMLDBField('author');
+            $field->setAttributes(XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED);
+            change_field_notnull($table, $field);
+        }
+        $key = new XMLDBKEY('authorfk');
+        $key->setAttributes(XMLDB_KEY_FOREIGN, array('author'), 'usr', array('id'));
+        add_key($table, $key);
+
+        table_column('view_feedback', null, 'authorname', 'text', null, null, null, '');
+        table_column('artefact_feedback', null, 'authorname', 'text', null, null, null, '');
+    }
+
+    if ($oldversion < 2008110700) {
+        $table = new XMLDBTable('group');
+        $field = new XMLDBField('public');
+        $field->setAttributes(XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, 0);
+        add_field($table, $field);
+
+        set_config('createpublicgroups', 'admins');
+    }
+
+    if ($oldversion < 2008111102) {
+        set_field('grouptype_roles', 'see_submitted_views', 1, 'grouptype', 'course', 'role', 'admin');
+    }
+
+    if ($oldversion < 2008111200) {
+        // Event subscription for auto adding users to groups
+        insert_record('event_subscription', (object)array('event' => 'createuser', 'callfunction' => 'add_user_to_autoadd_groups'));
+
+        $table = new XMLDBTable('group');
+        $field = new XMLDBField('usersautoadded');
+        $field->setAttributes(XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, 0);
+        add_field($table, $field);
+    }
+
+    if ($oldversion < 2008111201) {
+        $event = (object)array(
+            'name' => 'userjoinsgroup',
+        );
+        ensure_record_exists('event_type', $event, $event);
+    }
+
+    if ($oldversion < 2008110400) {
+        // Correct capitalisation of internal authinstance for 'no institution', only if it hasn't changed previously
+        execute_sql("UPDATE {auth_instance} SET instancename = 'Internal' WHERE institution = 'mahara' AND authname = 'internal' AND instancename = 'internal'");
+    }
+
+    if ($oldversion < 2008121500) {
+        // Make sure the system profile view is marked as a template and is 
+        // allowed to be copied by everyone
+        require_once('view.php');
+        execute_sql("UPDATE {view} SET template = 1 WHERE owner = 0 AND type = 'profile'");
+        $viewid = get_field('view', 'id', 'owner', 0, 'type', 'profile');
+        delete_records('view_access', 'view', $viewid);
+        insert_record('view_access', (object) array('view' => $viewid, 'accesstype' => 'loggedin'));
+    }
+
+    if ($oldversion < 2008122300) {
+        // Delete all activity_queue entries older than 2 weeks. Designed to 
+        // prevent total spammage caused by the activity queue processing bug
+        delete_records_select('activity_queue', 'ctime < ?', array(db_format_timestamp(time() - (86400 * 14))));
+    }
+
+    if ($oldversion < 2009011500) {
+        // Make the "port" column larger so it can handle any port number
+        $table = new XMLDBTable('host');
+        $field = new XMLDBField('portno');
+        $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, null, null, null, 80);
+        change_field_precision($table, $field);
+    }
+
+    if ($oldversion < 2009021600) {
+        // Add constraints on view and artefact tables to make sure that of the 
+        // owner/group/institution fields, only one is set at any given time
+
+        // First, we make blind assumptions in order to tweak the data into 
+        // being valid. In theory, there shouldn't be much danger because most 
+        // people will upgrade from 1.0 to 1.1, and thus never have invalid 
+        // data in their tables.
+        execute_sql('UPDATE {artefact} SET owner = NULL WHERE institution IS NOT NULL');
+        execute_sql('UPDATE {artefact} SET "group" = NULL WHERE institution IS NOT NULL');
+        execute_sql('UPDATE {artefact} SET owner = NULL WHERE "group" IS NOT NULL');
+        execute_sql('UPDATE {view} SET owner = NULL WHERE institution IS NOT NULL');
+        execute_sql('UPDATE {view} SET "group" = NULL WHERE institution IS NOT NULL');
+        execute_sql('UPDATE {view} SET owner = NULL WHERE "group" IS NOT NULL');
+
+        // Now add the constraints. MySQL parses check constraints but doesn't 
+        // actually apply them. So these protections will only apply if you use 
+        // Postgres. You did read the installation instruction's 
+        // recommendations that you use postgres, didn't you?
+        execute_sql('ALTER TABLE {artefact} ADD CHECK (
+            (owner IS NOT NULL AND "group" IS NULL     AND institution IS NULL) OR
+            (owner IS NULL     AND "group" IS NOT NULL AND institution IS NULL) OR
+            (owner IS NULL     AND "group" IS NULL     AND institution IS NOT NULL)
+        )');
+        execute_sql('ALTER TABLE {view} ADD CHECK (
+            (owner IS NOT NULL AND "group" IS NULL     AND institution IS NULL) OR
+            (owner IS NULL     AND "group" IS NOT NULL AND institution IS NULL) OR
+            (owner IS NULL     AND "group" IS NULL     AND institution IS NOT NULL)
+        )');
+    }
+
+    if ($oldversion < 2009021700) {
+        try {
+            include_once('xmlize.php');
+            $newlist = xmlize(file_get_contents(get_config('libroot') . 'htmlpurifiercustom/filters.xml'));
+            $filters = $newlist['filters']['#']['filter'];
+            foreach ($filters as &$f) {
+                $f = (object) array(
+                    'site' => $f['#']['site'][0]['#'],
+                    'file' => $f['#']['filename'][0]['#']
+                );
+            }
+            $filters[] = (object) array('site' => 'http://www.youtube.com', 'file' => 'YouTube');
+            set_config('filters', serialize($filters));
+        }
+        catch (Exception $e) {
+            log_debug('Upgrade 2009021700: failed to load html filters');
+        }
+    }
+
+    if ($oldversion < 2009021701) {
+        // Make sure that all views that can be copied have loggedin access
+        // This upgrade just fixes potentially corrupt data caused by running a 
+        // beta version then upgrading it
+        if ($views = get_column('view', 'id', 'copynewuser', '1')) {
+            $views[] = 1;
+            foreach ($views as $viewid) {
+                if (!record_exists('view_access', 'view', $viewid, 'accesstype', 'loggedin')) {
+                    // We're not checking that access dates are null (aka
+                    // it can always be accessed), but the chance of people
+                    // needing this upgrade are slim anyway
+                    insert_record('view_access', (object) array(
+                        'view' => $viewid,
+                        'accesstype' => 'loggedin',
+                        'startdate' => null,
+                        'stopdate'  => null,
+                    ));
+                }
+            }
+        }
+    }
+
+    if ($oldversion < 2009021900) {
+        // Generate a unique installation key
+        set_config('installation_key', get_random_key());
+    }
+
+    if ($oldversion < 2009021901) {
+        // Insert a cron job to send registration data to mahara.org
+        $cron = new StdClass;
+        $cron->callfunction = 'cron_send_registration_data';
+        $cron->minute       = rand(0, 59);
+        $cron->hour         = rand(0, 23);
+        $cron->day          = '*';
+        $cron->month        = '*';
+        $cron->dayofweek    = rand(0, 6);
+        insert_record('cron', $cron);
+    }
 
     if ($oldversion < 2009022700) {
         // Get rid of all blocks with position 0 caused by 'about me' block on profile views
@@ -275,7 +1112,7 @@ function xmldb_core_upgrade($oldversion=0) {
     if ($oldversion < 2009070600) {
         // This was forgotten as part of the 1.0 -> 1.1 upgrade
         if ($data = check_upgrades('blocktype.file/html')) {
-              upgrade_plugin($data);
+              upgrade_plugin($data); 
         };
     }
 
@@ -1278,10 +2115,10 @@ function xmldb_core_upgrade($oldversion=0) {
     }
 
     if ($oldversion < 2010081001) {
-        if ($data = check_upgrades('artefact.tests')) {
+        if ($data = check_upgrades('artefact.plans')) {
             upgrade_plugin($data);
         }
-        if ($data = check_upgrades('blocktype.tests/tests')) {
+        if ($data = check_upgrades('blocktype.plans/plans')) {
             upgrade_plugin($data);
         }
     }
@@ -1451,7 +2288,6 @@ function xmldb_core_upgrade($oldversion=0) {
         // Restore index that may be missing due to upgrade 2011050600.
         $table = new XMLDBTable('usr');
         $index = new XMLDBIndex('usr_use_uix');
-        $index->setAttributes(XMLDB_INDEX_UNIQUE, array('username'));
         if (!index_exists($table, $index)) {
             if (is_postgres()) {
                 // For postgres, create the index on the lowercase username, the way it's
@@ -1527,7 +2363,6 @@ function xmldb_core_upgrade($oldversion=0) {
         if (is_postgres()) {
             $table = new XMLDBTable('usr');
             $index = new XMLDBIndex('usr_fir_ix');
-            $index->setAttributes(XMLDB_INDEX_NOTUNIQUE, array('firstname', 'lastname', 'preferredname', 'studentid', 'email'));
             if (!index_exists($table, $index)) {
                 execute_sql('CREATE INDEX {usr_fir_ix} ON {usr}(LOWER(firstname))');
                 execute_sql('CREATE INDEX {usr_las_ix} ON {usr}(LOWER(lastname))');
@@ -2289,881 +3124,6 @@ function xmldb_core_upgrade($oldversion=0) {
         $field = new XMLDBField('editwindowend');
         $field->setAttributes(XMLDB_TYPE_DATETIME);
         add_field($table, $field);
-    }
-
-    if ($oldversion < 2013011700) {
-        set_config('defaultregistrationexpirylifetime', 1209600);
-    }
-
-    if ($oldversion < 2013012100) {
-        $event = (object)array(
-            'name' => 'loginas',
-        );
-        ensure_record_exists('event_type', $event, $event);
-    }
-
-    if ($oldversion < 2013012101) {
-        $table = new XMLDBTable('event_log');
-        $table->addFieldInfo('usr', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('realusr', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('event', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('data', XMLDB_TYPE_TEXT, null, null, null);
-        $table->addFieldInfo('time', XMLDB_TYPE_DATETIME, null, null, XMLDB_NOTNULL);
-        $table->addKeyInfo('usrfk', XMLDB_KEY_FOREIGN, array('usr'), 'usr', array('id'));
-        $table->addKeyInfo('realusrfk', XMLDB_KEY_FOREIGN, array('realusr'), 'usr', array('id'));
-        create_table($table);
-
-        $cron = new StdClass;
-        $cron->callfunction = 'cron_event_log_expire';
-        $cron->minute       = 7;
-        $cron->hour         = 23;
-        $cron->day          = '*';
-        $cron->month        = '*';
-        $cron->dayofweek    = '*';
-        insert_record('cron', $cron);
-    }
-
-    if ($oldversion < 2013020500) {
-        $table = new XMLDBTable('artefact');
-        $field = new XMLDBField('license');
-        $field->setAttributes(XMLDB_TYPE_CHAR,255);
-        add_field($table, $field);
-        $field = new XMLDBField('licensor');
-        $field->setAttributes(XMLDB_TYPE_CHAR,255);
-        add_field($table, $field);
-        $field = new XMLDBField('licensorurl');
-        $field->setAttributes(XMLDB_TYPE_CHAR,255);
-        add_field($table, $field);
-
-        $table = new XMLDBTable('institution');
-        $field = new XMLDBField('licensedefault');
-        $field->setAttributes(XMLDB_TYPE_CHAR,255);
-        add_field($table, $field);
-        $field = new XMLDBField('licensemandatory');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, 0);
-        add_field($table, $field);
-
-        $table = new XMLDBTable('artefact_license');
-        $table->addFieldInfo('name', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('displayname', XMLDB_TYPE_CHAR, 255, null, null);
-        $table->addFieldInfo('shortname', XMLDB_TYPE_CHAR, 255, null, null);
-        $table->addFieldInfo('icon', XMLDB_TYPE_CHAR, 255, null, null);
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('name'));
-        create_table($table);
-    }
-
-    if ($oldversion < 2013020501) {
-        require_once('license.php');
-        install_licenses_default();
-    }
-
-    if ($oldversion < 2013032202) {
-        require_once(get_config('libroot').'license.php');
-        set_field('usr_account_preference', 'value', LICENSE_INSTITUTION_DEFAULT, 'field', 'licensedefault', 'value', '-');
-    }
-
-    if ($oldversion < 2013050700) {
-        $table = new XMLDBTable('collection_tag');
-        $table->addFieldInfo('collection', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('tag', XMLDB_TYPE_CHAR, 128, null, XMLDB_NOTNULL);
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('collection', 'tag'));
-        $table->addKeyInfo('collectionfk', XMLDB_KEY_FOREIGN, array('collection'), 'collection', array('id'));
-        create_table($table);
-    }
-
-    if ($oldversion < 2013062600) {
-        $table = new XMLDBTable('institution');
-        $field = new XMLDBField('dropdownmenu');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, 0);
-        add_field($table, $field);
-    }
-
-    if ($oldversion < 2013081400) {
-        // We've made a change to how update_safe_iframe_regex() generates the regex
-        // Call this function to make sure the stored value reflects that change.
-        update_safe_iframe_regex();
-    }
-
-    if ($oldversion < 2013082100) {
-        log_debug('Update database for flexible page layouts feature');
-        log_debug('1. Create table view_rows_columns');
-        $table = new XMLDBTable('view_rows_columns');
-        $table->addFieldInfo('view', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('row', XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('columns', XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL);
-        $table->addKeyInfo('viewfk', XMLDB_KEY_FOREIGN, array('view'), 'view', array('id'));
-        create_table($table);
-
-        log_debug('2. Remake the table view_layout as view_layout_columns');
-        $table = new XMLDBTable('view_layout_columns');
-        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-        $table->addFieldInfo('columns', XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('widths', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->addKeyInfo('columnwidthuk', XMLDB_KEY_UNIQUE, array('columns', 'widths'));
-        create_table($table);
-
-        log_debug('3. Alter table view_layout');
-        $table = new XMLDBTable('view_layout');
-        $field = new XMLDBField('rows');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, null, null, null, 1);
-        add_field($table, $field);
-        $field = new XMLDBField('iscustom');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, 0);
-        add_field($table, $field);
-        $field = new XMLDBField('layoutmenuorder');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, null, null, null, 0);
-        add_field($table, $field);
-
-        log_debug('4. Create table view_layout_rows_columns');
-        $table = new XMLDBTable('view_layout_rows_columns');
-        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-        $table->addFieldInfo('viewlayout', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('row', XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('columns', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->addKeyInfo('rowfk', XMLDB_KEY_FOREIGN, array('viewlayout'), 'view_layout', array('id'));
-        $table->addKeyInfo('columnsfk', XMLDB_KEY_FOREIGN, array('columns'), 'view_layout_columns', array('id'));
-        create_table($table);
-
-        log_debug('5. Create table usr_custom_layout');
-        $table = new XMLDBTable('usr_custom_layout');
-        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-        $table->addFieldInfo('usr', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('layout', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->addKeyInfo('usrfk', XMLDB_KEY_FOREIGN, array('usr'), 'usr', array('id'));
-        $table->addKeyInfo('layoutfk', XMLDB_KEY_FOREIGN, array('layout'), 'view_layout', array('id'));
-        create_table($table);
-
-        log_debug('6. Convert existing view_layout records into new-style view_layouts with just one row');
-        $oldlayouts = get_records_array('view_layout', '', '', 'id', 'id, columns, widths');
-        foreach ($oldlayouts as $layout) {
-            // We don't actually need to populate the "rows", "iscustom" or "layoutmenuorder" columns,
-            // because their defaults take care of that.
-
-            // Check to see if there's a view_layout_columns record that matches its widths.
-            $colsid = get_field('view_layout_columns', 'id', 'widths', $layout->widths);
-            if (!$colsid) {
-                $colsid = insert_record(
-                        'view_layout_columns',
-                        (object) array(
-                                'columns' => $layout->columns,
-                                'widths' => $layout->widths
-                        ),
-                        'id',
-                        true
-                );
-            }
-
-            // Now insert a record for it in view_layout_rows_columns, to represent its one row
-            insert_record(
-                'view_layout_rows_columns',
-                (object) array(
-                        'viewlayout' => $layout->id,
-                        'row' => 1,
-                        'columns' => $colsid
-                )
-            );
-
-            // And also it needs a record in usr_custom_layout saying it belongs to the root user
-            insert_record('usr_custom_layout', (object)array(
-                'usr'    => 0,
-                'layout' => $layout->id,
-            ));
-
-        }
-
-        log_debug('7. Drop the obsolete view_layout.columns and view_layout.widths fields');
-        $table = new XMLDBTable('view_layout');
-        $field = new XMLDBField('columns');
-        drop_field($table, $field);
-        $field = new XMLDBField('widths');
-        drop_field($table, $field);
-
-        log_debug('8. Update default values for tables view_layout, view_layout_columns and view_layout_rows_columns');
-        install_view_layout_defaults();
-
-        log_debug('9. Update the table "block_instance"');
-        $table = new XMLDBTable('block_instance');
-        $field = new XMLDBField('row');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 2, null, XMLDB_NOTNULL, null, null, null, 1);
-        // This one tends to take a while...
-        set_time_limit(30);
-        add_field($table, $field);
-        set_time_limit(30);
-
-        // Refactor the block_instance.viewcolumnorderuk key so it includes row.
-        $key = new XMLDBKey('viewcolumnorderuk');
-        $key->setAttributes(XMLDB_KEY_UNIQUE, array('view', 'column', 'order'));
-        // If this particular site has been around since before Mahara 1.2, this
-        // will actually have been created as a unique index rather than a unique
-        // key, so check for that first.
-        $indexname = find_index_name($table, $key);
-        if (preg_match('/uix$/', $indexname)) {
-            $index = new XMLDBIndex($indexname);
-            $index->setAttributes(XMLDB_INDEX_UNIQUE, array('view', 'column', 'order'));
-            drop_index($table, $index);
-        }
-        else {
-            drop_key($table, $key);
-        }
-        $key = new XMLDBKey('viewrowcolumnorderuk');
-        $key->setAttributes(XMLDB_KEY_UNIQUE, array('view', 'row', 'column', 'order'));
-        add_key($table, $key);
-
-        log_debug('10. Add a "numrows" column to the views table.');
-        // The default value of "1" will be correct
-        // for all existing views, because they're using the old one-row layout style
-        $table = new XMLDBTable('view');
-        $field = new XMLDBField('numrows');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 2, null, XMLDB_NOTNULL, null, null, null, 1);
-        add_field($table, $field);
-
-        log_debug('11. Update the table "view_rows_columns" for existing pages');
-        execute_sql('INSERT INTO {view_rows_columns} ("view", "row", "columns") SELECT v.id, 1, v.numcolumns FROM {view} v');
-    }
-
-    if ($oldversion < 2013091900) {
-        // Create skin table...
-        $table = new XMLDBTable('skin');
-        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-        $table->addFieldInfo('title', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('description', XMLDB_TYPE_TEXT);
-        $table->addFieldInfo('owner', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('type', XMLDB_TYPE_CHAR, 10, 'private', XMLDB_NOTNULL);
-        $table->addFieldInfo('viewskin', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('bodybgimg', XMLDB_TYPE_INTEGER, 10);
-        $table->addFieldInfo('viewbgimg', XMLDB_TYPE_INTEGER, 10);
-        $table->addFieldInfo('ctime', XMLDB_TYPE_DATETIME);
-        $table->addFieldInfo('mtime', XMLDB_TYPE_DATETIME);
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->addKeyInfo('ownerfk', XMLDB_KEY_FOREIGN, array('owner'), 'usr', array('id'));
-        create_table($table);
-
-        // Create skin_favorites table...
-        $table = new XMLDBTable('skin_favorites');
-        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-        $table->addFieldInfo('user', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('favorites', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL);
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->addKeyInfo('userfk', XMLDB_KEY_FOREIGN, array('user'), 'usr', array('id'));
-        create_table($table);
-
-        // Create skin_fonts table...
-        $table = new XMLDBTable('skin_fonts');
-        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-        $table->addFieldInfo('name', XMLDB_TYPE_CHAR, 100, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('title', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('licence', XMLDB_TYPE_CHAR, 255);
-        $table->addFieldInfo('notice', XMLDB_TYPE_TEXT);
-        $table->addFieldInfo('previewfont', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('variants', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('fonttype', XMLDB_TYPE_CHAR, 10, 'site', XMLDB_NOTNULL);
-        $table->addFieldInfo('onlyheading', XMLDB_TYPE_INTEGER, 1, 0, XMLDB_NOTNULL);
-        $table->addFieldInfo('fontstack', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('genericfont', XMLDB_TYPE_CHAR, 10, null, XMLDB_NOTNULL, null, XMLDB_ENUM, array('cursive', 'fantasy', 'monospace', 'sans-serif', 'serif'));
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->addKeyInfo('nameuk', XMLDB_KEY_UNIQUE, array('name'));
-        create_table($table);
-
-        // Set column 'skin' to 'view' table...
-        $table = new XMLDBTable('view');
-        $field = new XMLDBField('skin');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 10);
-        add_field($table, $field);
-
-        require_once(get_config('libroot').'skin.php');
-        install_skins_default();
-    }
-
-    if ($oldversion < 2013091901) {
-        // Add a "skins" table to institutions to record whether they've enabled skins or not
-        $table = new XMLDBTable('institution');
-        $field = new XMLDBField('skins');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, 1, 'dropdownmenu');
-        add_field($table, $field);
-    }
-
-    if ($oldversion < 2013092300) {
-        $table = new XMLDBTable('import_entry_requests');
-        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null,
-            XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null, null);
-        $table->addFieldInfo('importid', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('entryid', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('entryparent', XMLDB_TYPE_CHAR, 255, null, null);
-        $table->addFieldInfo('strategy', XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('ownerid', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('plugin', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('entrytype', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('entrytitle', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('entrycontent', XMLDB_TYPE_TEXT, null, null, null);
-        $table->addFieldInfo('duplicateditemids', XMLDB_TYPE_TEXT, null, null, null);
-        $table->addFieldInfo('existingitemids', XMLDB_TYPE_TEXT, null, null, null);
-        $table->addFieldInfo('artefactmapping', XMLDB_TYPE_TEXT, null, null, null);
-        $table->addFieldInfo('decision', XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, 1);
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->addKeyInfo('owneridfk', XMLDB_KEY_FOREIGN, array('ownerid'), 'usr', array('id'));
-        create_table($table);
-    }
-
-    if ($oldversion < 2013092600) {
-        //  When uploading file as attachment and attaching it to an artefact, the artefact id
-        //  (in artefact field) and uploaded file artefact id (in attachment filed) are stored.
-        //  For Resume composite types (educationhistory, employmenthistory, books, etc.) this
-        //  is not enough. So we have to add item field to differentiate between e.g. different
-        //  employments in employmenhistory and to which employment the user actually whishes to
-        //  attach certain attachment...
-        $table = new XMLDBTable('artefact_attachment');
-        $field = new XMLDBField('item');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 10);
-        add_field($table, $field);
-    }
-
-    if ($oldversion < 2013112100) {
-        // Add a new column 'last_processed_userid' to the table 'activity_queue' in order to
-        // split multiple user activity notifications into chunks
-        $table = new XMLDBTable('activity_queue');
-        $field = new XMLDBField('last_processed_userid');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 10);
-        add_field($table, $field);
-        $key = new XMLDBKey('last_processed_useridfk');
-        $key->setAttributes(XMLDB_KEY_FOREIGN, array('last_processed_userid'), 'usr', array('id'));
-        add_key($table, $key);
-    }
-
-    if ($oldversion < 2013112600) {
-        // If a mahara site was upgraded from 1.0 then keys for the following tables
-        // may be missing so we will check for them and if missing add them.
-
-        // Normally when we create a foreign key, we create an index alongside it.
-        // If these keys were created by the 1.1 upgrade script, they will be missing
-        // those indexes. To get the index and the key in place, we have to re-create
-        // the key.
-
-        $table = new XMLDBTable('artefact_access_usr');
-
-        $index = new XMLDBIndex('usrfk');
-        $index->setAttributes(XMLDB_INDEX_NOTUNIQUE, array('usr'));
-        if (!index_exists($table, $index)) {
-            $field = new XMLDBField('usr');
-            $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-            try {
-                change_field_type($table, $field, true, true);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't change artefact_access_usr.usr column to NOT NULL (it probably contains some NULL values)");
-            }
-
-            $key = new XMLDBKey('usrfk');
-            $key->setAttributes(XMLDB_KEY_FOREIGN, array('usr'), 'usr', array('id'));
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a foreign key on column artefact_access_usr.usr referencing usr.id (the column probably contains some nonexistent user id's");
-            }
-        }
-
-        $index = new XMLDBIndex('artefactfk');
-        $index->setAttributes(XMLDB_INDEX_NOTUNIQUE, array('artefact'));
-        if (!index_exists($table, $index)) {
-            $field = new XMLDBField('artefact');
-            $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-            try {
-                change_field_type($table, $field, true, true);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't change artefact_access_usr.artefact column to NOT NULL (it probably contains some NULL values)");
-            }
-            $key = new XMLDBKey('artefactfk');
-            $key->setAttributes(XMLDB_KEY_FOREIGN, array('artefact'), 'artefact', array('id'));
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a foreign key on column artefact_access_usr.artefact referencing artefact.id (the column probably contains some nonexistent artefact id's)");
-            }
-        }
-
-        $key = new XMLDBKey('primary');
-        $key->setAttributes(XMLDB_KEY_PRIMARY, array('usr', 'artefact'));
-        if (!db_key_exists($table, $key)) {
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a primary key on table artefact_access_usr across columns (usr, artefact). (Probably the table contains some non-unique values in those columns)");
-            }
-        }
-
-        $table = new XMLDBTable('artefact_access_role');
-
-        $index = new XMLDBIndex('artefactfk');
-        $index->setAttributes(XMLDB_INDEX_NOTUNIQUE, array('artefact'));
-        if (!index_exists($table, $index)) {
-            $field = new XMLDBField('artefact');
-            $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-            try {
-                change_field_type($table, $field, true, true);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't change artefact_access_role.artefact column to NOT NULL (it probably contains some NULL values)");
-            }
-            $key = new XMLDBKey('artefactfk');
-            $key->setAttributes(XMLDB_KEY_FOREIGN, array('artefact'), 'artefact', array('id'));
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a foreign key on column artefact_access_role.artefact referencing artefact.id (the column probably contains some nonexistente artefact id's)");
-            }
-        }
-
-        $key = new XMLDBKey('primary');
-        $key->setAttributes(XMLDB_KEY_PRIMARY, array('role', 'artefact'));
-        if (!db_key_exists($table, $key)) {
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a primary key on table artefact_access_role across columns (role, artefact). (Probably there are some non-unique values in those columns.)");
-            }
-        }
-
-        $table = new XMLDBTable('artefact_attachment');
-
-        $index = new XMLDBIndex('artefactfk');
-        $index->setAttributes(XMLDB_INDEX_NOTUNIQUE, array('artefact'));
-        if (!index_exists($table, $index)) {
-            try {
-                add_index($table, $index);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a non-unique index on column artefact_attachment.artefact");
-            }
-        }
-
-        $table = new XMLDBTable('group');
-
-        $key = new XMLDBKey('grouptypefk');
-        $key->setAttributes(XMLDB_KEY_FOREIGN, array('grouptype'), 'grouptype', array('name'));
-        if (!db_key_exists($table, $key)) {
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a foreign key on column group.grouptype referencing grouptype.name (the column probably contains some nonexistent grouptypes)");
-            }
-        }
-
-        $table = new XMLDBTable('grouptype_roles');
-
-        $index = new XMLDBIndex('grouptypefk');
-        $index->setAttributes(XMLDB_INDEX_NOTUNIQUE, array('grouptype'));
-        if (!index_exists($table, $index)) {
-            $key = new XMLDBKey('grouptypefk');
-            $key->setAttributes(XMLDB_KEY_FOREIGN, array('grouptype'), 'grouptype', array('name'));
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a foreign key on column grouptype_roles.grouptype referencing grouptype.name (the column probably contains some nonexistent grouptypes");
-            }
-        }
-
-        $key = new XMLDBKey('primary');
-        $key->setAttributes(XMLDB_KEY_PRIMARY, array('grouptype', 'role'));
-        if (!db_key_exists($table, $key)) {
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a primary key on table grouptype_roles across columns (grouptype, role). (Probably there are some non-unique values in those columns.)");
-            }
-        }
-
-        $table = new XMLDBTable('view_autocreate_grouptype');
-
-        $index = new XMLDBIndex('viewfk');
-        $index->setAttributes(XMLDB_INDEX_NOTUNIQUE, array('view'));
-        if (!index_exists($table, $index)) {
-            $field = new XMLDBField('view');
-            $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-            try {
-                change_field_type($table, $field, true, true);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't change column view_autocreate_grouptype.view to NOT NULL (probably the column contains some NULL values)");
-            }
-            $key = new XMLDBKey('viewfk');
-            $key->setAttributes(XMLDB_KEY_FOREIGN, array('view'), 'view', array('id'));
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a foreign key on column view_autocreate_grouptype.view referencing view.id (probably the column contains some nonexistent view IDs");
-            }
-        }
-
-        $index = new XMLDBIndex('grouptypefk');
-        $index->setAttributes(XMLDB_INDEX_NOTUNIQUE, array('grouptype'));
-        if (!index_exists($table, $index)) {
-            $key = new XMLDBKey('grouptypefk');
-            $key->setAttributes(XMLDB_KEY_FOREIGN, array('grouptype'), 'grouptype', array('name'));
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a foreign key on column view_autocreate_grouptype.grouptype referencing grouptype.name (probably the column contains some nonexistent grouptypes");
-            }
-        }
-
-        $key = new XMLDBKey('primary');
-        $key->setAttributes(XMLDB_KEY_PRIMARY, array('view', 'grouptype'));
-        if (!db_key_exists($table, $key)) {
-            try {
-                add_key($table, $key);
-            }
-            catch (SQLException $e) {
-                log_warn("Couldn't set a primary key on table view_autocreate_grouptype across columns (view, grouptype). (Probably those columns contain some non-unique values.)");
-            }
-        }
-
-    }
-
-    if ($oldversion < 2013121300) {
-        // view_rows_columns can be missing the 'id' column if upgrading from version
-        // earlier than v1.8 and because we are adding a sequential primary column after
-        // the table is already made we need to
-        // - check that the column doesn't exist then add it without key or sequence
-        // - update the values for the new id column to be sequential
-        // - then add the primary key and finally make the column sequential
-        if ($records = get_records_sql_array('SELECT * FROM {view_rows_columns}', array())) {
-            if (empty($records[0]->id)) {
-                $table = new XMLDBTable('view_rows_columns');
-                $field = new XMLDBField('id');
-                $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, null, null, null, 1, 'view');
-                add_field($table, $field);
-                $x = 1;
-                foreach ($records as $record) {
-                    execute_sql('UPDATE {view_rows_columns} SET id = ? WHERE view = ? AND row = ? AND columns = ?',
-                                array($x, $record->view, $record->row, $record->columns));
-                    $x++;
-                }
-                // we can't add a sequence on a field unless it has a primary key
-                $key = new XMLDBKey('primary');
-                $key->setAttributes(XMLDB_KEY_PRIMARY, array('id'));
-                add_key($table, $key);
-                $field = new XMLDBField('id');
-                $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-                change_field_type($table, $field);
-                // but when we change field type postgres drops the keys for the column so we need
-                // to add the primary key back again - see line 2205 for more info
-                if (is_postgres()) {
-                    $key = new XMLDBKey('primary');
-                    $key->setAttributes(XMLDB_KEY_PRIMARY, array('id'));
-                    add_key($table, $key);
-                }
-            }
-        }
-    }
-
-    if ($oldversion < 2014010700) {
-
-        // If the usr_custom_layout.group column exists, it indicates that we this patch has already
-        // been run and we should skip it.
-        $table = new XMLDBTable('usr_custom_layout');
-        $field = new XMLDBField('group');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, null, null, null, null, null, 'usr');
-        if (!field_exists($table, $field)) {
-            // Add a log output line here so that we can tell whether this patch ran or not.
-            log_debug('Correcting custom layout table structures.');
-
-            // fix issue where custom layouts saved in groups, site pages and institutions
-            // were set to have usr = 0 because view owner was null
-            $table = new XMLDBTable('usr_custom_layout');
-            $field = new XMLDBField('usr');
-            $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, null);
-            change_field_notnull($table, $field);
-            // For PostgresSQL, change_field_notnull creates a temporary column, moves data to new temp column
-            // and then renames the temp column to 'usr'. Therefore, all indexes and foreign keys
-            // related to column 'owner' will be removed
-            if (is_postgres()) {
-                $key = new XMLDBKey('usr');
-                $key->setAttributes(XMLDB_KEY_FOREIGN, array('usr'), 'usr', array('id'));
-                add_key($table, $key);
-            }
-
-            $field = new XMLDBField('group');
-            $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, null, null, null, null, null, 'usr');
-            add_field($table, $field);
-            $key = new XMLDBKey('groupfk');
-            $key->setAttributes(XMLDB_KEY_FOREIGN, array('group'), 'group', array('id'));
-            add_key($table, $key);
-            $field = new XMLDBField('institution');
-            $field->setAttributes(XMLDB_TYPE_CHAR, 255, null, null, null, null, null, null, 'group');
-            add_field($table, $field);
-            $key = new XMLDBKey('institutionfk');
-            $key->setAttributes(XMLDB_KEY_FOREIGN, array('institution'), 'institution', array('name'));
-            add_key($table, $key);
-
-            // update previous records
-            // get custom layouts with usr = 0 which are not in default set
-            $groupcustomlayouts = get_records_sql_array('SELECT ucl.layout FROM {usr_custom_layout} ucl
-                                                         LEFT JOIN {view_layout} vl ON vl.id = ucl.layout
-                                                         WHERE usr = 0 AND iscustom = 1
-                                                         ORDER BY ucl.id', array());
-            if ($groupcustomlayouts != false) {
-                foreach ($groupcustomlayouts as $groupcustomlayout) {
-                    // find views using this custom layout
-                    $views = get_records_array('view', 'layout', $groupcustomlayout->layout, '', 'owner, "group", institution');
-                    if ($views != false) {
-                        foreach ($views as $view) {
-                            if (isset($view->owner)) {
-                                // view owned by individual
-                                $recordexists = get_record('usr_custom_layout', 'usr', $view->owner, 'layout', $groupcustomlayout->layout);
-                                if (!$recordexists) {
-                                    // add new record into usr_custom_layout table
-                                    $customlayout = new stdClass();
-                                    $customlayout->usr = $view->owner;
-                                    $customlayout->layout = $groupcustomlayout->layout;
-                                    insert_record('usr_custom_layout', $customlayout, 'id');
-                                }
-                            }
-                            else if (isset($view->group)) {
-                                // view owned by group
-                                $recordexists = get_record('usr_custom_layout', 'group', $view->group, 'layout', $groupcustomlayout->layout);
-                                if (!$recordexists) {
-                                    // add new record into usr_custom_layout table
-                                    $customlayout = new stdClass();
-                                    $customlayout->group = $view->group;
-                                    $customlayout->layout = $groupcustomlayout->layout;
-                                    insert_record('usr_custom_layout', $customlayout, 'id');
-                                }
-                            }
-                            else if (isset($view->institution)) {
-                                // view owned by group
-                                $recordexists = get_record('usr_custom_layout', 'institution', $view->institution, 'layout', $groupcustomlayout->layout);
-                                if (!$recordexists) {
-                                    // add new record into usr_custom_layout table
-                                    $customlayout = new stdClass();
-                                    $customlayout->institution = $view->institution;
-                                    $customlayout->layout = $groupcustomlayout->layout;
-                                    insert_record('usr_custom_layout', $customlayout, 'id');
-                                }
-                            }
-                        }
-                    }
-                    // now remove this custom layout
-                    $removedrecords = delete_records('usr_custom_layout', 'usr', '0', 'layout', $groupcustomlayout->layout);
-                }
-            }
-        }
-    }
-
-    if ($oldversion < 2014010800) {
-        $table = new XMLDBTable('institution_config');
-
-        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-        $table->addFieldInfo('institution', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('field', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL);
-        $table->addFieldInfo('value', XMLDB_TYPE_TEXT, 'small');
-
-        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->addKeyInfo('institutionfk', XMLDB_KEY_FOREIGN, array('institution'), 'institution', array('name'));
-        $table->addIndexInfo('instfielduk', XMLDB_INDEX_UNIQUE, array('institution', 'field'));
-
-        create_table($table);
-    }
-
-    if ($oldversion < 2014010801) {
-        // adding institution column to allow for different site content for each institution
-        $table = new XMLDBTable('site_content');
-        $field = new XMLDBField('institution');
-        $field->setAttributes(XMLDB_TYPE_CHAR, 255, null, null);
-        add_field($table, $field);
-
-        // resetting the primary key and updating what is currently there to be
-        // the 'mahara' institution's site pages
-        $key = new XMLDBKey('primary');
-        $key->setAttributes(XMLDB_KEY_PRIMARY, array('name'));
-        drop_key($table, $key);
-
-        execute_sql("UPDATE {site_content} SET institution = ?", array('mahara'));
-
-        $key = new XMLDBKey('primary');
-        $key->setAttributes(XMLDB_KEY_PRIMARY, array('name', 'institution'));
-        add_key($table, $key);
-
-        $key = new XMLDBKey('institutionfk');
-        $key->setAttributes(XMLDB_KEY_FOREIGN, array('institution'), 'institution', array('name'));
-        add_key($table, $key);
-
-        // now add the default general pages for each existing institution with the values of
-        // the 'mahara' institution. These can them be altered via Administration -> Institutions -> General pages
-        $sitecontentarray = array();
-        $sitecontents = get_records_array('site_content', 'institution', 'mahara');
-        foreach ($sitecontents as $sitecontent) {
-            $sitecontentarray[$sitecontent->name] = $sitecontent->content;
-        }
-        $pages = site_content_pages();
-        $now = db_format_timestamp(time());
-        $institutions = get_records_array('institution');
-        foreach ($institutions as $institution) {
-            if ($institution->name != 'mahara') {
-                foreach ($pages as $name) {
-                    $page = new stdClass();
-                    $page->name = $name;
-                    $page->ctime = $now;
-                    $page->mtime = $now;
-                    $page->content = $sitecontentarray[$name];
-                    $page->institution = $institution->name;
-                    insert_record('site_content', $page);
-                    $pageconfig = new stdClass();
-                    $pageconfig->institution = $institution->name;
-                    $pageconfig->field = 'sitepages_' . $name;
-                    $pageconfig->value = 'mahara';
-                    insert_record('institution_config', $pageconfig);
-                }
-            }
-        }
-    }
-
-    if ($oldversion < 2014021100) {
-        // Reset the view's skin value, if the skin does not exist
-        execute_sql("UPDATE {view} v SET skin = NULL WHERE v.skin IS NOT NULL AND NOT EXISTS (SELECT id FROM {skin} s WHERE v.skin = s.id)");
-    }
-
-    if ($oldversion < 2014021200) {
-        // Adding new Creative Commons 4.0 licenses.
-        // CC4.0 will be added only if:
-        // -- The CC4.0 URL doesn't already exist;
-        // -- And CC3.0 hasn't been deleted earlier.
-
-        $license = new stdClass();
-        $license->name = 'http://creativecommons.org/licenses/by-sa/4.0/';
-        $license->displayname = get_string('licensedisplaynamebysa', 'install');
-        $license->shortname = get_string('licenseshortnamebysa', 'install');
-        $license->icon = 'license:by-sa.png';
-        $version30 = 'http://creativecommons.org/licenses/by-sa/3.0/';
-        if (!record_exists('artefact_license', 'name', $license->name) && record_exists('artefact_license', 'name', $version30) ) {
-            insert_record('artefact_license', $license);
-        }
-
-        $license = new stdClass();
-        $license->name = 'http://creativecommons.org/licenses/by/4.0/';
-        $license->displayname = get_string('licensedisplaynameby', 'install');
-        $license->shortname = get_string('licenseshortnameby', 'install');
-        $license->icon = 'license:by.png';
-        $version30 = 'http://creativecommons.org/licenses/by/3.0/';
-        if (!record_exists('artefact_license', 'name', $license->name) && record_exists('artefact_license', 'name', $version30) ) {
-            insert_record('artefact_license', $license);
-        }
-
-        $license = new stdClass();
-        $license->name = 'http://creativecommons.org/licenses/by-nd/4.0/';
-        $license->displayname = get_string('licensedisplaynamebynd', 'install');
-        $license->shortname = get_string('licenseshortnamebynd', 'install');
-        $license->icon = 'license:by-nd.png';
-        $version30 = 'http://creativecommons.org/licenses/by-nd/3.0/';
-        if (!record_exists('artefact_license', 'name', $license->name) && record_exists('artefact_license', 'name', $version30) ) {
-            insert_record('artefact_license', $license);
-        }
-
-        $license = new stdClass();
-        $license->name = 'http://creativecommons.org/licenses/by-nc-sa/4.0/';
-        $license->displayname = get_string('licensedisplaynamebyncsa', 'install');
-        $license->shortname = get_string('licenseshortnamebyncsa', 'install');
-        $license->icon = 'license:by-nc-sa.png';
-        $version30 = 'http://creativecommons.org/licenses/by-nc-sa/3.0/';
-        if (!record_exists('artefact_license', 'name', $license->name) && record_exists('artefact_license', 'name', $version30) ) {
-            insert_record('artefact_license', $license);
-        }
-
-        $license = new stdClass();
-        $license->name = 'http://creativecommons.org/licenses/by-nc/4.0/';
-        $license->displayname = get_string('licensedisplaynamebync', 'install');
-        $license->shortname = get_string('licenseshortnamebync', 'install');
-        $license->icon = 'license:by-nc.png';
-        $version30 = 'http://creativecommons.org/licenses/by-nc/3.0/';
-        if (!record_exists('artefact_license', 'name', $license->name) && record_exists('artefact_license', 'name', $version30) ) {
-            insert_record('artefact_license', $license);
-        }
-
-        $license = new stdClass();
-        $license->name = 'http://creativecommons.org/licenses/by-nc-nd/4.0/';
-        $license->displayname = get_string('licensedisplaynamebyncnd', 'install');
-        $license->shortname = get_string('licenseshortnamebyncnd', 'install');
-        $license->icon = 'license:by-nc-nd.png';
-        $version30 = 'http://creativecommons.org/licenses/by-nc-nd/3.0/';
-        if (!record_exists('artefact_license', 'name', $license->name) && record_exists('artefact_license', 'name', $version30) ) {
-            insert_record('artefact_license', $license);
-        }
-    }
-
-    if ($oldversion < 2014022400) {
-        // Make sure artefacts are properly locked for submitted views.
-        // Can be a problem for older sites
-        $submitted = get_records_sql_array("SELECT v.owner FROM {view_artefact} va
-                        LEFT JOIN {view} v on v.id = va.view
-                        LEFT JOIN {artefact} a on a.id = va.artefact
-                        WHERE (v.submittedgroup IS NOT NULL OR v.submittedhost IS NOT NULL)", array());
-        if ($submitted) {
-            require_once(get_config('docroot') . 'artefact/lib.php');
-            foreach ($submitted as $record) {
-                ArtefactType::update_locked($record->owner);
-            }
-        }
-    }
-
-    if ($oldversion < 2014022600) {
-        $table = new XMLDBTable('host');
-        $field = new XMLDBField('portno');
-        drop_field($table, $field);
-    }
-
-    if ($oldversion < 2014032400) {
-        $table = new XMLDBTable('group');
-        $field = new XMLDBField('sendnow');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, 0);
-        add_field($table, $field);
-    }
-
-    if ($oldversion < 2014032500) {
-        $table = new XMLDBTable('usr');
-        $field = new XMLDBField('probation');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, null, null, null, 0);
-        if (!field_exists($table, $field)) {
-            add_field($table, $field);
-        }
-    }
-
-    if ($oldversion < 2014032600) {
-        install_watchlist_notification();
-    }
-
-    if ($oldversion < 2014032700) {
-        // Remove bad data created by the upload user via csv where users in no institution
-        // have 'licensedefault' set causing an error
-        execute_sql("DELETE FROM {usr_account_preference} WHERE FIELD = 'licensedefault' AND usr IN (
-                        SELECT u.id FROM {usr} u
-                        LEFT JOIN {usr_institution} ui ON ui.usr = u.id
-                        WHERE ui.institution = 'mahara' OR ui.institution is null
-                     )");
-    }
-
-    if ($oldversion < 2014032703) {
-        // Figure out where the magicdb is, and stick with that.
-        require_once(get_config('libroot') . 'file.php');
-        update_magicdb_path();
-    }
-
-    if ($oldversion < 2014032704) {
-        $table = new XMLDBTable('institution');
-        $field = new XMLDBField('registerallowed');
-        $field->setAttributes(XMLDB_TYPE_INTEGER, 1, null, XMLDB_NOTNULL, null, null, null, '0');
-        change_field_default($table, $field);
     }
 
     return $status;

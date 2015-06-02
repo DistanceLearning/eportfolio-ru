@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-resume
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -34,26 +50,6 @@ $sql = 'SELECT ar.*, a.owner
 
 if (!$data = get_records_sql_array($sql, array($owner, $type))) {
     $data = array();
-}
-
-// Add artefact attachments it there are any
-$datawithattachments = array();
-foreach ($data as $record) {
-    $sql = 'SELECT a.title, a.id, af.size
-            FROM {artefact} a
-            JOIN {artefact_file_files} af ON af.artefact = a.id
-            JOIN {artefact_attachment} at ON at.attachment = a.id
-            WHERE at.artefact = ? AND at.item = ?
-            ORDER BY a.title';
-    $attachments = get_records_sql_array($sql, array($record->artefact, $record->id));
-    $record->attachments = $attachments;
-    if (!is_array($attachments)) {
-        $record->clipcount = 0;
-    }
-    else {
-        $record->clipcount = count($attachments);
-    }
-    $datawithattachments[] = $record;
 }
 
 $count = count_records('artefact', 'owner', $owner, 'artefacttype', $type);

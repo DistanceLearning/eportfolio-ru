@@ -9,18 +9,19 @@
 
   <form class="searchquery" action="{$WWWROOT}view/choosetemplate.php" method="post">
 
-    <span id="searchpages"><label>{str tag="searchviews" section="view"}:</label>
+    <label>{str tag="searchviews" section="view"}:</label>
     <input type="text" name="viewquery" id="viewquery" class="query" value="{$views->query}">
-    <button class="query-button" type="submit">{str tag="go"}</button></span>
+    <button class="query-button" type="submit">{str tag="go"}</button>
 
     <input type="hidden" name="viewlimit" value="{$views->limit}">
     <input type="hidden" name="viewoffset" value="0">
     {if $views->group}<input type="hidden" name="group" value="{$views->group}">{/if}
     {if $views->institution}<input type="hidden" name="institution" value="{$views->institution}">{/if}
-    {if $views->collection}<input type="hidden" name="searchcollection" value="{$views->collection}">{/if}
-    <span id="searchowners"><label>{str tag="searchowners" section="view"}:</label>
+
+    <br>
+	<label>{str tag="searchowners" section="view"}:</label>
     <input type="text" name="ownerquery" id="ownerquery" class="query" value="{$owners->query}">
-    <button class="query-button" type="submit">{str tag="go"}</button></span>
+    <button class="query-button" type="submit">{str tag="go"}</button>
 
   </form>
   <div id="templatesearch_table">{$views->html|safe}</div>

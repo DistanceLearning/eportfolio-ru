@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -17,6 +33,9 @@ define('SECTION_PAGE', 'blocks');
 require(dirname(dirname(__FILE__)) . '/init.php');
 require_once(get_config('libroot') . 'view.php');
 require_once(get_config('libroot') . 'group.php');
+
+// Emulate IE7 compatibility mode for IE8 - views js doesn't work with ie8
+header('X-UA-Compatible: IE=EmulateIE7');
 
 $id = param_integer('id', 0); // if 0, we're editing our profile.
 $new = param_boolean('new', false);
@@ -65,10 +84,6 @@ if ($blockid = param_integer('blockconfig', 0)) {
     if (!isset($_POST['cancel_action_configureblockinstance_id_' . $blockid]) || !param_integer('removeoncancel', 0) || param_integer('pieform_jssubmission', 0)) {
         require_once(get_config('docroot') . 'blocktype/lib.php');
         $bi = new BlockInstance($blockid);
-        // Check if the block_instance belongs to this view
-        if ($bi->get('view') != $view->get('id')) {
-            throw new AccessDeniedException(get_string('blocknotinview', 'view', $bi->get('id')));
-        }
         $bi->build_configure_form();
     }
 }
@@ -117,12 +132,11 @@ $viewtheme = $view->set_user_theme();
 $allowedthemes = get_user_accessible_themes();
 
 // Pull in cross-theme view stylesheet and file stylesheets
-$stylesheets = array('<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'theme/views.css?v=' . get_config('release'). '">');
+$stylesheets = array('<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'theme/views.css">');
 foreach (array_reverse($THEME->get_url('style/style.css', true, 'artefact/file')) as $sheet) {
-    $stylesheets[] = '<link rel="stylesheet" type="text/css" href="' . $sheet . '?v=' . get_config('release'). '">';
+    $stylesheets[] = '<link rel="stylesheet" type="text/css" href="' . $sheet . '">';
 }
-$stylesheets[] = '<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'js/jquery/jquery-ui/css/ui-lightness/jquery-ui-1.8.19.custom.css?v=' . get_config('release'). '">';
-$stylesheets = array_merge($stylesheets, $view->get_all_blocktype_css());
+
 // Tell the user to change the view theme if the current one is no
 // longer available to them.
 if ($viewtheme && !isset($allowedthemes[$viewtheme])) {
@@ -137,51 +151,12 @@ if ($viewtheme && !isset($allowedthemes[$viewtheme])) {
     exit;
 }
 
-$javascript = array('views', 'tinymce', 'paginator', 'expandable', 'js/jquery/jquery-ui/js/jquery-ui-1.8.19.custom.min.js', 'tablerenderer', 'artefact/file/js/filebrowser.js', 'lib/pieforms/static/core/pieforms.js','js/jquery/modernizr.custom.js');
+$javascript = array('views', 'tinymce', 'paginator', 'tablerenderer', 'artefact/file/js/filebrowser.js', 'lib/pieforms/static/core/pieforms.js');
 $blocktype_js = $view->get_all_blocktype_javascript();
 $javascript = array_merge($javascript, $blocktype_js['jsfiles']);
 $inlinejs = "addLoadEvent( function() {\n" . join("\n", $blocktype_js['initjs']) . "\n});";
-require_once('pieforms/pieform/elements/select.php');
-$inlinejs .= pieform_element_select_get_inlinejs();
 
-// The form for adding blocks via the keyboard
-$addform = pieform(array(
-    'name' => 'addblock',
-    'method' => 'post',
-    'jsform' => true,
-    'renderer' => 'table',
-    'autofocus' => false,
-    'elements' => array(
-        'cellchooser' => array(
-            'type' => 'radio',
-            'title' => get_string('blockcell', 'view'),
-            'rowsize' => 2,
-            'separator' => '<br />',
-            'options' => array('R1C1', 'R1C2', 'R2C1'),
-        ),
-        'position' => array(
-            'type' => 'select',
-            'title' => get_string('blockorder', 'view'),
-            'options' => array('Top', 'After 1', 'After 2'),
-        ),
-        'submit' => array(
-            'type' => 'submitcancel',
-            'value' => array(get_string('save'), get_string('cancel')),
-        ),
-    ),
-));
-
-$smarty = smarty($javascript, $stylesheets, array(
-    'view' => array(
-        'addblock',
-        'cellposition',
-        'blockordertop',
-        'blockorderafter',
-        'moveblock',
-    ),
-), $extraconfig);
-
-$smarty->assign('addform', $addform);
+$smarty = smarty($javascript, $stylesheets, false, $extraconfig);
 
 // The list of categories for the tabbed interface
 $smarty->assign('category_list', $view->build_category_list($category, $new));
@@ -234,7 +209,6 @@ if ($owner &&  $viewtype == 'profile') {
 }
 
 if (get_config('viewmicroheaders')) {
-    $smarty->assign('maharalogofilename', 'images/site-logo-small.png');
     $smarty->assign('microheaders', true);
     $smarty->assign('microheadertitle', $view->display_title(true, false, false));
 }
@@ -267,9 +241,8 @@ if ($blockid) {
 }
 else {
     // The HTML for the columns in the view
-    $columns = $view->build_rows(true);
+    $columns = $view->build_columns(true);
     $smarty->assign('columns', $columns);
 }
-$smarty->assign('issiteview', isset($institution) && ($institution == 'mahara'));
 
 $smarty->display('view/blocks.tpl');

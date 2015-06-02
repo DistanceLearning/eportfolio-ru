@@ -10,16 +10,16 @@
 {/if}
             {/strip}
 {if !$nosearch && !$LOGGEDIN && $languageform}
-                <li id="language">
+            	<li>
                     {$languageform|safe}
-                </li>
+            	</li>
 {/if}
-{if !$LOGGEDIN && !$SIDEBARS && !$LOGINPAGE}        <li id="loginlink"><a href="{$WWWROOT}?login" accesskey="l">{str tag="login"}</a></li> {/if}
-            </ul>
+{if !$LOGGEDIN && !$SIDEBARS && !$LOGINPAGE}        <li><a href="{$WWWROOT}?login" accesskey="l">{str tag="login"}</a></li> {/if}
+			</ul>
         </div>
 
 
-{if !$nosearch && ($LOGGEDIN || $publicsearchallowed)}        {header_search_form}{/if}
+{if !$nosearch && $LOGGEDIN}        {user_search_form}{/if}
 
 </div>
 

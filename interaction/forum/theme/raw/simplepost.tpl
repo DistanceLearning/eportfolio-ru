@@ -5,18 +5,18 @@
 <tr>
 	<td class="forumpostleft">
       <div class="author">
-         <img src="{$WWWROOT}thumb.php?type=profileicon&amp;maxsize=40&amp;id={$post->poster}" alt="{str tag=profileimagetext arg1=$post->poster|display_default_name}" class="center">
+         <img src="{$WWWROOT}thumb.php?type=profileicon&amp;maxsize=40&amp;id={$post->poster}" alt="" class="center">
          <div class="poster"><a href="{profile_url($post->poster)}"{if in_array($post->poster, $groupadmins)} class="groupadmin"{elseif $post->moderator} class="moderator"{/if}>{$post->poster|display_name}</a></div>
          {if $post->postcount}<div class="postcount">{$post->postcount}</div>{/if}
       </div>
     </td>
     <td class="postedits">
     {if $post->subject && !$nosubject}
-        <div class="forumsubject"><h3 class="title">{if $post->id}<a href="#post{$post->id}">{$post->subject}</a>{else}{$post->subject}{/if}</h3></div>
+        <div class="forumsubject"><h5>{if $post->id}<a href="#post{$post->id}">{$post->subject}</a>{else}{$post->subject}{/if}</h5></div>
     {/if}
     <div class="posttime">{$post->ctime}</div>{$post->body|clean_html|safe}
 {if $post->edit}
-        <div class="editstopost"><h4 class="title">{str tag="editstothispost" section="interaction.forum"}</h4>
+        <div class="editstopost"><h5>{str tag="editstothispost" section="interaction.forum"}</h5>
         <ul>
             {foreach from=$post->edit item=edit}
             <li>

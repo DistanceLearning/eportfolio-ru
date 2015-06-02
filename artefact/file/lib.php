@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -37,7 +53,7 @@ class PluginArtefactFile extends PluginArtefact {
         return array(
             'content/files' => array(
                 'path' => 'content/files',
-                'url' => 'artefact/file/index.php',
+                'url' => 'artefact/file/',
                 'title' => get_string('Files', 'artefact.file'),
                 'weight' => 30,
             ),
@@ -78,8 +94,6 @@ class PluginArtefactFile extends PluginArtefact {
             // Set default quotas to 50MB
             set_config_plugin('artefact', 'file', 'defaultquota', 52428800);
             set_config_plugin('artefact', 'file', 'defaultgroupquota', 52428800);
-            set_config_plugin('artefact', 'file', 'folderdownloadzip', 1);
-            set_config_plugin('artefact', 'file', 'folderdownloadkeepzipfor', 3600);
         }
         set_config_plugin('artefact', 'file', 'commentsallowedimage', 1);
         self::resync_filetype_list();
@@ -107,7 +121,6 @@ class PluginArtefactFile extends PluginArtefact {
             'filebrowser' => array(
                 'mahara' => array(
                     'remove',
-                    'cancel',
                 ),
                 'artefact.file' => array(
                     'confirmdeletefile',
@@ -118,7 +131,6 @@ class PluginArtefactFile extends PluginArtefact {
                     'editfolder',
                     'fileappearsinviews',
                     'fileattachedtoportfolioitems',
-                    'fileappearsinskins',
                     'filewithnameexists',
                     'folderappearsinviews',
                     'foldercontainsprofileicons',
@@ -130,7 +142,6 @@ class PluginArtefactFile extends PluginArtefact {
                     'upload',
                     'uploadingfiletofolder',
                     'youmustagreetothecopyrightnotice',
-                    'moveto',
                 ),
             ),
         );
@@ -290,35 +301,6 @@ class PluginArtefactFile extends PluginArtefact {
         }
         return array();
     }
-
-    public static function progressbar_link($artefacttype) {
-        switch ($artefacttype) {
-         case 'profileicon':
-            return 'artefact/file/profileicons.php';
-            break;
-         default:
-            return 'artefact/file/index.php';
-        }
-    }
-
-    /**
-     * The "file" artefact type should count uploads of all file types.
-     * @param object $plugin
-     * @return object
-     */
-    public static function progressbar_metaartefact_count($name) {
-        global $USER;
-        if ($name == 'file') {
-            $meta = new stdClass();
-            $meta->artefacttype = $name;
-            $count = count_records_select('artefact', "owner=? and artefacttype in ('file','image','archive','video','audio')", array($USER->get('id')));
-            $meta->completed = $count;
-            return $meta;
-        }
-        else {
-            return false;
-        }
-    }
 }
 
 abstract class ArtefactTypeFileBase extends ArtefactType {
@@ -372,15 +354,10 @@ abstract class ArtefactTypeFileBase extends ArtefactType {
 
     // Sort folders before files; then use nat sort order.
     public static function my_files_cmp($a, $b) {
-        return strnatcasecmp((-2 * isset($a->isparent) + ($a->artefacttype != 'folder')) . 'a' . $a->title,
-                             (-2 * isset($b->isparent) + ($b->artefacttype != 'folder')) . 'a' . $b->title);
+        return strnatcasecmp((-2 * isset($a->isparent) + ($a->artefacttype != 'folder')) . $a->title,
+                             (-2 * isset($b->isparent) + ($b->artefacttype != 'folder')) . $b->title);
     }
 
-    // Sort folders before files in descending order; then use nat sort order descending.
-    public static function my_files_cmp_desc($a, $b) {
-        return strnatcasecmp((+2 * isset($b->isparent) + ($b->artefacttype == 'folder')) . 'a' . $b->title,
-                             (+2 * isset($a->isparent) + ($a->artefacttype == 'folder')) . 'a' . $a->title);
-    }
 
     /**
      * Gets a list of files in one folder
@@ -397,8 +374,8 @@ abstract class ArtefactTypeFileBase extends ArtefactType {
         global $USER;
         $select = '
             SELECT
-                a.id, a.artefacttype, a.mtime, f.size, a.title, a.description, a.license, a.licensor, a.licensorurl, a.locked, a.allowcomments, u.profileicon AS defaultprofileicon,
-                COUNT(DISTINCT c.id) AS childcount, COUNT (DISTINCT aa.artefact) AS attachcount, COUNT(DISTINCT va.view) AS viewcount, COUNT(DISTINCT s.id) AS skincount,
+                a.id, a.artefacttype, a.mtime, f.size, a.title, a.description, a.locked, a.allowcomments, u.profileicon AS defaultprofileicon,
+                COUNT(DISTINCT c.id) AS childcount, COUNT (DISTINCT aa.artefact) AS attachcount, COUNT(DISTINCT va.view) AS viewcount,
                 COUNT(DISTINCT api.id) AS profileiconcount';
         $from = '
             FROM {artefact} a
@@ -407,7 +384,6 @@ abstract class ArtefactTypeFileBase extends ArtefactType {
                 LEFT OUTER JOIN {artefact} api ON api.parent = a.id AND api.artefacttype = \'profileicon\'
                 LEFT OUTER JOIN {view_artefact} va ON va.artefact = a.id
                 LEFT OUTER JOIN {artefact_attachment} aa ON aa.attachment = a.id
-                LEFT OUTER JOIN {skin} s ON (s.bodybgimg = a.id OR s.viewbgimg = a.id)
                 LEFT OUTER JOIN {usr} u ON a.id = u.profileicon AND a.owner = u.id';
 
         if (!empty($filters['artefacttype'])) {
@@ -426,7 +402,7 @@ abstract class ArtefactTypeFileBase extends ArtefactType {
 
         $groupby = '
             GROUP BY
-                a.id, a.artefacttype, a.mtime, f.size, a.title, a.description, a.license, a.licensor, a.licensorurl, a.locked, a.allowcomments,
+                a.id, a.artefacttype, a.mtime, f.size, a.title, a.description, a.locked, a.allowcomments,
                 u.profileicon';
 
         $phvals = array();
@@ -473,18 +449,10 @@ abstract class ArtefactTypeFileBase extends ArtefactType {
             $where .= '
             AND a.parent = ? ';
             $phvals[] = $parentfolderid;
-            $parent = artefact_instance_from_id($parentfolderid);
-            $can_view_parent = $USER->can_view_artefact($parent);
-            if (!$can_view_parent) {
-                return null;
-            }
-            $can_edit_parent = $USER->can_edit_artefact($parent);
         }
         else {
             $where .= '
             AND a.parent IS NULL';
-            $can_edit_parent = true;
-            $can_view_parent = true;
         }
 
         $filedata = get_records_sql_assoc($select . $from . $where . $groupby, $phvals);
@@ -500,28 +468,8 @@ abstract class ArtefactTypeFileBase extends ArtefactType {
                 if ($item->size) { // Doing this here now for non-js users
                     $item->size = ArtefactTypeFile::short_size($item->size, true);
                 }
-                if ($group) {
-                    // site public files
-                    if ($institution == 'mahara' && ArtefactTypeFolder::admin_public_folder_id() == $parentfolderid) {
-                        $item->can_edit = 0;
-                        $item->can_view = 1;
-                        $item->can_republish = 1;
-                    }
-                    else if (!empty($item->author) && $item->author == $USER->get('id')) {
-                        $item->can_edit = 1;
-                        $item->can_view = 1;
-                        $item->can_republish = 1;
-                    }
-                    else {
-                        $item->can_edit = $can_edit_parent && $item->can_edit;
-                        $item->can_view = $can_view_parent && $item->can_view;
-                        $item->can_republish = $can_view_parent && $item->can_republish;
-                    }
-                }
-                if (!empty($item->author)) {
-                    if ($group && $item->author == $USER->get('id')) {
-                        $item->can_edit = 1;    // This will show the delete, edit buttons in filelist, but doesn't change the actual permissions in the checkbox
-                    }
+                if ($group && $item->author == $USER->get('id')) {
+                    $item->can_edit = 1;    // This will show the delete, edit buttons in filelist, but doesn't change the actual permissions in the checkbox
                 }
             }
             $where = 'artefact IN (' . join(',', array_keys($filedata)) . ')';
@@ -771,7 +719,7 @@ abstract class ArtefactTypeFileBase extends ArtefactType {
      * @param string $institution
      */
     public static function get_new_file_title($desired, $parent, $owner=null, $group=null, $institution=null) {
-        $bits = explode('\.', $desired);
+        $bits = split('\.', $desired);
         if (count($bits) > 1 && preg_match('/[^0-9]/', end($bits))) {
             $start = join('.', array_slice($bits, 0, count($bits)-1));
             $end = '.' . end($bits);
@@ -828,17 +776,6 @@ abstract class ArtefactTypeFileBase extends ArtefactType {
         );
     }
 
-    /**
-     * returns duplicated file/folder artefacts
-     *
-     * @param array $values
-     */
-    public static function get_duplicated_artefacts(array $values) {
-        return array();
-    }
-    public static function get_existing_artefacts(array $values) {
-        return array();
-    }
 }
 
 
@@ -943,12 +880,15 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
             return new ArtefactTypeImage(0, $data);
         }
 
-        $data->guess = file_mime_type($path, "foo.{$data->oldextension}");
-        // The guessed mimetype tends to be more accurate than what the browser tells us.
-        // Use the guess, unless it failed to find a match.
-        // But if it failed to find a match *and* there is no browser-supplied mimetype,
-        // then just use the guess.
-        if ($data->guess != 'application/octet-stream' || empty($data->filetype)) {
+        // If $data->filetype is set here, it's probably the claim made by the
+        // browser during upload or by a Leap2a file.  Generally we believe this
+        // claim, because it gives better results when serving the file on
+        // download.  If there's no claimed mimetype, use file_mime_type to make
+        // a guess, and give each file artefact type access to both the claimed
+        // and guessed mimetypes.
+        $data->guess = file_mime_type($path);
+
+        if (empty($data->filetype) || $data->filetype == 'application/octet-stream') {
             $data->filetype = $data->guess;
         }
 
@@ -1076,7 +1016,7 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
         if (!empty($data->group)) {
             require_once('group.php');
             if (!group_quota_allowed($data->group, $size)) {
-                throw new QuotaExceededException(get_string('uploadexceedsquotagroup', 'artefact.file'));
+                throw new QuotaExceededException(get_string('uploadexceedsquota', 'artefact.file'));
             }
         }
         $data->size = $size;
@@ -1107,14 +1047,13 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
     public function download_title() {
         $extn = $this->get('oldextension');
         $name = $this->get('title');
-        if (empty($extn) || substr($name, -1-strlen($extn)) == '.' . $extn) {
+        if (substr($name, -1-strlen($extn)) == '.' . $extn) {
             return $name;
         }
         return $name . (substr($name, -1) == '.' ? '' : '.') . $extn;
     }
 
     public function render_self($options) {
-        require_once('license.php');
         $options['id'] = $this->get('id');
 
         $downloadpath = get_config('wwwroot') . 'artefact/file/download.php?file=' . $this->get('id');
@@ -1134,12 +1073,6 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
         $smarty->assign('created', strftime(get_string('strftimedaydatetime'), $this->get('ctime')));
         $smarty->assign('modified', strftime(get_string('strftimedaydatetime'), $this->get('mtime')));
         $smarty->assign('size', $this->describe_size() . ' (' . $this->get('size') . ' ' . get_string('bytes', 'artefact.file') . ')');
-        if (get_config('licensemetadata')) {
-            $smarty->assign('license', render_license($this));
-        }
-        else {
-            $smarty->assign('license', false);
-        }
 
         foreach (array('title', 'description', 'artefacttype', 'owner', 'tags') as $field) {
             $smarty->assign($field, $this->get($field));
@@ -1287,7 +1220,7 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
 
     public static function get_icon($options=null) {
         global $THEME;
-        return $THEME->get_url('images/file.png');
+        return $THEME->get_url('images/file.gif');
     }
 
     public static function get_config_options() {
@@ -1417,7 +1350,7 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
                     'type'         => 'wysiwyg',
                     'rows'         => 10,
                     'cols'         => 80,
-                    'defaultvalue' => get_field('site_content', 'content', 'name', 'uploadcopyright', 'institution', 'mahara'),
+                    'defaultvalue' => get_field('site_content', 'content', 'name', 'uploadcopyright'),
                     'rules'        => array('maxlength' => 65536),
                 ),
             ),
@@ -1539,27 +1472,6 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
             'collapsible' => true,
         );
 
-        $keepfor = get_config_plugin('artefact', 'file', 'folderdownloadkeepzipfor');
-
-        $elements['folderdownloadzip'] = array(
-            'type' => 'fieldset',
-            'legend' => get_string('zipdownloadheading', 'artefact.file'),
-            'elements' => array(
-                'folderdownloadkeepzipfor' => array(
-                    'type' => 'text',
-                    'title' => get_string('keepzipfor', 'artefact.file'),
-                    'description' => get_string('keepzipfordescription', 'artefact.file'),
-                    'defaultvalue' => empty($keepfor) ? 3600 : $keepfor,
-                    'size' => 4,
-                    'rules' => array(
-                        'required' => true,
-                        'integer'  => true,
-                    ),
-                ),
-            ),
-            'collapsible' => true,
-        );
-
         return array(
             'elements' => $elements,
             'renderer' => 'table'
@@ -1594,15 +1506,13 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
         set_config_plugin('artefact', 'file', 'resizeonuploaduseroption', $values['resizeonuploaduseroption']);
         set_config_plugin('artefact', 'file', 'resizeonuploadmaxwidth', $values['resizeonuploadmaxwidth']);
         set_config_plugin('artefact', 'file', 'resizeonuploadmaxheight', $values['resizeonuploadmaxheight']);
-        set_config_plugin('artefact', 'file', 'folderdownloadkeepzipfor', $values['folderdownloadkeepzipfor']);
         $data = new StdClass;
         $data->name    = 'uploadcopyright';
         $data->content = $values['customagreement'];
         $data->mtime   = db_format_timestamp(time());
         $data->mauthor = $USER->get('id');
-        $data->institution = 'mahara';
-        if (record_exists('site_content', 'name', $data->name, 'institution', $data->institution)) {
-            update_record('site_content', $data, array('name', 'institution'));
+        if (record_exists('site_content', 'name', $data->name)) {
+            update_record('site_content', $data, 'name');
         }
         else {
             $data->ctime = db_format_timestamp(time());
@@ -1632,7 +1542,7 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
 
         return array(
             '_default' => $wwwroot . 'artefact/file/download.php?file=' . $id,
-            get_string('folder', 'artefact.file') => $wwwroot . 'artefact/file/index.php?folder=' . $id,
+            get_string('folder', 'artefact.file') => $wwwroot . 'artefact/file/?folder=' . $id,
         );
     }
 
@@ -1668,22 +1578,6 @@ class ArtefactTypeFile extends ArtefactTypeFileBase {
         return (bool) $this->get('group');
     }
 
-    public static function is_countable_progressbar() {
-        return true;
-    }
-
-    public static function get_title_progressbar() {
-        return get_string('anytypeoffile','artefact.file');
-    }
-
-    /**
-     * For the progress bar, this one is a metaartefact. Its progress should be based
-     * on how many of *any* file type has been uploaded.
-     * @return boolean
-     */
-    public static function is_metaartefact() {
-        return true;
-    }
 }
 
 class ArtefactTypeFolder extends ArtefactTypeFileBase {
@@ -1743,17 +1637,17 @@ class ArtefactTypeFolder extends ArtefactTypeFileBase {
         $smarty->assign('owner', $this->get('owner'));
         $smarty->assign('viewid', isset($options['viewid']) ? $options['viewid'] : 0);
         $smarty->assign('simpledisplay', isset($options['simpledisplay']) ? $options['simpledisplay'] : false);
-        $smarty->assign('folderid', $this->get('id'));
-        $smarty->assign('downloadfolderzip', get_config_plugin('blocktype', 'folder', 'folderdownloadzip') ? !empty($options['folderdownloadzip']) : false);
 
         if ($childrecords = $this->folder_contents()) {
             $this->add_to_render_path($options);
-            $sortorder = (isset($options['sortorder']) && $options['sortorder'] == 'desc') ? 'my_files_cmp_desc' : 'my_files_cmp';
-            usort($childrecords, array('ArtefactTypeFileBase', $sortorder));
+            usort($childrecords, array('ArtefactTypeFileBase', 'my_files_cmp'));
             $children = array();
             foreach ($childrecords as &$child) {
                 $c = artefact_instance_from_id($child->id);
                 $child->title = $child->hovertitle = $c->get('title');
+                if (!empty($options['simpledisplay'])) {
+                    $child->title = str_shorten_text($child->title, 20);
+                }
                 $child->date = format_date(strtotime($child->mtime), 'strfdaymonthyearshort');
                 $child->iconsrc = call_static_method(generate_artefact_class_name($child->artefacttype), 'get_icon', array('id' => $child->id, 'viewid' => isset($options['viewid']) ? $options['viewid'] : 0));
             }
@@ -1769,7 +1663,7 @@ class ArtefactTypeFolder extends ArtefactTypeFileBase {
 
     public static function get_icon($options=null) {
         global $THEME;
-        return $THEME->get_url('images/folder.png');
+        return $THEME->get_url('images/folder.gif');
     }
 
     public static function collapse_config() {
@@ -1912,7 +1806,7 @@ class ArtefactTypeFolder extends ArtefactTypeFileBase {
         $wwwroot = get_config('wwwroot');
 
         return array(
-            '_default' => $wwwroot . 'artefact/file/index.php?folder=' . $id,
+            '_default' => $wwwroot . 'artefact/file/?folder=' . $id,
         );
     }
 
@@ -1933,9 +1827,6 @@ class ArtefactTypeFolder extends ArtefactTypeFileBase {
         }
     }
 
-    public static function is_countable_progressbar() {
-        return true;
-    }
 }
 
 class ArtefactTypeImage extends ArtefactTypeFile {
@@ -2007,7 +1898,7 @@ class ArtefactTypeImage extends ArtefactTypeFile {
             $url .= '&size=' . $options['size'];
         }
         else {
-            $url .= '&maxheight=24&maxwidth=24';
+            $url .= '&maxheight=20&maxwidth=20';
         }
 
         return $url;
@@ -2055,19 +1946,11 @@ class ArtefactTypeImage extends ArtefactTypeFile {
             return array('html' => $smarty->fetch('artefact:file:image_render_self.tpl'), 'javascript' => '');
         }
         $result = parent::render_self($options);
-        $result['html'] = '<div class="fl filedata-icon"><h4 class="title">'
+        $result['html'] = '<div class="fl filedata-icon"><h4>'
             . get_string('Preview', 'artefact.file') . '</h4><a href="'
-            . hsc($downloadpath) . '"><img src="' . hsc($downloadpath) . '&maxwidth=400&maxheight=180'
+            . hsc($url) . '"><img src="' . hsc($downloadpath) . '&maxwidth=400&maxheight=180'
             . '" alt=""></a></div>' . $result['html'];
         return $result;
-    }
-
-    public static function get_title_progressbar() {
-        return get_string('image','artefact.file');
-    }
-
-    public static function is_metaartefact() {
-        return false;
     }
 }
 
@@ -2126,9 +2009,6 @@ class ArtefactTypeProfileIcon extends ArtefactTypeImage {
         return null;
     }
 
-    public static function get_title_progressbar() {
-        return get_string('profileicon','artefact.file');
-    }
 }
 
 class ArtefactTypeArchive extends ArtefactTypeFile {
@@ -2222,7 +2102,7 @@ class ArtefactTypeArchive extends ArtefactTypeFile {
 
     public static function get_icon($options=null) {
         global $THEME;
-        return $THEME->get_url('images/archive.png');
+        return $THEME->get_url('images/archive.gif');
     }
 
     public function open_archive() {
@@ -2246,7 +2126,7 @@ class ArtefactTypeArchive extends ArtefactTypeFile {
     }
 
     private function read_entry($name, $isfolder, $size) {
-        $path = explode('/', $name);
+        $path = split('/', $name);
         if ($isfolder) {
             array_pop($path);
         }
@@ -2347,12 +2227,7 @@ class ArtefactTypeArchive extends ArtefactTypeFile {
     public function create_folder($folder) {
         $newfolder = new ArtefactTypeFolder(0, $this->data['template']);
         $newfolder->commit();
-        if ($this->archivetype == 'zip') {
-            $folderindex = ($folder == '.' ? ($this->data['template']->title . '/') : ($folder . $this->data['template']->title . '/'));
-        }
-        else {
-            $folderindex = ($folder == '.' ? '' : ($folder . '/')) . $this->data['template']->title;
-        }
+        $folderindex = ($folder == '.' ? '' : ($folder . '/')) . $this->data['template']->title;
         $this->data['folderids'][$folderindex] = $newfolder->get('id');
         $this->data['folderscreated']++;
     }
@@ -2423,7 +2298,7 @@ class ArtefactTypeArchive extends ArtefactTypeFile {
                 if (!isset($this->data['folderids'][$folder])) {
                     $parent = '.';
                     $child = '';
-                    $path = explode('/', $folder);
+                    $path = split('/', $folder);
                     for ($i = 0; $i < count($path); $i++) {
                         $child .= $path[$i] . '/';
                         if (!isset($this->data['folderids'][$child])) {
@@ -2436,13 +2311,16 @@ class ArtefactTypeArchive extends ArtefactTypeFile {
                     }
                 }
 
-                $this->data['template']->parent = $this->data['folderids'][($folder == '.' ? '.' : ($folder . '/'))];
+                $this->data['template']->parent = $this->data['folderids'][$folder];
                 $this->data['template']->title = basename($name);
 
                 // set the file extension for later use (eg by flowplayer)
                 $this->data['template']->extension = pathinfo($this->data['template']->title, PATHINFO_EXTENSION);
 
-                if (substr($name, -1) != '/') {
+                if (substr($name, -1) == '/') {
+                    $this->create_folder($folder);
+                }
+                else {
                     $h = fopen($tempfile, 'w');
                     $size = zip_entry_filesize($entry);
                     $contents = zip_entry_read($entry, $size);
@@ -2460,13 +2338,6 @@ class ArtefactTypeArchive extends ArtefactTypeFile {
         return $this->data;
     }
 
-    public static function get_title_progressbar() {
-        return get_string('archive','artefact.file');
-    }
-
-    public static function is_metaartefact() {
-        return false;
-    }
 }
 
 class ArtefactTypeVideo extends ArtefactTypeFile {
@@ -2485,14 +2356,11 @@ class ArtefactTypeVideo extends ArtefactTypeFile {
 
     public static function is_valid_file($path, $data) {
         $validtypes = self::video_mime_types();
-        if (isset($validtypes[$data->guess])) {
-            $data->filetype = $data->guess;
-            return true;
+        if (!isset($validtypes[$data->guess])) {
+            return false;
         }
-        else if (!empty($validtypes[$data->filetype])) {
-            return true;
-        }
-        return false;
+        $data->filetype = $data->guess;
+        return true;
     }
 
     public static function video_file_descriptions() {
@@ -2522,30 +2390,20 @@ class ArtefactTypeVideo extends ArtefactTypeFile {
 
     public static function get_icon($options=null) {
         global $THEME;
-        return $THEME->get_url('images/video.png');
+        return $THEME->get_url('images/video.gif');
     }
 
-    public static function get_title_progressbar() {
-        return get_string('video','artefact.file');
-    }
-
-    public static function is_metaartefact() {
-        return false;
-    }
 }
 
 class ArtefactTypeAudio extends ArtefactTypeFile {
 
     public static function is_valid_file($path, $data) {
         $validtypes = self::audio_mime_types();
-        if (isset($validtypes[$data->guess])) {
-            $data->filetype = $data->guess;
-            return true;
+        if (!isset($validtypes[$data->guess])) {
+            return false;
         }
-        else if (!empty($validtypes[$data->filetype])) {
-            return true;
-        }
-        return false;
+        $data->filetype = $data->guess;
+        return true;
     }
 
     public static function audio_file_descriptions() {
@@ -2576,14 +2434,6 @@ class ArtefactTypeAudio extends ArtefactTypeFile {
 
     public static function get_icon($options=null) {
         global $THEME;
-        return $THEME->get_url('images/audio.png');
-    }
-
-    public static function get_title_progressbar() {
-        return ucfirst(get_string('audio','artefact.file'));
-    }
-
-    public static function is_metaartefact() {
-        return false;
+        return $THEME->get_url('images/audio.gif');
     }
 }

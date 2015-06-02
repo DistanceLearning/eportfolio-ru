@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -122,7 +138,6 @@ function change_language($userid, $oldlang, $newlang) {
     }
     set_field_select('artefact_tag', 'tag', get_string_from_language($newlang, 'profile'), 'WHERE tag = ? AND artefact IN (SELECT id FROM {artefact} WHERE "owner" = ?)', array(get_string_from_language($oldlang, 'profile'), $userid));
     set_field_select('view_tag', 'tag', get_string_from_language($newlang, 'profile'), 'WHERE tag = ? AND "view" IN (SELECT id FROM {view} WHERE "owner" = ?)', array(get_string_from_language($oldlang, 'profile'), $userid));
-    set_field_select('collection_tag', 'tag', get_string_from_language($newlang, 'profile'), 'WHERE tag = ? AND "collection" IN (SELECT id FROM {collection} WHERE "owner" = ?)', array(get_string_from_language($oldlang, 'profile'), $userid));
 }
 
 /** 
@@ -176,14 +191,6 @@ function get_account_preference($userid, $field) {
 function get_user_language($userid) {
     $langpref = get_account_preference($userid, 'lang');
     if (empty($langpref) || $langpref == 'default') {
-
-        // Check for an institution language
-        $instlang = get_user_institution_language($userid);
-        if (!empty($instlang) && $instlang != 'default') {
-            return $instlang;
-        }
-
-        // Use the site language
         return get_config('lang');
     }
     return $langpref;
@@ -198,7 +205,6 @@ function get_user_language($userid) {
 function expected_account_preferences() {
     return array('friendscontrol' => 'auth',
                  'wysiwyg'        =>  1,
-                 'licensedefault' => '',
                  'messages'       => 'allow',
                  'lang'           => 'default',
                  'addremovecolumns' => 0,
@@ -207,19 +213,14 @@ function expected_account_preferences() {
                  'hiderealname'   => 0,
                  'multipleblogs' => 0,
                  'showhomeinfo' => 1,
-                 'showprogressbar' => 1,
                  'mobileuploadtoken' => '',
                  'theme' => '',
                  'resizeonuploaduserdefault' => 1,
                  'devicedetection' => 1,
-                 'licensedefault' => '',
-                 'viewsperpage' => 20,
                  );
 }
 
 function general_account_prefs_form_elements($prefs) {
-    global $USER;
-    require_once('license.php');
     $elements = array();
     $elements['friendscontrol'] = array(
         'type' => 'radio',
@@ -240,17 +241,6 @@ function general_account_prefs_form_elements($prefs) {
         'help' => true,
         'disabled' => get_config('wysiwyg'),
     );
-    if (get_config('licensemetadata')) {
-        $elements['licensedefault'] = license_form_el_basic(null);
-        $elements['licensedefault']['title'] = get_string('licensedefault','account');
-        if ($USER->get('institutions')) {
-            $elements['licensedefault']['options'][LICENSE_INSTITUTION_DEFAULT] = get_string('licensedefaultinherit','account');
-        }
-        $elements['licensedefault']['description'] = get_string('licensedefaultdescription','account');
-        if (isset($prefs->licensedefault)) {
-            $elements['licensedefault']['defaultvalue'] = $prefs->licensedefault;
-        }
-    }
     $elements['maildisabled'] = array(
         'type' => 'checkbox',
         'defaultvalue' => $prefs->maildisabled,
@@ -270,19 +260,11 @@ function general_account_prefs_form_elements($prefs) {
         'help' => true,
     );
     $languages = get_languages();
-    // Determine default language.
-    $instlang = get_user_institution_language($USER->id, $instlanginstname);
-    if (!empty($instlang) && $instlang != 'default') {
-        $sitedefaultlabel = get_string('defaultlangforinstitution', 'admin', get_config_institution($instlanginstname, 'displayname')) . ' (' . $languages[$instlang] . ')';
-    }
-    else {
-        $sitedefaultlabel = get_string('sitedefault', 'admin') . ' (' . $languages[get_config('lang')] . ')';
-    }
     $elements['lang'] = array(
         'type' => 'select',
         'defaultvalue' => $prefs->lang,
         'title' => get_string('language', 'account'),
-        'options' => array_merge(array('default' => $sitedefaultlabel), $languages),
+        'options' => array_merge(array('default' => get_string('sitedefault', 'admin') . ' (' . $languages[get_config('lang')] . ')'), $languages),
         'help' => true,
         'ignore' => count($languages) < 2,
     );
@@ -374,14 +356,6 @@ function general_account_prefs_form_elements($prefs) {
             'title' => get_string('showhomeinfo1', 'account'),
             'description' => get_string('showhomeinfodescription', 'account', hsc(get_config('sitename'))),
             'help' => 'true'
-        );
-    }
-    if (get_config('showprogressbar')) {
-        $elements['showprogressbar'] = array(
-            'type' => 'checkbox',
-            'defaultvalue' => $prefs->showprogressbar,
-            'title' => get_string('showprogressbar', 'account'),
-            'description' => get_string('showprogressbardescription', 'account', hsc(get_config('sitename'))),
         );
     }
     if (get_config('allowmobileuploads')) {
@@ -592,24 +566,7 @@ function email_user($userto, $userfrom, $subject, $messagetext, $messagehtml='',
     $replytoset = false;
     if (!empty($customheaders) && is_array($customheaders)) {
         foreach ($customheaders as $customheader) {
-            // To prevent duplicated declaration of the field "Message-ID",
-            // don't add it into the $mail->CustomHeader[].
-            if (false === stripos($customheader, 'message-id')) {
-                // Hack the fields "In-Reply-To" and "References":
-                // add touser<userID>
-                if ((0 === stripos($customheader, 'in-reply-to')) ||
-                    (0 === stripos($customheader, 'references'))) {
-                    $customheader = preg_replace('/<forumpost(\d+)/', '<forumpost${1}touser' . $userto->id, $customheader);
-                }
-                $mail->AddCustomHeader($customheader);
-            }
-            else {
-                list($h, $msgid) = explode(':', $customheader, 2);
-                // Hack the "Message-ID": add touser<userID> to make sure
-                // the "Message-ID" is unique
-                $msgid = preg_replace('/<forumpost(\d+)/', '<forumpost${1}touser' . $userto->id, $msgid);
-                $mail->MessageID = trim($msgid);
-            }
+            $mail->AddCustomHeader($customheader);
             if (0 === stripos($customheader, 'reply-to')) {
                 $replytoset = true;
             }
@@ -723,10 +680,7 @@ function check_overcount($mailinfo) {
         return false;
     }
 
-    $minbounces = get_config('bounces_min');
-    $bounceratio = get_config('bounces_ratio');
-    // If they haven't set a minbounces value, then we can't proceed
-    if (!$minbounces) {
+    if ((! $minbounces = get_config('bounces_min')) || (! $bounceratio = get_config('bounces_ratio'))) {
         return false;
     }
 
@@ -819,21 +773,18 @@ function process_email($address) {
         return $email;
     }
 
-    $mailprefix = get_config('bounceprefix');
-    $prefixlength = strlen($mailprefix);
-
     list($email->localpart,$email->domain) = explode('@',$address);
-    // The prefix is stored in the first characters denoted by $prefixlength
-    $email->prefix        = substr($email->localpart, 0, $prefixlength);
+    // The prefix is stored in the first four characters
+    $email->prefix        = substr($email->localpart,0,4);
     // The type of message received is a one letter code
-    $email->type          = substr($email->localpart, $prefixlength, 1);
+    $email->type          = substr($email->localpart,4,1);
     // The userid should be available immediately afterwards
     // Postfix and other smtp servers don't like the use of / in the extension part of an email
     // We may of replaced it with another valid email character which isn't in base64, namely '-'
     // If we didn't, then the preg_replace won't do anything
-    list(,$email->userid) = unpack('V',base64_decode(preg_replace('/-/', '/', substr($email->localpart, $prefixlength + 1, 8))));
+    list(,$email->userid) = unpack('V',base64_decode(preg_replace('/-/', '/', substr($email->localpart,5,8))));
     // Any additional arguments
-    $email->args          = substr($email->localpart, $prefixlength + 9,-16);
+    $email->args          = substr($email->localpart,13,-16);
     // And a hash of the intended recipient for authentication
     $email->addresshash   = substr($email->localpart,-16);
 
@@ -845,6 +796,7 @@ function process_email($address) {
     switch ($email->type) {
     case 'B': // E-mail bounces
         if ($user = get_record_select('artefact_internal_profile_email', '"owner" = ? AND principal = 1', array($email->userid))) {
+            $mailprefix = get_config('bounceprefix');
             $maildomain = get_config('bouncedomain');
             $installation_key = get_config('installation_key');
             // check the half md5 of their email
@@ -1541,12 +1493,12 @@ function can_send_message($from, $to) {
     if (empty($from)) {
         return false; // not logged in
     }
-    if (!is_object($from)) {
-        $from = get_record('usr', 'id', $from);
-    }
-    if (is_object($to)) {
-        $to = $to->id;
-    }
+	if (!is_object($from)) {
+	    $from = get_record('usr', 'id', $from);
+	}
+	if (is_object($to)) {
+	    $to = $to->id;
+	}
     $messagepref = get_account_preference($to, 'messages');
     return (is_friend($from->id, $to) && $messagepref == 'friends') || $messagepref == 'allow' || $from->admin;
 }
@@ -1556,7 +1508,7 @@ function load_user_institutions($userid) {
         throw new InvalidArgumentException("couldn't load institutions, no user id specified");
     }
     if ($institutions = get_records_sql_assoc('
-        SELECT u.institution,'.db_format_tsfield('ctime').','.db_format_tsfield('u.expiry', 'membership_expiry').',u.studentid,u.staff,u.admin,i.displayname,i.theme,i.registerallowed, i.showonlineusers,i.allowinstitutionpublicviews, i.logo, i.style, i.licensemandatory, i.licensedefault, i.dropdownmenu, i.skins
+        SELECT u.institution,'.db_format_tsfield('ctime').','.db_format_tsfield('u.expiry', 'membership_expiry').',u.studentid,u.staff,u.admin,i.displayname,i.theme,i.registerallowed, i.showonlineusers,i.allowinstitutionpublicviews, i.logo, i.style
         FROM {usr_institution} u INNER JOIN {institution} i ON u.institution = i.name
         WHERE u.usr = ? ORDER BY i.priority DESC', array($userid))) {
         return $institutions;
@@ -1657,8 +1609,7 @@ function profile_url($user, $full=true, $useid=false) {
     }
     else if (is_numeric($user)) {
         $id = $user;
-        $user = get_user_for_display($id);
-        $urlid = ($wantclean && !empty($user->urlid)) ? $user->urlid : null;
+        $urlid = $wantclean ? get_user_for_display($id)->urlid : null;
     }
     else if (isset($user->id)) {
         $id = $user->id;
@@ -1694,7 +1645,7 @@ function profile_url($user, $full=true, $useid=false) {
  * @return array containing the users in the order from $userids
  */
 function get_users_data($userids, $getviews=true) {
-    global $USER;
+	global $USER;
 
     $userids = array_map('intval', $userids);
 
@@ -1779,7 +1730,6 @@ function build_userlist_html(&$data, $page, $admingroups) {
     $smarty = smarty_core();
     $smarty->assign('data', isset($userdata) ? $userdata : null);
     $smarty->assign('page', $page);
-    $smarty->assign('offset', $data['offset']);
 
     $params = array();
     if (isset($data['query'])) {
@@ -1806,9 +1756,7 @@ function build_userlist_html(&$data, $page, $admingroups) {
         'url' => get_config('wwwroot') . 'user/' . $page . '.php?' . http_build_query($params),
         'jsonscript' => 'json/friendsearch.php',
         'datatable' => 'friendslist',
-        'searchresultsheading' => 'searchresultsheading',
         'count' => $data['count'],
-        'setlimit' => true,
         'limit' => $data['limit'],
         'offset' => $data['offset'],
         'jumplinks' => 6,
@@ -2136,8 +2084,8 @@ function addfriend_submit(Pieform $form, $values) {
  *
  * @param object $user stdclass or User object for the usr table
  * @param array  $profile profile field/values to set
- * @param string|object $institution Institution the user should joined to (name or Institution object)
- * @param bool $remoteauth authinstance record for a remote authinstance
+ * @param string $institution Institution the user should joined to
+ * @param stdclass $remoteauth authinstance record for a remote authinstance
  * @param string $remotename username on the remote site
  * @param array $accountprefs user account preferences to set
  * @return integer id of the new user
@@ -2161,12 +2109,10 @@ function create_user($user, $profile=array(), $institution=null, $remoteauth=nul
         if (empty($user->quota)) {
             $user->quota = get_config_plugin('artefact', 'file', 'defaultquota');
         }
-        if (get_config('defaultaccountlifetime')) {
-            // we need to set the user expiry to the site default one
-            $user->expiry = date('Y-m-d',mktime(0, 0, 0, date('m'), date('d'), date('Y')) + (int)get_config('defaultaccountlifetime'));
-        }
         $user->id = insert_record('usr', $user, 'id', true);
     }
+    // Bypass access check for 'copynewuser' institution/site views, because this user may not be logged in yet
+    $user->newuser = true;
 
     if (isset($user->email) && $user->email != '') {
         set_profile_field($user->id, 'email', $user->email);
@@ -2184,22 +2130,16 @@ function create_user($user, $profile=array(), $institution=null, $remoteauth=nul
         set_profile_field($user->id, $k, $v);
     }
 
-    if (!empty($institution)) {
+    if (!empty($institution) && $institution != 'mahara') {
         if (is_string($institution)) {
             $institution = new Institution($institution);
         }
         if ($institution->name != 'mahara') {
             $institution->addUserAsMember($user); // uses $user->newuser
-            if (empty($accountprefs['licensedefault'])) {
-                $accountprefs['licensedefault'] = LICENSE_INSTITUTION_DEFAULT;
-            }
         }
     }
-    $authobj = get_record('auth_instance', 'id', $user->authinstance);
-    $authinstance = AuthFactory::create($authobj->id);
-    // For legacy compatibility purposes, we'll also put the remote auth on there if it has been
-    // specifically requested.
-    if ($authinstance->needs_remote_username() || (!empty($remoteauth))) {
+
+    if (!empty($remoteauth)) {
         if (isset($remotename) && strlen($remotename) > 0) {
             $un = $remotename;
         }
@@ -2208,7 +2148,7 @@ function create_user($user, $profile=array(), $institution=null, $remoteauth=nul
         }
         // remote username must not already exist
         if (record_exists('auth_remote_user', 'remoteusername', $un, 'authinstance', $user->authinstance)) {
-            throw new InvalidArgumentException("user_create: remoteusername already exists: ({$un}, {$user->authinstance})");
+            throw new InvalidArgumentException("user_create: remoteusername already exists: ".$un);
         }
         insert_record('auth_remote_user', (object) array(
             'authinstance'   => $user->authinstance,
@@ -2228,9 +2168,10 @@ function create_user($user, $profile=array(), $institution=null, $remoteauth=nul
     }
 
     // Copy site views and collections to the new user's profile
+    $checkviewaccess = !$user->newuser;
     $userobj = new User();
     $userobj->find_by_id($user->id);
-    $userobj->copy_site_views_collections_to_new_user();
+    $userobj->copy_site_views_collections_to_new_user($checkviewaccess);
 
     reset_password($user, false, $quickhash);
 
@@ -2364,8 +2305,6 @@ function install_system_profile_view() {
         'type'        => 'profile',
         'owner'       => 0,
         'numcolumns'  => 2,
-        'numrows'     => 1,
-        'columnsperrow' => array((object)array('row' => 1, 'columns' => 2)),
         'ownerformat' => FORMAT_NAME_PREFERREDNAME,
         'title'       => get_string('profileviewtitle', 'view'),
         'description' => get_string('profiledescription'),
@@ -2384,7 +2323,6 @@ function install_system_profile_view() {
                 'blocktype'  => $blocktype,
                 'title'      => get_string('title', 'blocktype.' . $blocktype),
                 'view'       => $view->get('id'),
-                'row'        => 1,
                 'column'     => $blocktypes[$blocktype],
                 'order'      => $weights[$blocktypes[$blocktype]],
             ));
@@ -2410,8 +2348,6 @@ function install_system_dashboard_view() {
         'type'        => 'dashboard',
         'owner'       => 0,
         'numcolumns'  => 2,
-        'numrows'     => 1,
-        'columnsperrow' => array((object)array('row' => 1, 'columns' => 2)),
         'ownerformat' => FORMAT_NAME_PREFERREDNAME,
         'title'       => get_string('dashboardviewtitle', 'view'),
         'template'    => 1,
@@ -2423,7 +2359,6 @@ function install_system_dashboard_view() {
         array(
             'blocktype' => 'newviews',
             'title' => '',
-            'row'   => 1,
             'column' => 1,
             'config' => array(
                 'limit' => 5,
@@ -2432,14 +2367,12 @@ function install_system_dashboard_view() {
         array(
             'blocktype' => 'myviews',
             'title' => '',
-            'row'   => 1,
             'column' => 1,
             'config' => null,
         ),
         array(
             'blocktype' => 'inbox',
             'title' => '',
-            'row'   => 1,
             'column' => 2,
             'config' => array(
                 'feedback' => true,
@@ -2455,7 +2388,6 @@ function install_system_dashboard_view() {
         array(
             'blocktype' => 'inbox',
             'title' => '',
-            'row'   => 1,
             'column' => 2,
             'config' => array(
                 'newpost' => true,
@@ -2472,7 +2404,6 @@ function install_system_dashboard_view() {
                 'blocktype'  => $blocktype['blocktype'],
                 'title'      => $blocktype['title'],
                 'view'       => $view->get('id'),
-                'row'        => $blocktype['row'],
                 'column'     => $blocktype['column'],
                 'order'      => $weights[$blocktype['column']],
                 'configdata' => $blocktype['config'],
@@ -2494,11 +2425,8 @@ function install_system_dashboard_view() {
  * gravatar.
  */
 function profile_icon_url($user, $maxwidth=40, $maxheight=40) {
+    global $THEME;
 
-    // Getting icon when feedback is done by anonymous user
-    if (empty($user)) {
-        return anonymous_icon_url($maxwidth, $maxheight);
-    }
     $user = get_user_for_display($user);
 
     if (!property_exists($user, 'profileicon') || !property_exists($user, 'email')) {
@@ -2522,26 +2450,13 @@ function profile_icon_url($user, $maxwidth=40, $maxheight=40) {
         return $thumb . '?type=profileiconbyid&' . $sizeparams . '&id=' . $user->profileicon;
     }
 
-    return anonymous_icon_url($maxwidth, $maxheight, $user->email);
-}
-
-/**
- * Return icon to show when there is no user profile icon.
- *
- * @param int  $maxwidth       Maximum width of image
- * @param int  $maxheight      Maximum height of image
- * @param string $email        email address to use for remote_avatar, if any.
- */
-function anonymous_icon_url($maxwidth=40, $maxheight=40, $email=null) {
-    global $THEME;
-
     // Assume we have the right size available in docroot, so we don't
     // have to call thumb.php
     $notfoundwidth = $maxwidth == 100 ? '' : $maxwidth;
     $notfound = $THEME->get_url('images/no_userphoto' . $notfoundwidth . '.png');
 
-    if (!empty($email) && get_config('remoteavatars')) {
-        return remote_avatar($email, array('maxw' => $maxwidth, 'maxh' => $maxheight), $notfound);
+    if (get_config('remoteavatars')) {
+        return remote_avatar($user->email, array('maxw' => $maxwidth, 'maxh' => $maxheight), $notfound);
     }
     return $notfound;
 }

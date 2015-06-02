@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage interaction-forum
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -34,7 +50,7 @@ $forum = get_record_sql(
     'SELECT f.title, f.description, f.id, COUNT(t.id) AS topiccount, s.forum AS subscribed, g.id AS groupid, g.name AS groupname, ic.value AS newtopicusers
     FROM {interaction_instance} f
     INNER JOIN {group} g ON (g.id = f."group" AND g.deleted = ?)
-    LEFT JOIN {interaction_forum_topic} t ON (t.forum = f.id AND t.deleted != 1)
+    LEFT JOIN {interaction_forum_topic} t ON (t.forum = f.id AND t.deleted != 1 AND t.sticky != 1)
     LEFT JOIN {interaction_forum_subscription_forum} s ON (s.forum = f.id AND s."user" = ?)
     LEFT JOIN {interaction_forum_instance_config} ic ON (f.id = ic.forum AND ic.field = \'createtopicusers\')
     WHERE f.id = ?
@@ -256,8 +272,8 @@ $smarty->assign('groupadmins', group_get_admin_ids($forum->groupid));
 $smarty->assign('stickytopics', $stickytopics);
 $smarty->assign('regulartopics', $regulartopics);
 $smarty->assign('moderators', $moderators);
-$smarty->assign('closedicon', $THEME->get_url('images/locked.png', false));
-$smarty->assign('subscribedicon', $THEME->get_url('images/subscribed.png', false));
+$smarty->assign('closedicon', $THEME->get_url('images/closed.gif', false, 'interaction/forum'));
+$smarty->assign('subscribedicon', $THEME->get_url('images/subscribed.gif', false, 'interaction/forum'));
 $smarty->assign('pagination', $pagination['html']);
 $smarty->assign('INLINEJAVASCRIPT', $inlinejavascript);
 $smarty->display('interaction:forum:view.tpl');

@@ -1,50 +1,51 @@
 {if $groupviews}
     <div class="groupviewsection">
-        <h3 class="title">{str tag="groupviews" section="view"}</h3>
-        <div class="fullwidth listing">
-        {foreach from=$groupviews item=view}
-            <div class="{cycle values='r0,r1'} listrow">
-            {if $view.template}
-                <div class="fr">{$view.form|safe}</div>
-            {/if}
-                <h4 class="title"><a href="{$view.fullurl}">{$view.title}</a></h4>
-                <div class="detail">{$view.description|str_shorten_html:100:true|strip_tags|safe}</div>
-                {if $view.tags}<div class="tags"><label>{str tag=tags}:</label> {list_tags owner=$view.owner tags=$view.tags}</div>{/if}
-            </div>
-        {/foreach}
-        </div>
+    <h4>{str tag="groupviews" section="view"}</h4>
+    <table class="fullwidth listing">
+    {foreach from=$groupviews item=view}
+        <tr class="{cycle values='r0,r1'}">
+            <td>
+                {if $view.template}
+                <div class="s fr">{$view.form|safe}</div>
+                {/if}
+                <h5 class="inline"><a href="{$view.fullurl}">{$view.title}</a></h5>
+                <div class="groupviewdescription">{$view.description|str_shorten_html:100:true|strip_tags|safe}</div>
+                {if $view.tags}<div class="s tags"><label>{str tag=tags}:</label> {list_tags owner=$view.owner tags=$view.tags}</div>{/if}
+            </td>
+        </tr>
+    {/foreach}
+    </table>
     </div>
 {/if}
 
 {if $sharedviews}
     <div class="groupviewsection">
-        <h3 class="title">{str tag="viewssharedtogroupbyothers" section="view"}</h3>
-        <div class="fullwidth listing">
-        {foreach from=$sharedviews item=view}
-            <div class="{cycle values='r0,r1'} listrow">
-            {if $view.template}
+    <h4>{str tag="viewssharedtogroupbyothers" section="view"}</h4>
+    <table class="fullwidth listing">
+    {foreach from=$sharedviews item=view}
+        <tr class="{cycle values='r0,r1'}">
+            <td>
+                {if $view.template}
                 <div class="s fr">{$view.form|safe}</div>
-            {/if}
-                <h4 class="title"><a href="{$view.fullurl}">{$view.title}</a>
+                {/if}
+                <h5 class="inline"><a href="{$view.fullurl}">{$view.title}</a></h5>
                 {if $view.sharedby}
                     <span class="owner"> {str tag=by section=view}
-                        {if $view.group}
-                            <a href="{group_homepage_url($view.groupdata)}">{$view.sharedby}</a>
-                        {elseif $view.owner}
-                            <a href="{profile_url($view.user)}">{$view.sharedby}</a>
-                        {else}
-                            {$view.sharedby}
-                        {/if}
+                    {if $view.group}
+                        <a href="{group_homepage_url($view.groupdata)}">{$view.sharedby}</a>
+                    {elseif $view.owner}
+                        <a href="{profile_url($view.user)}">{$view.sharedby}</a>
+                    {else}
+                        {$view.sharedby}
+                    {/if}
                     </span>
                 {/if}
-                </h4>
-                <div class="detail">{$view.description|str_shorten_html:100:true|strip_tags|safe}</div>
-             {if $view.tags}
-                <div class="tags"><label>{str tag=tags}:</label> {list_tags owner=$view.owner tags=$view.tags}</div>
-             {/if}
-            </div>
-        {/foreach}
-        </div>
+                <div class="groupviewdescription">{$view.description|str_shorten_html:100:true|strip_tags|safe}</div>
+                {if $view.tags}<div class="s tags"><label>{str tag=tags}:</label> {list_tags owner=$view.owner tags=$view.tags}</div>{/if}
+            </td>
+        </tr>
+    {/foreach}
+    </table>
     </div>
 {/if}
 
@@ -52,38 +53,47 @@
 {if $mysubmitted || $group_view_submission_form}
     <div class="groupviewsection">
     {if $group_view_submission_form}
-        <h3 class="title">{str tag="submittogroup" section="view"}</h3>
+        <h4>{str tag="submittogroup" section="view"}</h4>
     {/if}
-        <div class="fullwidth listing">
-        {if $mysubmitted}
-        {foreach from=$mysubmitted item=item}
-            <div class="{cycle values='r0,r1'} submittedform">
-            {if $item.submittedtime}
-                {str tag=youhavesubmittedon section=view arg1=$item.url arg2=$item.name arg3=$item.submittedtime|format_date}
-            {else}
-                {str tag=youhavesubmitted section=view arg1=$item.url arg2=$item.name}
-            {/if}
-            </div>
-        {/foreach}
-        {/if}
-        {if $group_view_submission_form}
-            <div class="submissionform">{$group_view_submission_form|safe}</div>
-        {/if}
-        </div>
+    <table class="fullwidth listing">
+    {if $mysubmitted}
+      {foreach from=$mysubmitted item=item}
+      <tr class="{cycle values='r0,r1'}"><td class="submittedform">
+      {if $item.submittedtime}
+        {str tag=youhavesubmittedon section=view arg1=$item.url arg2=$item.name arg3=$item.submittedtime|format_date}
+      {else}
+        {str tag=youhavesubmitted section=view arg1=$item.url arg2=$item.name}
+      {/if}
+      </td></tr>
+      {/foreach}
+    {/if}
+    {if $group_view_submission_form}
+        <tr>
+            <td class="submissionform">{$group_view_submission_form|safe}</td>
+        </tr>
+    {/if}
+    </table>
     </div>
 {/if}
 
 {if $allsubmitted}
     <div class="groupviewsection">
-        <h3 class="title">{str tag="submissionstogroup" section="view"}</h3>
-        <div class="fullwidth listing" id="allsubmitted">
-        {foreach from=$allsubmitted item=item}
-            <div class="{cycle values='r0,r1'} listrow">
-                <h4 class="title"><a href="{$item.url}">{$item.name|str_shorten_text:60:true}</a>
-                <span class="owner">{str tag=by section=view} <a href="{$item.ownerurl}">{$item.ownername}</a></span></h4>
-                <div class="detail">{str tag=timeofsubmission section=view}: {$item.submittedtime|format_date}</div>
-            </div>
-        {/foreach}
-        </div>
+    <table class="fullwidth listing">
+        <tr>
+          <td><h5>{str tag="submissionstogroup" section="view"}</h5></td>
+          <th>{str tag=timeofsubmission section=view}</th>
+        </tr>
+    {foreach from=$allsubmitted item=item}
+        <tr class="{cycle values='r0,r1'}">
+          <td>
+            <strong><a href="{$item.url}">{$item.name|str_shorten_text:60:true}</a></strong>
+            <div><a href="{$item.ownerurl}">{$item.ownername}</a></div>
+          </td>
+          <td>
+            <div class="postedon nowrap">{$item.submittedtime|format_date}</div>
+          </td>
+        </tr>
+    {/foreach}
+    </table>
     </div>
 {/if}

@@ -1,33 +1,28 @@
 {include file="header.tpl"}
 
-    <p>{$instructions|clean_html|safe}</p>
+    <div>{$instructions|clean_html|safe}</div>
     <div class="memberswrap"><div class="memberssearch">
     {if $membershiptypes}
     	<div class="membershiptypes">
         {foreach from=$membershiptypes item=item implode="&nbsp;|&nbsp;"}
             {if $item.link}
-               <a href="{$item.link}">{$item.name}</a>
+               <strong><a href="{$item.link}">{$item.name}</a></strong>
             {else}
                <strong>{$item.name}</strong>
             {/if}
         {/foreach}
         </div>
     {/if}
-        {$form|safe}
+        <label>{str tag=search}:</label> {$form|safe}
     </div>
     <div class="cb"></div>
-    {if $membershiptype}
-        <h2 id="searchresultsheading">
-            <span class="accessible-hidden">{str tag=Results}: </span>
-            {str tag=pendingmembers section=group}
-        </h2>
-    {else}
-        <h2 id="searchresultsheading" class="accessible-hidden hidden">{str tag=Results}</h2>
-    {/if}
+    {if $membershiptype}<h3>{str tag=pendingmembers section=group}</h3>{/if}
     <div id="results">
-        <div id="membersearchresults" class="tablerenderer fullwidth listing twocolumn">
+        <table id="membersearchresults" class="tablerenderer fullwidth listing twocolumn">
+            <tbody>
             {$results|safe}
-        </div>
+            </tbody>
+        </table>
     </div>
     {$pagination|safe}
     </div>

@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-plans
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -18,11 +34,8 @@ define('SECTION_PAGE', 'plans');
 
 require(dirname(dirname(dirname(__FILE__))) . '/init.php');
 safe_require('artefact', 'plans');
-if (!PluginArtefactPlans::is_active()) {
-    throw new AccessDeniedException(get_string('plugindisableduser', 'mahara', get_string('plans','artefact.plans')));
-}
 
-define('TITLE', get_string('Tasks','artefact.plans'));
+define('TITLE', get_string('tasks','artefact.plans'));
 
 $id = param_integer('id');
 
@@ -48,12 +61,9 @@ EOF;
 $smarty = smarty(array('paginator'));
 $smarty->assign_by_ref('tasks', $tasks);
 $smarty->assign_by_ref('plan', $id);
-$smarty->assign_by_ref('tags', $plan->get('tags'));
-$smarty->assign_by_ref('owner', $plan->get('owner'));
 $smarty->assign('strnotasksaddone',
     get_string('notasksaddone', 'artefact.plans',
     '<a href="' . get_config('wwwroot') . 'artefact/plans/new.php?id='.$plan->get('id').'">', '</a>'));
-$smarty->assign('planstasksdescription', get_string('planstasksdescription', 'artefact.plans', get_string('newtask', 'artefact.plans')));
 $smarty->assign('PAGEHEADING', get_string("planstasks", "artefact.plans",$plan->get('title')));
 $smarty->assign('INLINEJAVASCRIPT', $js);
 $smarty->display('artefact:plans:plan.tpl');

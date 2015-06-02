@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-comment
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -75,10 +91,6 @@ $elements['ispublic'] = array(
     'title' => get_string('makepublic', 'artefact.comment'),
     'defaultvalue' => !$comment->get('private'),
 );
-if (get_config('licensemetadata')) {
-    $elements['license'] = license_form_el_basic($comment);
-    $elements['licensing_advanced'] = license_form_el_advanced($comment);
-}
 $elements['submit'] = array(
     'type'  => 'submitcancel',
     'value' => array(get_string('save'), get_string('cancel')),
@@ -93,36 +105,14 @@ $form = pieform(array(
     'elements'        => $elements,
 ));
 
-function edit_comment_validate(Pieform $form, $values) {
-    require_once(get_config('libroot.php') . 'antispam.php');
-    $result = probation_validate_content($values['message']);
-    if ($result !== true) {
-        $form->set_error('message', get_string('newuserscantpostlinksorimages'));
-    }
-}
-
 function edit_comment_submit(Pieform $form, $values) {
-    global $viewid, $comment, $SESSION, $goto, $USER;
+    global $viewid, $comment, $SESSION, $goto;
 
     db_begin();
 
     $comment->set('description', $values['message']);
     $comment->set('rating', valid_rating($values['rating']));
-    require_once(get_config('libroot') . 'view.php');
-    $view = new View($viewid);
-    $owner = $view->get('owner');
-    $group = $comment->get('group');
-    $approvecomments = $view->get('approvecomments');
-    if (!empty($group) && ($approvecomments || (!$approvecomments && $view->user_comments_allowed($USER) == 'private')) && $values['ispublic'] && !$USER->can_edit_view($view)) {
-        $comment->set('requestpublic', 'author');
-    }
-    else if (($approvecomments || (!$approvecomments && $view->user_comments_allowed($USER) == 'private')) && $values['ispublic'] && (!empty($owner) && $owner != $comment->get('author'))) {
-        $comment->set('requestpublic', 'author');
-    }
-    else {
-        $comment->set('private', 1 - (int) $values['ispublic']);
-        $comment->set('requestpublic', null);
-    }
+    $comment->set('private', 1 - (int) $values['ispublic']);
     $comment->commit();
 
     require_once('activity.php');
@@ -132,51 +122,11 @@ function edit_comment_submit(Pieform $form, $values) {
     );
 
     activity_occurred('feedback', $data, 'artefact', 'comment');
-    if ($comment->get('requestpublic') == 'author') {
-        if (!empty($owner)) {
-            edit_comment_notify($view, $comment->get('author'), $owner);
-        }
-        else if (!empty($group)) {
-            $group_admins = group_get_admin_ids($group);
-            // TO DO: need to notify the group admins bug #1197197
-        }
-    }
 
     db_commit();
 
     $SESSION->add_ok_msg(get_string('commentupdated', 'artefact.comment'));
     redirect($goto);
-}
-
-function edit_comment_notify($view, $author, $owner) {
-    global $comment, $SESSION;
-
-    $data = (object) array(
-        'subject'   => false,
-        'message'   => false,
-        'strings'   => (object) array(
-            'subject' => (object) array(
-                'key'     => 'makepublicrequestsubject',
-                'section' => 'artefact.comment',
-                'args'    => array(),
-            ),
-            'message' => (object) array(
-                'key'     => 'makepublicrequestbyauthormessage',
-                'section' => 'artefact.comment',
-                'args'    => array(hsc(display_name($author, $owner))),
-            ),
-            'urltext' => (object) array(
-                'key'     => 'Comment',
-                'section' => 'artefact.comment',
-            ),
-        ),
-        'users'     => array($owner),
-        'url'       => $comment->get_view_url($view->get('id'), true, false),
-    );
-    if (!empty($owner)) {
-        $SESSION->add_ok_msg(get_string('makepublicrequestsent', 'artefact.comment', display_name($owner)));
-    }
-    activity_occurred('maharamessage', $data);
 }
 
 $stylesheets = array('style/jquery.rating.css');

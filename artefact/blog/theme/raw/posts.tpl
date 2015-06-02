@@ -19,44 +19,37 @@
                 {else}
                     <form name="edit_{$post->id}" action="{$WWWROOT}artefact/blog/post.php">
                       <input type="hidden" name="id" value="{$post->id}">
-                      <input type="image" src="{theme_url filename="images/btn_edit.png"}" alt="{str(tag=editspecific arg1=$post->title)|escape:html|safe}" title="{str tag=edit}">
+                      <input type="image" src="{theme_url filename="images/edit.gif"}" title="{str tag=edit}">
                     </form>
                     {$post->delete|safe}
                 {/if}
             </span>
         </div>
-        <h2>{$post->title}</h2>
-        <div id="postdetails_{$post->id}" class="postdetails postdate">
-            {str tag=postedon section=artefact.blog} {$post->ctime}
-        </div>
+        <h1 class="posttitle">{$post->title}</h1>
         <div id="postdescription_{$post->id}" class="postdescription">
             {$post->description|clean_html|safe}
         </div>
         {if $post->files}
             <div id="postfiles_{$post->id}">
-                <table class="cb attachments fullwidth">
-                    <thead class="expandable-head">
-                        <tr>
-                            <td colspan="2">
-                                <a class="toggle" href="#">{str tag=attachedfiles section=artefact.blog}</a>
-                                <span class="fr">
-                                    <img class="fl" src="{theme_url filename='images/attachment.png'}" alt="{str tag=Attachments section=artefact.resume}">
-                                    {$post->files|count}
-                                </span>
-                            </td>
-                        </tr>
-                    </thead>
-                    <tbody class="expandable-body">
+                <table class="attachments fullwidth">
+                    <col width="5%">
+                    <col width="40%">
+                    <col width="55%">
+                    <tbody>
+                        <tr><th colspan=3>{str tag=attachedfiles section=artefact.blog}</th></tr>
                         {foreach from=$post->files item=file}
                             <tr class="{cycle values='r1,r0'}">
-                                <td class="icon-container"><img src="{$file->icon}" alt=""></td>
-                                <td><h3 class="title"><a href="{$WWWROOT}artefact/file/download.php?file={$file->attachment}">{$file->title}</a> <span class="description">({$file->size|display_size})</span></h3>
-                                <div class="detail">{$file->description}</div></td>
+                                <td><img src="{$file->icon}" alt=""></td>
+                                <td class="valign"><a href="{$WWWROOT}artefact/file/download.php?file={$file->attachment}">{$file->title}</a></td>
+                                <td class="valign">{$file->description}</td>
                             </tr>
                         {/foreach}
                     </tbody>
                 </table>
             </div>
         {/if}
+        <div id="postdetails_{$post->id}" class="postdetails">
+            {str tag=postedon section=artefact.blog} {$post->ctime}
+        </div>
     </div>
 {/foreach}

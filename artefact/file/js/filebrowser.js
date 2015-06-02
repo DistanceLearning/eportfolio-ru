@@ -1,9 +1,24 @@
 /**
  * File browser
  * @source: http://gitorious.org/mahara/mahara
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
  *
+ * @licstart
+ * Copyright (C) 2006-2010  Catalyst IT Ltd
+ *
+ * The JavaScript code in this page is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GNU GPL) as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.  The code is distributed WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+ *
+ * As additional permission under GNU GPL version 3 section 7, you
+ * may distribute non-source (e.g., minimized or compacted) forms of
+ * that code without the copy of the GNU GPL normally required by
+ * section 4, provided you include this license notice and a URL
+ * through which recipients can access the Corresponding Source.
+ * @licend
  */
 
 function FileBrowser(idprefix, folderid, config, globalconfig) {
@@ -16,7 +31,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
     this.config.sesskey = globalconfig.sesskey;
     this.config.theme = globalconfig.theme;
     this.nextupload = 0;
-    this.createfolder_is_connected = false;
 
     this.init = function () {
         self.form = getFirstParentByTagAndClassName(self.id + '_filelist_container', 'form', 'pieform');
@@ -37,7 +51,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
         if (self.config.edit || self.config.editmeta) {
             self.edit_init();
         }
-
     }
 
     this.submitform = function () {
@@ -78,32 +91,12 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
         connect(self.id + '_userfile', 'onchange', self.upload_submit);
     }
 
-    this.upload_validate_dropzone = function () {
-        if ($(self.id + '_notice') && !$(self.id + '_notice').checked) {
-            return get_string('youmustagreetothecopyrightnotice');
-        }
-        return false;
-    }
-
     this.upload_validate = function () {
         if ($(self.id + '_notice') && !$(self.id + '_notice').checked) {
             appendChildNodes(self.id+'_upload_messages', DIV({'class':'error'}, get_string('youmustagreetothecopyrightnotice')));
             return false;
         }
         return !isEmpty($(self.id + '_userfile').value);
-    }
-
-    this.upload_presubmit_dropzone = function (e) {
-        // Display upload status
-        self.nextupload++;
-        var message = makeMessage(DIV(null,
-            IMG({'src':get_themeurl('images/loading.gif')}), ' ',
-            get_string('uploadingfiletofolder',e.name,self.foldername)
-            ), 'info');
-        setNodeAttribute(message, 'id', 'uploadstatusline' + self.nextupload);
-        appendChildNodes(self.id + '_upload_messages', message);
-        $(self.id+'_uploadnumber').value = self.nextupload;
-        return true;
     }
 
     this.upload_presubmit = function (e) {
@@ -120,7 +113,7 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                 var message = makeMessage(DIV(null,
                     IMG({'src':get_themeurl('images/loading.gif')}), ' ',
                     get_string('uploadingfiletofolder',localname,self.foldername)
-                    ), 'ok');
+                    ), 'info');
                 setNodeAttribute(message, 'id', 'uploadstatusline' + self.nextupload);
                 appendChildNodes(self.id + '_upload_messages', message);
             }
@@ -185,7 +178,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
             replaceChildNodes(self.id + '_createfolder_messages', makeMessage(message, 'error'));
             return false;
         }
-        progressbarUpdate('folder');
     }
 
     this.edit_submit = function (e) {
@@ -214,23 +206,18 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
     }
 
     this.callback_feedback = function (data) {
-        var infoclass = 'info';
         if (data.problem) {
-            infoclass = 'warning';
+            var image = 'images/icon_problem.gif';
         }
         else if (data.error) {
-            infoclass = 'error';
+            var image = 'images/failure.gif';
         }
         else {
-            infoclass = 'ok';
+            var image = 'images/success.gif';
         }
 
         quotaUpdate(data.quotaused, data.quota);
-        if (data.returnCode == '0') {
-            // pass the artefacttype to update progress bar
-            progressbarUpdate(data.artefacttype, data.deleted);
-        }
-        var newmessage = makeMessage(DIV(null,' ', data.message), infoclass);
+        var newmessage = makeMessage(DIV(null,IMG({'src':get_themeurl(image)}), ' ', data.message), 'info');
         setNodeAttribute(newmessage, 'id', 'uploadstatusline' + data.uploadnumber);
         if (data.uploadnumber) {
             removeElement($('uploadstatusline'+data.uploadnumber));
@@ -239,12 +226,8 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
     }
 
     this.hide_edit_form = function () {
-
         var editrow = $(self.id + '_edit_row');
         if (!hasElementClass(editrow, 'hidden')) {
-            if ((typeof formchangemanager !== 'undefined') && !formchangemanager.confirmLeavingForm()) {
-                return false;
-            }
             addElementClass(editrow, 'hidden');
             // Reconnect the old edit button to open the form
             if (editrow.previousSibling) {
@@ -257,17 +240,13 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                 });
             }
         }
-        return true;
     }
 
     this.edit_form = function (e) {
         e.stop();
-
         // In IE, this.value is set to the button text
         var id = getNodeAttribute(this, 'name').replace(/.*_edit\[(\d+)\]$/, '$1');
-        if (!self.hide_edit_form()) {
-            return;
-        }
+        self.hide_edit_form();
         $(self.id + '_edit_heading').innerHTML = self.filedata[id].artefacttype == 'folder' ? get_string('editfolder') : get_string('editfile');
         var descriptionrow = getFirstParentByTagAndClassName($(self.id + '_edit_description'), 'tr');
         if (self.filedata[id].artefacttype == 'profileicon') {
@@ -278,25 +257,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
         }
         $(self.id + '_edit_title').value = self.filedata[id].title;
         $(self.id + '_edit_description').value = self.filedata[id].description == null ? '' : self.filedata[id].description;
-        if ($(self.id + '_edit_license')) {
-            if (self.filedata[id].license == null) {
-                $(self.id + '_edit_license').value = ''
-            }
-            else {
-                $(self.id + '_edit_license').value = self.filedata[id].license;
-                if ($(self.id + '_edit_license').value != self.filedata[id].license) {
-                    // Doesn't exist in the select box, add it!
-                    var new_option = jQuery('<option/>');
-                    new_option.attr('value', self.filedata[id].license);
-                    new_option.text(self.filedata[id].license);
-                    jQuery($(self.id + '_edit_license')).append(new_option);
-                    $(self.id + '_edit_license').value = self.filedata[id].license;
-                }
-            }
-            $(self.id + '_edit_licensor').value = self.filedata[id].licensor == null ? '' : self.filedata[id].licensor;
-            $(self.id + '_edit_licensorurl').value = self.filedata[id].licensorurl == null ? '' : self.filedata[id].licensorurl;
-            pieform_select_other($(self.id + '_edit_license'));
-        }
         $(self.id + '_edit_allowcomments').checked = self.filedata[id].allowcomments;
         $(self.id + '_edit_tags').value = self.filedata[id].tags.join(', ');
         replaceChildNodes($(self.id + '_edit_messages'));
@@ -322,20 +282,15 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
         disconnectAll(this);
         connect(this, 'onclick', function (e) {
             e.stop();
-            // Check if there are some dirty changes before close the edit form
-            if ((typeof formchangemanager !== 'undefined') && formchangemanager.confirmLeavingForm()) {
-                addElementClass(self.id + '_edit_row', 'hidden');
-                disconnectAll(this);
-                connect(this, 'onclick', self.edit_form);
-            }
+            addElementClass(self.id + '_edit_row', 'hidden');
+            disconnectAll(this);
+            connect(this, 'onclick', self.edit_form);
             return false;
         });
 
         // Recalculate the width of config block
-        if ($('artefactchooser-body')) {
-            var width = getElementDimensions(getFirstParentByTagAndClassName($('artefactchooser-body'), 'td', null)).w;
-            updateBlockConfigWidth(getFirstParentByTagAndClassName(self.form, 'div', 'blockinstance'), width);
-        }
+        var width = getElementDimensions(getFirstParentByTagAndClassName($('artefactchooser-body'), 'td', null)).w;
+        update_width(getFirstParentByTagAndClassName(self.form, 'div', 'blockinstance'), width);
 
         return false;
     }
@@ -378,9 +333,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                             if (self.filedata[id].viewcount > 0) {
                                 warn += get_string('fileappearsinviews') + ' ';
                             }
-                            if (self.filedata[id].skincount > 0) {
-                                warn += get_string('fileappearsinskins') + ' ';
-                            }
                             if (warn != '') {
                                 warn += get_string('confirmdeletefile');
                             }
@@ -399,10 +351,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
             });
             connect(self.id + '_edit_cancel', 'onclick', function (e) {
                 e.stop();
-                if (typeof formchangemanager !== 'undefined') {
-                    var form = jQuery(this).closest('form')[0];
-                    formchangemanager.setFormState(form, FORM_INIT);
-                }
                 self.hide_edit_form();
                 return false;
             });
@@ -415,7 +363,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
 
                 forEach(getElementsByTagAndClassName('div', 'icon-drag', self.id + '_filelist'), function (elem) {
                     self.make_icon_draggable(elem);
-                    self.make_icon_keyboard_accessible(elem);
                 });
                 forEach(getElementsByTagAndClassName('tr', 'folder', self.id + '_filelist'), self.make_row_droppable);
                 forEach(getElementsByTagAndClassName('a', 'changefolder', self.id + '_foldernav'), self.make_folderlink_droppable);
@@ -444,12 +391,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
         });
         forEach(getElementsByTagAndClassName('a', 'changefolder', self.id + '_upload_browse'), function (elem) {
             connect(elem, 'onclick', function (e) {
-                if (self.config.edit) {
-                    if ((typeof formchangemanager !== 'undefined') && !formchangemanager.confirmLeavingForm()) {
-                        e.stop();
-                        return false;
-                    }
-                }
                 var href = getNodeAttribute(this, 'href');
                 var params = parseQueryString(href.substring(href.indexOf('?')+1));
                 $(self.id + '_changefolder').value = params.folder;
@@ -463,74 +404,13 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                 return false;
             });
         });
-        if ($(self.id + '_createfolder') && !self.createfolder_is_connected) {
+        if ($(self.id + '_createfolder')) {
             connect($(self.id + '_createfolder'), 'onclick', self.createfolder_submit);
-            self.createfolder_is_connected = true;
         }
         if (self.config.select) {
             self.connect_select_buttons();
         }
     }
-
-    this.create_move_list = function(icon, moveid) {
-        var self = this;
-
-        if (self.move_list) {
-            self.move_list.remove();
-        }
-
-        var ul = $j('<ul>').addClass('file-move-list');
-
-        $j('#' + self.id + '_filelist a.changefolder').each(function(i) {
-            var title = $j(this);
-            var elemid = title.attr('href').replace(/.+folder=/, '');
-            if (elemid != moveid) {
-                var displaytitle = title.find('.display-title').html();
-                var link = $j('<a>').attr('href', '#').html(get_string('moveto', displaytitle));
-                link.on('click keydown', function(e) {
-                    if (e.type == 'click' && e.buttons == 0) {
-                        // Stops the link being activated when it shouldn't (eg. when setting focus to the list)
-                        return false;
-                    }
-                    else if (e.type == 'click' || e.keyCode == 32 || e.keyCode == 13) {
-                        self.setfocus = 'changefolder:' + elemid;
-                        self.move_to_folder(moveid, elemid);
-                        self.move_list = null;
-                        return false;
-                    }
-                });
-                ul.append($j('<li>').append(link));
-            }
-        });
-
-        var cancellink = $j('<a>').attr('href', '#').html(get_string('cancel'));
-        cancellink.on('click keydown', function(e) {
-            if (e.type == 'click' && e.buttons == 0) {
-                return false;
-            }
-            else if (e.type == 'click' || e.keyCode == 32 || e.keyCode == 13) {
-                ul.remove();
-                icon.focus();
-                self.move_list = null;
-            }
-        });
-        ul.append($j('<li>').append(cancellink));
-
-        self.move_list = ul;
-        return ul;
-    }
-
-    this.make_icon_keyboard_accessible = function(icon) {
-        var self = this;
-        var id = icon.id.replace(/.+:/, '');
-        $j(icon).on('click keydown', function(e) {
-            if (e.type == 'click' || e.keyCode == 32 || e.keyCode == 13) {
-                var folderlist = self.create_move_list(icon, id);
-                $j(icon).closest('tr').find('.filename').append(folderlist);
-                folderlist.find('a').first().focus();
-            }
-        });
-    };
 
     this.make_row_droppable = function(row) {
         new Droppable(row, {
@@ -542,7 +422,11 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                 if (dragid == dropid) {
                     return;
                 }
-                self.move_to_folder(dragid, dropid);
+                $(self.id + '_move').value = dragid;
+                $(self.id + '_moveto').value = dropid;
+                self.submitform();
+                $(self.id + '_move').value = '';
+                $(self.id + '_moveto').value = '';
             }
         });
 
@@ -563,18 +447,14 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                 if (dragid == dropid) {
                     return;
                 }
-                self.move_to_folder(dragid, dropid);
+                $(self.id + '_move').value = dragid;
+                $(self.id + '_moveto').value = dropid;
+                self.submitform();
+                $(self.id + '_move').value = '';
+                $(self.id + '_moveto').value = '';
             }
         });
     };
-
-    this.move_to_folder = function(dragid, dropid) {
-        $(this.id + '_move').value = dragid;
-        $(this.id + '_moveto').value = dropid;
-        this.submitform();
-        $(this.id + '_move').value = '';
-        $(this.id + '_moveto').value = '';
-    }
 
     this.drag = {};
 
@@ -669,7 +549,7 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
     }
 
     this.update_metadata_to_selected_list = function () {
-        forEach(getElementsByTagAndClassName('input', 'btn_edit', self.id + '_filelist'), function (elem) {
+        forEach(getElementsByTagAndClassName('input', 'btn-edit', self.id + '_filelist'), function (elem) {
             var id = elem.name.replace(/.*_edit\[(\d+)\]$/, '$1');
             var row = getFirstParentByTagAndClassName(elem, 'tr');
             var newtitle = getFirstElementByTagAndClassName('a', null, row);
@@ -722,15 +602,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
         if (self.filedata[id].tags) {
             self.selecteddata[id].tags = self.filedata[id].tags;
         }
-        if (self.filedata[id].license) {
-            self.selecteddata[id].license = self.filedata[id].license;
-        }
-        if (self.filedata[id].licensor) {
-            self.selecteddata[id].licensor = self.filedata[id].licensor;
-        }
-        if (self.filedata[id].licensorurl) {
-            self.selecteddata[id].licensorurl = self.filedata[id].licensorurl;
-        }
         // Check if the file to add was already in the selected list
         var existed = false;
         for (i = 0; i < rows.length; i++) {
@@ -748,7 +619,7 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
             }
         };
         if (!existed) {
-            var remove = INPUT({'type': 'submit', 'class':'button submit unselect', 'name':self.id+'_unselect[' + id + ']', 'value':get_string('remove')});
+            var remove = INPUT({'type': 'submit', 'class':'button small unselect', 'name':self.id+'_unselect[' + id + ']', 'value':get_string('remove')});
             connect(remove, 'onclick', self.unselect);
             filelink = ''
             if (self.filedata[id].artefacttype == 'folder') {
@@ -761,7 +632,7 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                    TD(null, IMG({'src':self.filedata[id].icon})),
                    TD(null, filelink),
                    TD({'class':'filedescription'}, self.filedata[id].description),
-                   TD({'class':'right s'}, remove, INPUT({'type':'hidden', 'class':'hidden', 'id':self.id+'_selected[' + id + ']', 'name':self.id+'_selected[' + id + ']', 'value':id}))
+                   TD({'class':'valign'}, remove, INPUT({'type':'hidden', 'class':'hidden', 'id':self.id+'_selected[' + id + ']', 'name':self.id+'_selected[' + id + ']', 'value':id}))
                   ));
         }
         // Display the list
@@ -847,10 +718,6 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                 replaceChildNodes(self.id + '_edit_placeholder', removeElement(self.id + '_edit_row'));
             }
             $(self.id+'_filelist_container').innerHTML = data.newlist.html;
-            if (self.setfocus) {
-                $(self.setfocus).focus();
-                self.setfocus = null;
-            }
             if (data.changedfolder && data.newpath) {
                 $(self.id+'_folder').value = self.folderid = data.folder;
                 $(self.id+'_foldername').value = self.foldername = data.newpath.foldername;
@@ -858,20 +725,11 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
                 if (data.changedowner && data.newtabs && data.newtabdata) {
                     self.tabdata = data.newtabdata;
                     $(self.id+'_ownertabs').innerHTML = data.newtabs;
-                    if (data.newsubtabs) {
-                        $(self.id + '_ownersubtabs').innerHTML = data.newsubtabs;
-                        removeElementClass(self.id + '_ownersubtabs', 'hidden')
-                    }
-                    else {
-                        addElementClass(self.id + '_ownersubtabs', 'hidden');
-                    }
-                    if ($(self.id + '_upload_container')) {
-                        if (data.newtabdata.upload) {
-                            removeElementClass(self.id + '_upload_container', 'hidden');
-                        }
-                        else {
-                            addElementClass(self.id + '_upload_container', 'hidden');
-                        }
+                    $(self.id+'_ownersubtabs').innerHTML = data.newsubtabs;
+                    if (data.newtabdata.upload) {
+                        removeElementClass(self.id + '_upload_container', 'hidden');
+                    } else {
+                        addElementClass(self.id + '_upload_container', 'hidden');
                     }
                     self.config.editmeta = data.editmeta;
                 }
@@ -910,22 +768,13 @@ function FileBrowser(idprefix, folderid, config, globalconfig) {
             location.href = data.goto;
         }
         else if (typeof(data.replaceHTML) == 'string') {
-            if (data.returnCode == -1) {
-                formError(form, data);
-            }
-            else {
-                formSuccess(form, data);
-            }
+            formSuccess(form, data);
             self.init();
         }
         // Recalculate the width of config block
-        if ($('artefactchooser-body')) {
-            var width = getElementDimensions(getFirstParentByTagAndClassName($('artefactchooser-body'), 'table', 'maharatable')).w;
-            updateBlockConfigWidth(getFirstParentByTagAndClassName(self.form, 'div', 'blockinstance'), width);
-        }
+        var width = getElementDimensions(getFirstParentByTagAndClassName($('artefactchooser-body'), 'td', null)).w;
+        update_width(getFirstParentByTagAndClassName(self.form, 'div', 'blockinstance'), width);
     }
 
 }
 
-// This variable = true if the users has updated the field 'Tags' by clicking the tag.
-var tags_changed = false;

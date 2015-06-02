@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage auth-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -560,9 +576,6 @@ class AuthXmlrpc extends Auth {
         $SESSION->set('mnetuser', null);
     }
 
-    public function needs_remote_username() {
-        return true;
-    }
 }
 
 /**
@@ -777,6 +790,18 @@ class PluginAuthXmlrpc extends PluginAuth {
             'help'                => true
         );
 
+        $elements['portno'] = array(
+            'type' => 'text',
+            'title' => get_string('port', 'auth'),
+            'rules' => array(
+                'required' => true,
+                'integer'  => true
+            ),
+            'defaultvalue' => $peer->portno,
+            'size'   => 4,
+            'help'   => true
+        );
+
         $elements['parent'] = array(
             'type'                => 'select',
             'title'               => get_string('parent','auth'),
@@ -919,6 +944,7 @@ class PluginAuthXmlrpc extends PluginAuth {
         $peer->wwwroot              = preg_replace("|\/+$|", "", $values['wwwroot']);
         $peer->name                 = $values['name'];
         $peer->deleted              = $values['deleted'];
+        $peer->portno               = $values['portno'];
         $peer->appname              = $values['appname'];
         $peer->institution          = $values['institution'];
         if (isset($values['publickey'])) {

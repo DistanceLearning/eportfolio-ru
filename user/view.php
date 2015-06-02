@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 define('INTERNAL', 1);
@@ -32,13 +48,7 @@ $loggedinid = $USER->get('id');
 
 if ($profileurlid = param_alphanumext('profile', null)) {
     if (!$user = get_record('usr', 'urlid', $profileurlid, 'deleted', 0)) {
-        if ($USER->is_logged_in()) {
-            throw new UserNotFoundException("User $profileurlid not found");
-        }
-        else {
-            // For logged-out users we show "access denied" in order to prevent an enumeration attack
-            throw new AccessDeniedException(get_string('youcannotviewthisusersprofile', 'error'));
-        }
+        throw new UserNotFoundException("User $profileurlid not found");
     }
     $userid = $user->id;
 }
@@ -55,13 +65,7 @@ if ($userid == 0) {
 // Get the user's details
 if (!isset($user)) {
     if (!$user = get_record('usr', 'id', $userid, 'deleted', 0)) {
-        if ($USER->is_logged_in()) {
-            throw new UserNotFoundException("User with id $userid not found");
-        }
-        else {
-            // For logged-out users we show "access denied" in order to prevent an enumeration attack
-            throw new AccessDeniedException(get_string('youcannotviewthisusersprofile', 'error'));
-        }
+        throw new UserNotFoundException("User with id $userid not found");
     }
 }
 $is_friend = is_friend($userid, $loggedinid);
@@ -82,18 +86,12 @@ if (!$view) {
 }
 
 $viewid = $view->get('id');
-// Special behaviour: Logged in users who the page hasn't been shared with, see a special page
-// with the user's name, icon, and little else.
 $restrictedview = !can_view_view($viewid);
-// Logged-out users can't see any details, though
-if ($restrictedview && !$USER->is_logged_in()) {
-    throw new AccessDeniedException(get_string('accessdenied', 'error'));
-}
 if (!$restrictedview) {
-    $viewcontent = $view->build_rows();
+    $viewcontent = $view->build_columns();
 }
 
-$javascript = array('paginator', 'lib/pieforms/static/core/pieforms.js', 'expandable');
+$javascript = array('paginator', 'lib/pieforms/static/core/pieforms.js', 'artefact/resume/resumeshowhide.js');
 $blocktype_js = $view->get_all_blocktype_javascript();
 $javascript = array_merge($javascript, $blocktype_js['jsfiles']);
 $inlinejs = "addLoadEvent( function() {\n" . join("\n", $blocktype_js['initjs']) . "\n});";
@@ -103,11 +101,20 @@ $viewtheme = $view->get('theme');
 if ($viewtheme && $THEME->basename != $viewtheme) {
     $THEME = new Theme($viewtheme);
 }
-$stylesheets = array('<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'theme/views.css?v=' . get_config('release'). '">');
-$stylesheets = array_merge($stylesheets, $view->get_all_blocktype_css());
+$stylesheets = array('<link rel="stylesheet" type="text/css" href="' . get_config('wwwroot') . 'theme/views.css">');
 
 $name = display_name($user);
 define('TITLE', $name);
+$smarty = smarty(
+    $javascript,
+    $stylesheets,
+    array(),
+    array(
+        'stylesheets' => array('style/views.css'),
+        'sidebars'    => false,
+    )
+);
+$smarty->assign('restrictedview', $restrictedview);
 
 $sql = "SELECT g.*, a.type FROM {group} g JOIN (
 SELECT gm.group, 'invite' AS type
@@ -125,15 +132,6 @@ ORDER BY g.name";
 if (!$allusergroups = get_records_sql_assoc($sql, array($userid, $userid, $userid))) {
     $allusergroups = array();
 }
-$groupinvitedlist = false;
-$groupinvitedlistform = false;
-$grouprequestedlist = false;
-$grouprequestedlistform = false;
-$remoteusermessage = false;
-$remoteuseracceptform = false;
-$remoteusernewfriendform = false;
-$remoteuserfriendscontrol = false;
-$remoteuserrelationship = false;
 if (!empty($loggedinid) && $loggedinid != $userid) {
 
     $invitedlist = array();   // Groups admin'ed by the logged in user that the displayed user has been invited to
@@ -175,7 +173,7 @@ if (!empty($loggedinid) && $loggedinid != $userid) {
                 $invitelist[$group->id] = $group->name;
             }
         }
-        $groupinvitedlist = join(', ', $invitedlist);
+        $smarty->assign('invitedlist', join(', ', $invitedlist));
         if (count($invitelist) > 0) {
             $default = array_keys($invitelist);
             $default = $default[0];
@@ -201,10 +199,10 @@ if (!empty($loggedinid) && $loggedinid != $userid) {
                     ),
                 ),
             ));
-            $groupinvitedlistform = $inviteform;
+            $smarty->assign('inviteform',$inviteform);
         }
 
-        $grouprequestedlist = join(', ', $requestedlist);
+        $smarty->assign('requestedlist', join(', ', $requestedlist));
         if (count($controlledlist) > 0) {
             $default = array_keys($controlledlist);
             $default = $default[0];
@@ -231,7 +229,7 @@ if (!empty($loggedinid) && $loggedinid != $userid) {
                     ),
                 ),
             ));
-            $grouprequestedlistform = $addform;
+            $smarty->assign('addform',$addform);
         } 
     }
 
@@ -243,18 +241,19 @@ if (!empty($loggedinid) && $loggedinid != $userid) {
     }
     else if ($record = get_record('usr_friend_request', 'requester', $userid, 'owner', $loggedinid)) {
         $relationship = 'pending';
-        $remoteusermessage = $record->message;
-        $remoteuseracceptform = acceptfriend_form($userid);
+        $smarty->assign('message', $record->message);
+        $smarty->assign('acceptform', acceptfriend_form($userid));
     }
     else {
         $relationship = 'none';
         $friendscontrol = get_account_preference($userid, 'friendscontrol');
         if ($friendscontrol == 'auto') {
-            $remoteusernewfriendform = addfriend_form($userid);
+            $smarty->assign('newfriendform', addfriend_form($userid));
         }
-        $remoteuserfriendscontrol = $friendscontrol;
+        $smarty->assign('friendscontrol', $friendscontrol);
     }
-    $remoteuserrelationship = $relationship;
+    $smarty->assign('relationship', $relationship);
+
 }
 
 if ($userid != $USER->get('id') && $USER->is_admin_for_user($user) && is_null($USER->get('parentuser'))) {
@@ -262,44 +261,6 @@ if ($userid != $USER->get('id') && $USER->is_admin_for_user($user) && is_null($U
 } else {
     $loginas = null;
 }
-$smarty = smarty(
-    $javascript,
-    $stylesheets,
-    array(),
-    array(
-        'stylesheets' => array('style/views.css'),
-        'sidebars'    => false,
-    )
-);
-$smarty->assign('restrictedview', $restrictedview);
-if ($groupinvitedlist) {
-    $smarty->assign('invitedlist', $groupinvitedlist);
-}
-if ($groupinvitedlistform) {
-    $smarty->assign('inviteform',$groupinvitedlistform);
-}
-if ($grouprequestedlist) {
-    $smarty->assign('requestedlist', $grouprequestedlist);
-}
-if ($grouprequestedlistform) {
-    $smarty->assign('addform',$grouprequestedlistform);
-}
-if ($remoteusermessage) {
-    $smarty->assign('message', $record->message);
-}
-if ($remoteuseracceptform) {
-    $smarty->assign('acceptform', acceptfriend_form($userid));
-}
-if ($remoteusernewfriendform) {
-    $smarty->assign('newfriendform', addfriend_form($userid));
-}
-if ($remoteuserfriendscontrol) {
-    $smarty->assign('friendscontrol', $friendscontrol);
-}
-if ($remoteuserrelationship) {
-    $smarty->assign('relationship', $relationship);
-}
-
 $smarty->assign('loginas', $loginas);
 
 $smarty->assign('INLINEJAVASCRIPT', $inlinejs);
@@ -314,7 +275,6 @@ $smarty->assign('user', $user);
 if (get_config('viewmicroheaders')) {
     $smarty->assign('microheaders', true);
     $smarty->assign('microheadertitle', $view->display_title(true, false));
-    $smarty->assign('maharalogofilename', 'images/site-logo-small.png');
     if ($loggedinid && $loggedinid == $userid) {
         $microheaderlinks = array(
             array(

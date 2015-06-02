@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -19,7 +35,6 @@ require_once('pieforms/pieform.php');
 require_once('pieforms/pieform/elements/calendar.php');
 require_once(get_config('libroot') . 'view.php');
 require_once(get_config('libroot') . 'collection.php');
-require_once(get_config('libroot') . 'antispam.php');
 
 $view = new View(param_integer('id'));
 $collection = $view->get_collection();
@@ -131,7 +146,7 @@ for ($i = 0; $i < count($records); $i++) {
                 ),
                 'submit' => array(
                     'type'         => 'image',
-                    'src'          => $THEME->get_url('images/btn_deleteremove.png'),
+                    'src'          => $THEME->get_url('images/icon_close.gif'),
                     'elementtitle' => get_string('delete'),
                     'confirm'      => get_string('reallydeletesecreturl', 'view'),
                 ),
@@ -236,18 +251,7 @@ function newurl_submit(Pieform $form, $values) {
     redirect('/view/urls.php?id=' . $viewid);
 }
 
-// Determine whether
-$allownew = get_config('allowpublicviews') // Public view turned off sitewide
-            && (!$view->get('owner') || $USER->institution_allows_public_views()); // The page belongs to a user in an institution without public views
-
-// If the user would be allowed to create new views, check whether they should be prohibited because they're on probation
-if ($allownew) {
-    $onprobation = get_config('allowpublicviews') && is_probationary_user();
-    $allownew = !$onprobation;
-}
-else {
-    $onprobation = false;
-}
+$allownew = !$view->get('owner') || (get_config('allowpublicviews') && $USER->institution_allows_public_views());
 $newform = $allownew ? pieform($newform) : null;
 
 $js = <<<EOF
@@ -269,6 +273,5 @@ $smarty->assign('PAGEHEADING', TITLE);
 $smarty->assign('INLINEJAVASCRIPT', $js);
 $smarty->assign('editurls', $editurls);
 $smarty->assign('allownew', $allownew);
-$smarty->assign('onprobation', $onprobation);
 $smarty->assign('newform', $newform);
 $smarty->display('view/urls.tpl');

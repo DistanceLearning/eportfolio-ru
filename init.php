@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -45,23 +61,6 @@ if (!is_readable($CFG->docroot . 'config.php')) {
 
 init_performance_info();
 
-// Because the default XML loader is vulnerable to XEE attacks, we're disabling it by default.
-// If you need to use it, you can re-enable the function, call it while passing in the
-// LIBXML_NONET parameter, and then disable the function again, like this:
-//
-// EXAMPLE
-//     if (function_exists('libxml_disable_entity_loader')) {
-//         libxml_disable_entity_loader(false);
-//     }
-//     $options =
-//         LIBXML_COMPACT |    // Reported to greatly speed XML parsing
-//         LIBXML_NONET        // Disable network access - security check
-//     ;
-//     $xml = simplexml_load_file($filename, 'SimpleXMLElement', $options);
-//     if (function_exists('libxml_disable_entity_loader')) {
-//         libxml_disable_entity_loader(true);
-//     }
-// END EXAMPLE
 if (function_exists('libxml_disable_entity_loader')) {
     libxml_disable_entity_loader(true);
 }
@@ -76,11 +75,6 @@ foreach (array('docroot', 'dataroot') as $path) {
     $CFG->{$path} = (substr($CFG->{$path}, -1) != '/') ? $CFG->{$path} . '/' : $CFG->{$path};
 }
 
-// Set default configs that are dependent on the docroot and dataroot
-if (empty($CFG->sessionpath)) {
-    $CFG->sessionpath = $CFG->dataroot . 'sessions';
-}
-
 // xmldb stuff
 $CFG->xmldbdisablenextprevchecking = true;
 $CFG->xmldbdisablecommentchecking = true;
@@ -90,12 +84,6 @@ if (empty($CFG->directorypermissions)) {
     $CFG->directorypermissions = 0700;
 }
 $CFG->filepermissions = $CFG->directorypermissions & 0666;
-
-// Now that we've loaded the configs, we can override the default error settings
-// from errors.php
-$errorlevel = $CFG->error_reporting;
-error_reporting($errorlevel);
-set_error_handler('error', $errorlevel);
 
 // core libraries
 require('mahara.php');
@@ -115,28 +103,19 @@ try {
     // the error is instead.
     ob_start();
 
-    // Transform $CFG->dbtype into the name of the ADODB driver we will use
     if (is_postgres()) {
         $CFG->dbtype = 'postgres7';
     }
     else if (is_mysql()) {
-        // If they have mysqli, use it. Otherwise, fall back to the older "mysql" extension.
-        if (extension_loaded('mysqli')) {
-            $CFG->dbtype = 'mysqli';
-        }
-        else {
-            $CFG->dbtype = 'mysql';
-        }
+        $CFG->dbtype = 'mysql';
     }
-
+    
     $db = &ADONewConnection($CFG->dbtype);
     if (empty($CFG->dbhost)) {
         $CFG->dbhost = '';
     }
-    // The ADODB connection function doesn't have a separate port argument, but the
-    // postgres7, mysql, and mysqli drivers all support a $this->dbport field.
-    if (!empty($CFG->dbport)) {
-        $db->port = $CFG->dbport;
+    else if (!empty($CFG->dbport)) {
+        $CFG->dbhost .= ':'.$CFG->dbport;
     }
     if (!empty($CFG->dbpersist)) {    // Use persistent connection (default)
         $dbconnected = $db->PConnect($CFG->dbhost,$CFG->dbuser,$CFG->dbpass,$CFG->dbname);
@@ -294,6 +273,7 @@ if (!get_config('searchplugin')) {
         $CFG->searchplugin = 'internal';
     }
 }
+
 $bcrypt_cost = get_config('bcrypt_cost');
 // bcrypt_cost is the cost parameter passed as part of the bcrypt hash
 // See http://php.net/manual/en/function.crypt.php
@@ -302,16 +282,6 @@ if (!$bcrypt_cost || !is_int($bcrypt_cost) || $bcrypt_cost < 4 || $bcrypt_cost >
     $bcrypt_cost = 12;
 }
 $CFG->bcrypt_cost = sprintf('%02d', $bcrypt_cost);
-
-if (!get_config('productionmode')) {
-    $CFG->log_dbg_targets     = LOG_TARGET_SCREEN | LOG_TARGET_ERRORLOG;
-    $CFG->log_info_targets    = LOG_TARGET_SCREEN | LOG_TARGET_ERRORLOG;
-    $CFG->log_warn_targets    = LOG_TARGET_SCREEN | LOG_TARGET_ERRORLOG;
-    $CFG->log_environ_targets = LOG_TARGET_SCREEN | LOG_TARGET_ERRORLOG;
-    $CFG->developermode       = DEVMODE_DEBUGJS | DEVMODE_DEBUGCSS | DEVMODE_UNPACKEDJS;
-    $CFG->perftofoot          = true;
-    $CFG->nocache             = true;
-}
 
 header('Content-type: text/html; charset=UTF-8');
 
@@ -336,8 +306,7 @@ try {
 
 // The installer does its own auth_setup checking, because some upgrades may
 // break logging in and so need to allow no logins.
-// Command-line scripts obviously have no logged-in user.
-if (!defined('INSTALLER') && !defined('CLI')) {
+if (!defined('INSTALLER')) {
     auth_setup();
 }
 
@@ -371,7 +340,7 @@ if (!get_config('installed')) {
     && false === strpos($scriptfilename, 'admin/upgrade.json.php')
     && false === strpos($scriptfilename, 'admin/cli/install.php')
     && false === strpos($scriptfilename, 'admin/cli/upgrade.php')) {
-        redirect('/admin/index.php');
+        redirect('/admin/');
     }
 }
 

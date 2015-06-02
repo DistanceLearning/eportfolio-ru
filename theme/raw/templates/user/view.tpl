@@ -3,13 +3,13 @@
 {else}
   {include file="header.tpl"}
   <h1 class="user-icon-name">
-  <span class="usericon"><img src="{profile_icon_url user=$user maxwidth=60 maxheight=60}" alt="{str tag=profileimagetext arg1=$user|display_default_name}" /></span>
+  <span class="usericon"><img src="{profile_icon_url user=$user maxwidth=60 maxheight=60}" alt="" /></span>
   {if $pageheadinghtml}
     {$pageheadinghtml|safe}
   {/if}
   </h1>
   {if $ownprofile}
-  <div class="rbuttons userviewrbuttons">
+  <div class="userviewrbuttons">
     <a title="{str tag=editthisview section=view}" href="{$WWWROOT}view/blocks.php?profile=1" class="btn">{str tag=editthisview section=view}</a>
   </div>
   {/if}
@@ -17,9 +17,9 @@
 
 
 {if $relationship == 'pending'}
-                    	<div class="message attentionmessage">
+                    	<div class="message">
                             <label>{str tag='whymakemeyourfriend' section='group'}</label>: {$message}
-                            <div class="attentionform">
+                            <div>
                               {$acceptform|safe}
                               <a class="btn" id="approve_deny_friendrequest_deny" href="{$WWWROOT}user/denyrequest.php?id={$USERID}&returnto=view">{str tag=denyrequest section=group}</a>
                             </div>

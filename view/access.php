@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -175,7 +191,7 @@ if ($institution) {
             'type'         => 'checkbox',
             'title'        => get_string('copyfornewusers', 'view'),
             'description'  => get_string('copyfornewusersdescription1', 'view'),
-            'defaultvalue' => $view->get('copynewuser'),
+            'defaultvalue' => $view->get('template') && $view->get('copynewuser'),
         );
         $form['elements']['more']['elements']['copyfornewgroups'] = array(
             'type'         => 'html',
@@ -185,13 +201,17 @@ if ($institution) {
             'type'         => 'html',
             'value'        => '<div class="description">' . get_string('copyfornewgroupsdescription1', 'view') . '</div>',
         );
+        $copyoptions = array('copynewuser', 'copyfornewgroups', 'copyfornewgroupsdescription1');
+        $needsaccess = array('copynewuser');
         $createfor = $view->get_autocreate_grouptypes();
         foreach (group_get_grouptype_options() as $grouptype => $grouptypedesc) {
             $form['elements']['more']['elements']['copyfornewgroups_'.$grouptype] = array(
                 'type'         => 'checkbox',
                 'title'        => $grouptypedesc,
-                'defaultvalue' => in_array($grouptype, $createfor),
+                'defaultvalue' => $view->get('template') && in_array($grouptype, $createfor),
             );
+            $copyoptions[] = 'copyfornewgroups_'.$grouptype;
+            $needsaccess[] = 'copyfornewgroups_'.$grouptype;
         }
     }
     else {
@@ -202,9 +222,46 @@ if ($institution) {
             'type'         => 'checkbox',
             'title'        => get_string('copyfornewmembers', 'view'),
             'description'  => get_string('copyfornewmembersdescription1', 'view', $instname),
-            'defaultvalue' => $view->get('copynewuser'),
+            'defaultvalue' => $view->get('template') && $view->get('copynewuser'),
         );
+        $copyoptions = array('copynewuser');
+        $needsaccess = array('copynewuser');
     }
+    $copyoptionstr = json_encode($copyoptions);
+    $needsaccessstr = json_encode($needsaccess);
+    $js .= <<<EOF
+function update_copy_options() {
+    if ($('editaccess_template').checked) {
+        forEach({$copyoptionstr}, function (id) {
+            removeElementClass($('editaccess_'+id+'_container'), 'hidden');
+        });
+    }
+    else {
+        forEach({$copyoptionstr}, function (id) {
+            addElementClass($('editaccess_'+id+'_container'), 'hidden');
+        });
+        forEach({$needsaccessstr}, function (id) {
+            $('editaccess_'+id).checked = false;
+        });
+        update_loggedin_access();
+    }
+}
+function update_loggedin_access() {
+    if (some({$needsaccessstr}, function (id) { return $('editaccess_'+id).checked; })) {
+        ensure_loggedin_access();
+    }
+    else {
+        relax_loggedin_access();
+    }
+}
+addLoadEvent(function() {
+    update_copy_options();
+    connect('editaccess_template', 'onclick', update_copy_options);
+    forEach({$needsaccessstr}, function (id) {
+        connect('editaccess_'+id, 'onclick', update_loggedin_access);
+    });
+});
+EOF;
 } else {
     $form['elements']['more']['elements']['retainview'] = array(
         'type'         => 'checkbox',
@@ -344,7 +401,21 @@ function ptimetotime($ptime) {
 
 function editaccess_validate(Pieform $form, $values) {
     global $SESSION, $institution, $group;
-
+    if ($institution && $values['copynewuser'] && !$values['template']) {
+        $form->set_error('copynewuser', get_string('viewscopiedfornewusersmustbecopyable', 'view'));
+    }
+    $createforgroup = false;
+    if ($institution == 'mahara') {
+        foreach (group_get_grouptypes() as $grouptype) {
+            if ($values['copyfornewgroups_'.$grouptype]) {
+                $createforgroup = true;
+                break;
+            }
+        }
+        if ($createforgroup && !$values['template']) {
+            $form->set_error('copyfornewgroups', get_string('viewscopiedfornewgroupsmustbecopyable', 'view'));
+        }
+    }
     $retainview = isset($values['retainview']) ? $values['retainview'] : false;
     if ($retainview && !$values['template']) {
         $form->set_error('retainview', get_string('viewswithretainviewrightsmustbecopyable', 'view'));
@@ -398,6 +469,12 @@ function editaccess_validate(Pieform $form, $values) {
             }
         }
     }
+
+    // Must have logged in user access for copy new user/group settings.
+    if (($createforgroup || ($institution && $values['copynewuser'])) && !$loggedinaccess) {
+        $SESSION->add_error_msg(get_string('copynewusergroupneedsloggedinaccess', 'view'));
+        $form->set_error('accesslist', '');
+    }
 }
 
 if (!empty($institution)) {
@@ -450,12 +527,12 @@ function editaccess_submit(Pieform $form, $values) {
 
     if ($institution) {
         if (isset($values['copynewuser'])) {
-            $viewconfig['copynewuser'] = (int) $values['copynewuser'];
+            $viewconfig['copynewuser'] = (int) ($values['template'] && $values['copynewuser']);
         }
         if ($institution == 'mahara') {
             $createfor = array();
             foreach (group_get_grouptypes() as $grouptype) {
-                if ($values['copyfornewgroups_'.$grouptype]) {
+                if ($values['template'] && $values['copyfornewgroups_'.$grouptype]) {
                     $createfor[] = $grouptype;
                 }
             }
@@ -530,7 +607,6 @@ $smarty = smarty(
     array(),
     array(
         'mahara' => array('From', 'To', 'datetimeformatguide'),
-        'view' => array('startdate', 'stopdate', 'addaccess', 'addaccessinstitution', 'addaccessgroup'),
         'artefact.comment' => array('Comments', 'Allow', 'Moderate')
     ),
     array('sidebars' => false)

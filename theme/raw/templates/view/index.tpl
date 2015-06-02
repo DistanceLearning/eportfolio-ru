@@ -17,38 +17,37 @@
             <div class="grouppageswrap">
 {$searchform|safe}
 
-{if $query}
-                <h2 id="searchresultsheading" class="accessible-hidden">{str tag=Results}</h2>
-{/if}
-
 {if $views}
-                <div id="myviews" class="listing">
+            <table id="myviews" class="fullwidth listing">
+                <tbody>
 {foreach from=$views item=view}
-                    <div class="listrow {cycle values='r0,r1'}">
-                        <h3 class="title"><a href="{$view.fullurl}">{$view.displaytitle}</a></h3>
-                        <div class="fr btns2">
+                    <tr class="{cycle values='r0,r1'}">
+                        <td>
+                            <h4><a href="{$view.fullurl}">{$view.displaytitle}</a></h4>
+{if $view.submittedto}
+                              <div class="submitted-viewitem">{$view.submittedto|clean_html|safe}</div>
+{elseif $view.type == 'profile'}
+                              <div class="videsc">{str tag=profiledescription}</div>
+{elseif $view.type == 'dashboard'}
+                              <div class="videsc">{str tag=dashboarddescription}</div>
+{elseif $view.type == 'grouphomepage'}
+                              <div class="videsc">{str tag=grouphomepagedescription section=view}</div>
+{elseif $view.description}
+                              <div class="videsc">{$view.description|str_shorten_html:110:true|strip_tags|safe}</div>
+{/if}
+                        </td>
+                        <td class="right buttonscell btns2">
 {if !$view.submittedto && (!$view.locked || $editlocked)}
-                            <a href="{$WWWROOT}view/blocks.php?id={$view.id}&{$querystring}" title="{str tag ="editcontentandlayout" section="view"}"><img src="{theme_url filename='images/btn_edit.png'}" alt="{str(tag=editspecific arg1=$view.displaytitle)|escape:html|safe}"></a>
+                                <a href="{$WWWROOT}view/blocks.php?id={$view.id}" title="{str tag ="editcontentandlayout" section="view"}"><img src="{theme_url filename='images/edit.gif'}" alt="{str tag=edit}"></a>
 {/if}
 {if !$view.submittedto && $view.removable && (!$view.locked || $editlocked)}
-                            <a href="{$WWWROOT}view/delete.php?id={$view.id}&{$querystring}" title="{str tag=deletethisview section=view}"><img src="{theme_url filename='images/btn_deleteremove.png'}" alt="{str(tag=deletespecific arg1=$view.displaytitle)|escape:html|safe}"></a>
+                                <a href="{$WWWROOT}view/delete.php?id={$view.id}" title="{str tag=deletethisview section=view}"><img src="{theme_url filename='images/icon_close.gif'}" alt="{str tag=delete}"></a>
 {/if}
-                        </div>{* rbuttons *}
-{if $view.submittedto}
-                        <div class="detail submitted-viewitem">{$view.submittedto|clean_html|safe}</div>
-{elseif $view.type == 'profile'}
-                        <div class="detail">{str tag=profiledescription}</div>
-{elseif $view.type == 'dashboard'}
-                        <div class="detail">{str tag=dashboarddescription}</div>
-{elseif $view.type == 'grouphomepage'}
-                        <div class="detail">{str tag=grouphomepagedescription section=view}</div>
-{elseif $view.description}
-                        <div class="detail">{$view.description|str_shorten_html:110:true|strip_tags|safe}</div>
-{/if}
-                        <div class="cb"></div>
-                    </div>
+                        </td>{* rbuttons *}
+                    </tr>
 {/foreach}
-                </div>
+                </tbody>
+            </table>
 {$pagination|safe}
             </div>
 {else}

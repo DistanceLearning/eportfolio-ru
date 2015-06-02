@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype-externalvideo
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -209,8 +225,6 @@ class PluginBlocktypeExternalvideo extends SystemBlocktype {
 
         if (!filter_var($values['videoid'], FILTER_VALIDATE_URL)) {
             // Not a url, treat the input as html to be sanitised when rendered.
-            $httpstr = is_https() ? 'https' : 'http';
-            $values['videoid'] = preg_replace('#https?://#', $httpstr . '://', $values['videoid']);
             $values['html'] = $values['videoid'];
             return $values;
         }
@@ -300,14 +314,6 @@ class PluginBlocktypeExternalvideo extends SystemBlocktype {
 
     public static function default_copy_type() {
         return 'full';
-    }
-
-    public static function postinst($prevversion) {
-        if ($prevversion == 0) {
-            ensure_record_exists('iframe_source_icon', (object) array('name' => 'Prezi', 'domain' => 'prezi.com'), (object) array('name' => 'Prezi', 'domain' => 'prezi.com'));
-            ensure_record_exists('iframe_source', (object) array('prefix' => 'prezi.com/embed/', 'name' => 'Prezi'), (object) array('prefix' => 'prezi.com/embed/', 'name' => 'Prezi'));
-            update_safe_iframe_regex();
-        }
     }
 
 }

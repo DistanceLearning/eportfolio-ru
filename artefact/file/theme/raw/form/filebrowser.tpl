@@ -10,8 +10,8 @@
 <input type="hidden" name="{$prefix}_changefolder" id="{$prefix}_changefolder" value="" />
 <input type="hidden" name="{$prefix}_foldername" id="{$prefix}_foldername" value="{$foldername}" />
 
-{if $config.select}
-<div id="{$prefix}_open_upload_browse_container"{if $browse} class="hidden"{/if}>
+{if $config.select && !$browse}
+<div id="{$prefix}_open_upload_browse_container">
 <input type="submit" class="buttondk" id="{$prefix}_open_upload_browse" name="browse" value="{if $config.selectone}{str tag=selectafile section=artefact.file}{else}{str tag=addafile section=artefact.file}{/if}" />{if $config.browsehelp}{contextualhelp plugintype=$config.plugintype pluginname=$config.pluginname section=$config.browsehelp}{/if}
 </div>
 {/if}
@@ -30,13 +30,13 @@
 {include file="artefact:file:form/ownertabs.tpl" tabs=$tabs prefix=$prefix querybase=$querybase}
 </div>
 <div id="artefactchooser-body">
-  <div id="{$prefix}_ownersubtabs" {if !$tabs.subtabs}class="hidden"{/if}>
+  <div id="{$prefix}_ownersubtabs">
   {if $tabs.subtabs}{include file="artefact:file:form/ownersubtabs.tpl" tabs=$tabs prefix=$prefix querybase=$querybase}{/if}
   </div>
 {/if}
 
-{if $config.upload}
 <div id="{$prefix}_upload_container" class="fileupload{if ($tabs && !$tabs.upload) || $uploaddisabled} hidden{/if}">
+{if $config.upload}
   {* config.uploadagreement: disable the file chooser unless the agreement is checked *}
   {* config.simpleupload: the form only contains a file chooser *}
   {* config.submitbutton: add submit button even if js is enabled & don't start uploading as soon as a file is chosen *}
@@ -50,11 +50,10 @@
       {$agreementtext|clean_html|safe}
   </div>
   {/if}
-  {$licenseform|safe}
   <div class="uploadform">
-    <label for="{$prefix}_userfile">{if $config.simpleupload}{str tag='uploadfile' section='artefact.file'}{else}{str tag='File' section='artefact.file'}{/if}</label>
+    <label>{if $config.simpleupload}{str tag='uploadfile' section='artefact.file'}{else}{str tag='File' section='artefact.file'}{/if}</label>
       <span id="{$prefix}_userfile_container"><input type="file" class="file" id="{$prefix}_userfile" name="userfile[]" multiple size="20" /></span>
-      <span id="{$prefix}_userfile_maxuploadsize">({str tag=maxuploadsize section=artefact.file} {$maxuploadsize})</span>
+      <span id="{$prefix}_userfile_maxuploadsize" class="s">({str tag=maxuploadsize section=artefact.file} {$maxuploadsize})</span>
       {if $config.uploadagreement}<script>setNodeAttribute('{$prefix}_userfile', 'disabled', true);</script>{/if}
   </div>
   {if $config.resizeonuploaduseroption}
@@ -64,11 +63,6 @@
       {contextualhelp plugintype='artefact' pluginname='file' form='files_filebrowser' element='resizeonuploaduseroption'}
   </div>
   {/if}
-  <div id="file_dropzone_container" class="{$prefix}">
-      <div id="fileDropzone" class="dropzone-previews" style="display:none;">
-        <div class="dz-message">{str tag=dragdrophere section=artefact.file}</div>
-      </div>
-  </div>
   <div class="uploadform">
     <div id="{$prefix}_uploadsubmit_container">{* filebrowser.js may add a submit button in here even if config.submitbutton is off *}
       {if $config.submitbutton}
@@ -77,13 +71,11 @@
       <noscript><input type="submit" class="submit" name="{$prefix}_upload" id="{$prefix}_upload" value="{str tag=upload section=artefact.file}" /></noscript>
     </div>
   </div>
-
-</div>
 {/if}
+</div>
 {if $config.upload}
 <div id="{$prefix}_upload_disabled" class="uploaddisabled{if !$uploaddisabled} hidden{/if}">{str tag="cannoteditfolder" section=artefact.file}</div>
 {/if}
-
 
 {if $config.edit}
 <input type="hidden" name="{$prefix}_move" id="{$prefix}_move" value="" />
@@ -92,7 +84,6 @@
   
 {if $config.createfolder}
   <div id="createfolder"{if $uploaddisabled} class="hidden"{/if}><div id="{$prefix}_createfolder_messages" class="createfolder-message"></div>
-    <label for="{$prefix}_createfolder_name" class="accessible-hidden">{str tag=createfolder section=artefact.file}</label>
     <input type="text" class="text" name="{$prefix}_createfolder_name" id="{$prefix}_createfolder_name" size="40" />
     <input type="submit" class="submit" name="{$prefix}_createfolder" id="{$prefix}_createfolder" value="{str tag=createfolder section=artefact.file}" /></div>
 {/if}
@@ -102,7 +93,7 @@
 </div>
 
 <div id="{$prefix}_filelist_container">
-{include file="artefact:file:form/filelist.tpl" prefix=$prefix filelist=$filelist folderdownload=$folderdownload folderparams=$folderparams editable=$config.edit selectable=$config.select highlight=$highlight edit=$edit querybase=$querybase groupinfo=$groupinfo owner=$tabs.owner ownerid=$tabs.ownerid selectfolders=$config.selectfolders showtags=$config.showtags editmeta=$config.editmeta}
+{include file="artefact:file:form/filelist.tpl" prefix=$prefix filelist=$filelist editable=$config.edit selectable=$config.select highlight=$highlight edit=$edit querybase=$querybase groupinfo=$groupinfo owner=$tabs.owner ownerid=$tabs.ownerid selectfolders=$config.selectfolders showtags=$config.showtags editmeta=$config.editmeta}
 </div>
 
 {* Edit form used when js is available *}

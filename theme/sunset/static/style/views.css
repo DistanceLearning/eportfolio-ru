@@ -1,50 +1,62 @@
-/**
- * Views stylesheet - for Mahara's Sunset theme.
- *
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
-
- * This file is licensed under the same terms as Mahara itself
- */ 
-/******************** Collection navigation ********************/
-#collectionnavwrap {
-	background-color: #f0d5d0;
+/*  Views  */
+/* The tabs that allow you to select a blocktype category */
+#category-list li {
+	display: inline-block;
 }
-ul.colnav li a,
-ul.colnav li a:link,
-ul.colnav li a:visited,
-ul.colnav li a:active {
-	background: #8e1901;
-	color: #FFFFFF;
+#category-list li a, #category-list li a:link, #category-list li a:visited, #category-list li a:active {
+	color: #fadc8a;
+	background-color: #c66c14;
 }
-/******************** Blocktype icons panel ********************/
-#editcontent-sidebar {
-	background-color: #ca7113;
+#category-list li.current a, #category-list li.current a:link, #category-list li.current a:visited, #category-list li.current a:active {
+	color: #ffffff;
+	background-color: #8E1901;
 }
-#block-category-general,
-#block-category-internal,
-#block-category-fileimagevideo,
-#block-category-external,
-#block-category-blog,
-#blog,
-#internal,
-#general,
-#fileimagevideo,
-#external,
-#select-theme {
-    background-color: #fbcd50;
-    border-color: #ebc254;
+/* The panel that contains the blocktype icons */
+#blocktype-list {
+	border: 0;
+	background: #8E1901;
 }
-.blocktype {
-    background: #fff2d0;
-    border-color: #f1e6c8;
+#top-pane {
+	background: none;
 }
-/******************** Blocks ********************/
-/* block header */
-.blockinstance-header .title {
+#middle-pane {
+	background: #6b1200;
+	color: #FFF;
+}
+#middle-pane label {
+	color: #FFF;
+}
+#blocktype-list .blocktype h4 {
+	color: #FFF;
+}
+.blocktype-description {
+	color: #FFF;
+}
+#page #bottom-pane {
+	background-color: #dcc695;
+}
+/**************** Blockinstance **********************/
+/* pagination */
+#feedback_pagination {
+	border-top: 1px dotted #8E1901;
+}
+.blockinstance-header h4 {
 	border-bottom: 1px dotted #8E1901;
 }
-.viewfooter {
-    background: #fffef9;
+ul.colnav li a {
+	background: #8e1901;
+	color: #FFF;
+}
+#collectionnavwrap {
+	background-color: #6b1200;
+}
+.viewheader #collection .collection-title {
+	color: #FFFFFF;
+}
+.viewheader #collection #collectionnavwrap ul.colnav li a {
+	background: #f7be23;
+	color: #8e1901;
+}
+ul.artefactchooser-tabs li {
+	display: inline-block;
 }

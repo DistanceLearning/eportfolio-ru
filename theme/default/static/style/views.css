@@ -1,115 +1,327 @@
-/**
- * Views stylesheet - for Mahara's Aqua theme.
- *
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+/*  Views  */
+#page #bottom-pane {
+	background-color: #F3F7EC;
+}
+/* The tabs that allow you to select a blocktype category */
+#category-list ul {
+    background: #F3F7EC;
+    padding-left: 10px;
+}
+#category-list li a,
+#category-list li a:link,
+#category-list li a:visited,
+#category-list li a:active {
+    color: #547B23;
+    background: #F3F7EC;
+    border-left: 1px solid #FFFFFF;
+    border-top: 0;
+    border-right: 1px solid #ced5b8;
+    border-bottom: 0;
+}
+#category-list li a:hover {
+    color: #7E7327;
+}
+#category-list li.current a,
+#category-list li.current a:link,
+#category-list li.current a:visited,
+#category-list li.current a:active {
+    background: #F5F9FC;
+    border-left: 1px solid #FFFFFF;
+    border-top: 0;
+    border-right: 1px solid #e0e8ee;
+    border-bottom: 0;
+}
+.ie7 #category-list li a, .ie7 #category-list li.current a {
+    border: 0 !important;
+}
 
- * This file is licensed under the same terms as Mahara itself
- */ 
-/******************** Collection navigation ********************/
-/* Collections */
-#collectionnavwrap {
-	background: #F3F7EC;
+/* The panel that contains the blocktype icons */
+#blocktype-list {
+    background-color: #f5f9fc;
 }
-ul.colnav li a,
-ul.colnav li a:link,
-ul.colnav li a:visited,
-ul.colnav li a:active {
-    background: #d6e0c5;
+#blocktype-list li {
+    display: inline-block;
+    float: left;
 }
-/******************** Blocktype icons panel ********************/
-/* for 600px or less */
-@media screen and (max-width: 600px) {
-    #editcontent-sidebar {
-        width: 39px;
-        top: 0;
-    }
-    body.no-js #editcontent-sidebar {
-        width: 64px;
-    }
-    #tabcontent #page,
-    #tabcontent #page.open {
-        margin-left: 46px;
-    }
-    body.no-js #tabcontent #page,
-    body.no-js #tabcontent #page.open {
-        margin-left: 71px;
-    }
-    .block-category-title .withjs,
-    .block-category-title .nonjs {
-    	text-indent: -9999px;
-    }
-    .blocktypetitle,
-    .open #content-editor-header,
-    #content-editor-header {
-        display: none;
-    }
-    .ui-draggable-dragging .blocktype .blocktypetitle {
-    	display: inline;
-    }
-    #select-theme-header {
-        text-indent: -9999px;
-    }
-    #select-theme select {
-        max-width: 30px;
-    }
+.no-js #blocktype-list li {
+    min-height: 160px;
 }
-/******************** Blocks ********************/
-.blockinstance-header .title a,
-.blockinstance-header .title a:link,
-.blockinstance-header .title a:visited,
-.blockinstance-header .title a:active {
+#middle-pane {
+	background: #ddebf5;
+}
+/* header*/
+.blockinstance-header h4 {
+    border-bottom: 2px solid #d2d2d2;
+}
+.blockinstance-header h4 a,
+.blockinstance-header h4 a:link,
+.blockinstance-header h4 a:visited,
+.blockinstance-header h4 a:active {
+    text-decoration: none;
 	color: #1E6297;
 }
-.blockinstance-header .title a:hover {
+.blockinstance-header h4 a:hover {
 	color: #267bbd;
-    text-decoration: none;
 }
-/******************** Responsive design ********************/
+
+.blockinstance-content h3 {
+	color: #333;
+}
+.blockinstance-content fieldset table th {
+	color: #888;
+}
+
+
+/* Wall */
+.wallpost {
+    background-color: #F8FBFD;
+}
+
+/* tabs for the artefact chooser */
+ul.artefactchooser-tabs {
+    font-weight: bold;
+    background: #d1d1d1 url(../images/tabs.gif) repeat-x left top;
+    padding-left: 10px !important;
+}
+ul.artefactchooser-tabs li {
+    color: #1E6297 !important;
+}
+ul.artefactchooser-tabs li a,
+ul.artefactchooser-tabs li a:link,
+ul.artefactchooser-tabs li a:visited,
+ul.artefactchooser-tabs li a:active {
+    background: #d1d1d1 url(../images/tabs.gif) repeat-x left top;
+    color: #474220 !important;
+    border-left: 1px solid #FFFFFF;
+    border-top: 0;
+    border-right: 1px solid #d1d1d1;
+    border-bottom: 1px solid #d1d1d1;
+}
+ul.artefactchooser-tabs li a:hover {
+    color: #7E7327 !important;
+}
+ul.artefactchooser-tabs li.current a,
+ul.artefactchooser-tabs li.current a:link,
+ul.artefactchooser-tabs li.current a:visited
+ul.artefactchooser-tabs li.current a:active {
+    background: #FFFFFF url(../images/tabs-active.gif) repeat-x left top;
+    color: #1E6297 !important;
+    border-left: 1px solid #FFFFFF;
+    border-top: 0;
+    border-right: 1px solid #d1d1d1;
+    border-bottom: 1px solid #FFFFFF;
+}
+ul.artefactchooser-subtabs {
+  padding: 0 !important;
+}
+ul.artefactchooser-subtabs li {
+  padding: 0;
+  margin: 0 3px !important;
+}
+ul.artefactchooser-subtabs li a,
+ul.artefactchooser-subtabs li a:link,
+ul.artefactchooser-subtabs li a:visited,
+ul.artefactchooser-subtabs li a:active {
+  text-decoration: none;
+  padding: 3px 5px;
+  font-weight: bold;
+}
+ul.artefactchooser-subtabs li a:hover {
+	text-decoration: none;
+}
+ul.artefactchooser-subtabs li.current a,
+ul.artefactchooser-subtabs li.current a:link,
+ul.artefactchooser-subtabs li.current a:visited,
+ul.artefactchooser-subtabs li.current a:active {
+  color: #333;
+  font-weight: bold;
+}
+ul.artefactchooser-subtabs li.current a:hover {
+	text-decoration: none;
+}
+
+/* table */
+.maharatable thead th {
+    color: #186194;
+}
+
+
+.plan_incomplete td {
+	background: #e9f0f5;
+}
+
+/* View Page footer menu */
+.feedback {
+	background: url(../images/feedback.gif) no-repeat left top;
+	padding-left: 20px !important;
+}
+.objection {
+	background: url(../images/objectionable.gif) no-repeat left top;
+	padding-left: 20px !important;
+}
+.print {
+	background: url(../images/icon-print.gif) no-repeat left top;
+	padding-left: 20px !important;
+}
+.watchlist {
+	background: url(../images/watchlist.gif) no-repeat left top;
+	padding-left: 20px !important;
+}
+
+/* Collection navigation */
+ul.colnav li a {
+	background: #d6e0c5;
+}
+
+.blockinstance-content .groupviewsection h5 {
+	color: #333;
+}
+
+/* copy a page */
+#copyview .searchquery {
+	background-color: #EBF0F4;
+	border: 0;
+}
+/******************** RESPONSIVE DESIGN ************************/
+/* responsive design */
+#page #category-list h3.rd-edittab-title {
+    display: none;
+}
+#page .rd-navmenu #category-list h3.rd-edittab-title {
+    background: #F5F9FC;
+    border: 0;
+    padding: 9px;
+    margin: 0;
+    display: block;
+}
+#page .rd-navmenu #category-list ul {
+    display: none;
+}
+#page .rd-navmenu .edittab-expand ul {
+    display: block !important;
+    padding: 0;
+}
+#page .rd-navmenu #category-list li {
+    float: none;
+    margin: 0;
+    text-align: left;
+    border: 0;
+    border-top: 1px solid #FFFFFF;
+    display: block;
+}
+#page .rd-navmenu #category-list li a {
+    padding: 10px;
+    display: block;
+    border: 0;
+}
+#page .rd-navmenu h3.rd-edittab-title .rd-edittab {
+    display: block;
+    background: #1E6297 url(../images/collapse-arrows.png) no-repeat 2px -37px;
+    padding: 9px;
+    position: absolute;
+    right: 7px;
+    top: 7px;
+    z-index: 1;
+    border: 1px solid #1E6297;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+#page .edittab-expand h3.rd-edittab-title .rd-edittab {
+    background: #1E6297 url(../images/collapse-arrows.png) no-repeat 3px 5px;
+}
 /* for 950px or less */
 @media screen and (max-width: 950px) {
-    .columns4,
-    .columns5 {
+    .columns4,  .columns5 {
         width: 31% !important;
+    }
+    .blockinstance-content {
+        overflow-x: hidden;
     }
 }
 /* for 768px or less */
 @media screen and (max-width: 768px) {
-    .columns3,
-    .columns4,
-    .columns5 {
+    .columns3,  .columns4,  .columns5 {
         width: 48% !important;
-    }
-    .blockinstance.configure {
-        width: 80% !important;
-        left: 5% !important;
     }
 }
 /* for 600px or less */
 @media screen and (max-width: 600px) {
-    .column {
-        width: 98% !important;
-        padding: 0 0.9% 3px 0.9%;
+    .blockinstance.configure {
+        width: 80% !important;
+        left: 5% !important;
+    }
+    .filelist thead {
+        display: none;
+    }
+    .filelist .btn-edit {
+        display: none;
+    }
+
+    body.no-js #category-list ul {
+        display: block !important;
+        padding: 0;
+    }
+    body.no-js #category-list li {
         float: none;
+        margin: 0;
+        text-align: left;
+        border: 0;
+        border-top: 1px solid #FFFFFF;
+        display: block;
+    }
+    body.no-js #category-list li a {
+        padding: 10px;
+        display: block;
+        border: 0 !important;
+    }
+    body.no-js h3.rd-edittab-title .rd-edittab {
+        display: block;
+        padding: 9px;
+        position: absolute;
+        right: 7px;
+        top: 7px;
+        z-index: 1;
+        border: 1px solid #1E6297;
+        -webkit-border-radius: 2px;
+        -moz-border-radius: 2px;
+        border-radius: 2px;
+        cursor: pointer;
+        background: #1E6297 url(../images/collapse-arrows.png) no-repeat 3px 5px;
     }
 }
 /* for 540px or less */
 @media screen and (max-width: 540px) {
-    #toggle_watchlist_link,
-    #print_link,
-    #objection_link {
+    .column {
+        width: 98% !important;
+        padding: 0 1% 3px 1%;
+        float: none;
+    }
+    .blockinstance {
+        margin: 0 0 10px 0;
+    }
+    #viewmenu {
+        font-size: 1em;
+    }
+    #toggle_watchlist_link, #print_link, #objection_link {
         display: none;
     }
-    /* Latest forum posts block (on groups page) */
-    #latestforumposts td {
-        float: left;
-        width: 98%;
-        padding: 3px 0.9% 0 0.9%;
-        border-bottom: 0;
+    #middle-pane #themeselect {
+        float: none;
+        text-align: center;
     }
-    #latestforumposts td.right {
-        text-align: left;
-        padding: 0 0.9% 3px 0.9%;
+    #feedbacktable .commentleft {
+        float: none;
+        width: 98%;
+        padding: 3px 1%;
+    }
+    #feedbacktable .commentrightwrap {
+        margin-left: 1%;
+    }
+    #feedbacktable .icon {
+    }
+    #feedbacktable .undercomment {
+        margin-left: 1%;
     }
 }

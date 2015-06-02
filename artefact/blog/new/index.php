@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-internal
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -17,7 +33,6 @@ define('SECTION_PAGE', 'new');
 
 require(dirname(dirname(dirname(dirname(__FILE__)))) . '/init.php');
 define('TITLE', get_string('newblog','artefact.blog') . ': ' . get_string('blogsettings','artefact.blog'));
-require_once('license.php');
 require_once('pieforms/pieform.php');
 safe_require('artefact', 'blog');
 
@@ -53,8 +68,6 @@ $form = pieform(array(
             'description' => get_string('tagsdescprofile'),
             'help'        => true,
         ),
-        'license' => license_form_el_basic(null),
-        'licensing_advanced' => license_form_el_advanced(null),
         'submit' => array(
             'type'  => 'submitcancel',
             'value' => array(
@@ -80,12 +93,12 @@ function newblog_submit(Pieform $form, $values) {
     global $USER;
 
     ArtefactTypeBlog::new_blog($USER, $values);
-    redirect('/artefact/blog/index.php');
+    redirect('/artefact/blog/');
 }
 
 /**
  * This function gets called to cancel a submission.
  */
 function newblog_cancel_submit() {
-    redirect('/artefact/blog/index.php');
+    redirect('/artefact/blog/');
 }

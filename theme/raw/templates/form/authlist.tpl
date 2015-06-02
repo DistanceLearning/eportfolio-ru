@@ -13,10 +13,6 @@
             }
         }
         rebuildInstanceList(outputArray);
-        if (typeof formchangemanager !== 'undefined') {
-            var form = jQuery('div#instanceList').closest('form')[0];
-            formchangemanager.setFormState(form, FORM_CHANGED);
-        }
     }
 
     function move_down(id) {
@@ -33,10 +29,6 @@
             }
         }
         rebuildInstanceList(outputArray);
-        if (typeof formchangemanager !== 'undefined') {
-            var form = jQuery('div#instanceList').closest('form')[0];
-            formchangemanager.setFormState(form, FORM_CHANGED);
-        }
     }
 
     function rebuildInstanceList(outputArray) {
@@ -56,14 +48,14 @@
         for(i = 0; i < displayArray.length; i++) {
             if(displayArray.length > 1) {
                 if (i + 1 != displayArray.length) {
-                    getFirstElementByTagAndClassName('span', 'authIcons', displayArray[i]).innerHTML += '<a href="" onclick="move_down('+outputArray[i]+'); return false;"><img class="inline-button" alt="'+get_string('moveitemdown')+'" src="{{theme_url filename="images/btn_movedown.png"}}" /></a>'+"\n";
+                    getFirstElementByTagAndClassName('span', 'authIcons', displayArray[i]).innerHTML += '<a href="" onclick="move_down('+outputArray[i]+'); return false;">[&darr;]</a>'+"\n";
                 }
                 if(i != 0) {
-                    getFirstElementByTagAndClassName('span', 'authIcons', displayArray[i]).innerHTML += '<a href="" onclick="move_up('+outputArray[i]+'); return false;"><img class="inline-button" alt="'+get_string('moveitemup')+'" src="{{theme_url filename="images/btn_moveup.png"}}" /></a>'+"\n";
+                    getFirstElementByTagAndClassName('span', 'authIcons', displayArray[i]).innerHTML += '<a href="" onclick="move_up('+outputArray[i]+'); return false;">[&uarr;]</a>'+"\n";
                 }
             }
 
-            getFirstElementByTagAndClassName('span', 'authIcons', displayArray[i]).innerHTML += '<a href="" onclick="removeAuth('+outputArray[i]+'); return false;"><img class="inline-button" alt="'+get_string('deleteitem')+'" src="{{theme_url filename="images/btn_deleteremove.png"}}" /></a>'+"\n";
+            getFirstElementByTagAndClassName('span', 'authIcons', displayArray[i]).innerHTML += '<a href="" onclick="removeAuth('+outputArray[i]+'); return false;">[x]</a>'+"\n";
 
             instanceListDiv.appendChild(displayArray[i]);
         }
@@ -88,12 +80,12 @@
             return false;
         }
 
-        for(i = 0; i < inuseArray.length; i++) {
-            if (id == inuseArray[i]) {
-                alert({{$cannotremoveinuse|safe}});
-                return false;
-            }
-        }
+		for(i = 0; i < inuseArray.length; i++) {
+			if (id == inuseArray[i]) {
+				alert({{$cannotremoveinuse|safe}});
+				return false;
+			}
+		}
 
         for(i = 0; i < instanceArray.length; i++) {
             if(instanceArray[i] == id) {
@@ -106,10 +98,6 @@
 
         document.getElementById('deleteList').value = deleteArray.join(',');
         rebuildInstanceList(instanceArray);
-        if (typeof formchangemanager !== 'undefined') {
-            var form = jQuery('div#instanceList').closest('form')[0];
-            formchangemanager.setFormState(form, FORM_CHANGED);
-        }
     }
 
     function emptyThisNode(node) {
@@ -171,10 +159,7 @@
         }
         instanceArray.push(id);
         rebuildInstanceList(instanceArray);
-        if (typeof formchangemanager !== 'undefined') {
-            var form = jQuery('div#instanceList').closest('form')[0];
-            formchangemanager.setFormState(form, FORM_CHANGED);
-        }
+
         replaceChildNodes('messages');
     }
 
@@ -191,12 +176,12 @@ IMPORTANT: do not introduce any new whitespace into the instanceList div.
         </label>
         <span class="authIcons" id="arrows{{$instance->id}}">
             {{if $instance->index + 1 < $instance->total}}
-            <a href="" onclick="move_down({{$instance->id}}); return false;"><img class="inline-button" alt="{{str tag=moveitemdown}}" src="{{theme_url filename="images/btn_movedown.png"}}" /></a>
+            <a href="" onclick="move_down({{$instance->id}}); return false;">[&darr;]</a>
             {{/if}}
             {{if $instance->index != 0 }}
-            <a href="" onclick="move_up({{$instance->id}}); return false;"><img class="inline-button" alt="{{str tag=moveitemup}}" src="{{theme_url filename="images/btn_moveup.png"}}" /></a>
+            <a href="" onclick="move_up({{$instance->id}}); return false;">[&uarr;]</a>
             {{/if}}
-            <a href="" onclick="removeAuth({{$instance->id}}); return false;"><img class="inline-button" alt="{{str tag=deleteitem}}" src="{{theme_url filename="images/btn_deleteremove.png"}}" /></a>
+            <a href="" onclick="removeAuth({{$instance->id}}); return false;">[x]</a>
         </span>
     </div>{{/foreach}}
 </div>

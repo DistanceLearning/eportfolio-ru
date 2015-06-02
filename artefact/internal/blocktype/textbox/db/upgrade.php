@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype-textbox
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -68,35 +84,28 @@ function xmldb_blocktype_textbox_upgrade($oldversion=0) {
                     ) a
                     WHERE blocktype = 'textbox' AND {block_instance}.id::text = a.note"
                 );
-                // Update view_artefact table
-                execute_sql("
-                    INSERT INTO {view_artefact} (view, block, artefact)
-                    SELECT b.view, b.id, a.id
-                    FROM {block_instance} b, {artefact} a
-                    WHERE b.blocktype = 'textbox' AND a.artefacttype = 'html' AND a.note IS NOT NULL AND CAST(b.id AS TEXT) = a.note",
-                    array()
-                );
             }
             else if (is_mysql()) {
                 execute_sql("
                     UPDATE {block_instance}, {artefact}
-                    SET {block_instance}.configdata = CONCAT('a:1:{s:10:\"artefactid\";i:', {artefact}.id, ';}')
+                    SET {block_instance}.configdata = CONCAT('a:1:{s:10:\"artefactid\";i:', CAST({artefact}.id AS CHAR), ';}')
                     WHERE
                         {artefact}.artefacttype = 'html'
                         AND {artefact}.note IS NOT NULL
                         AND {block_instance}.blocktype = 'textbox'
-                        AND {block_instance}.id = {artefact}.note"
-                );
-                // Update view_artefact table
-                execute_sql("
-                    INSERT INTO {view_artefact} (view, block, artefact)
-                    SELECT b.view, b.id, a.id
-                    FROM {block_instance} b, {artefact} a
-                    WHERE b.blocktype = 'textbox' AND a.artefacttype = 'html' AND a.note IS NOT NULL AND b.id = a.note",
-                    array()
+                        AND CAST({block_instance}.id AS CHAR) = {artefact}.note"
                 );
             }
 
+            // Update view_artefact table
+            $casttype = is_postgres() ? 'TEXT' : 'CHAR';
+            execute_sql("
+                INSERT INTO {view_artefact} (view, block, artefact)
+                SELECT b.view, b.id, a.id
+                FROM {block_instance} b, {artefact} a
+                WHERE b.blocktype = 'textbox' AND a.artefacttype = 'html' AND a.note IS NOT NULL AND CAST(b.id AS $casttype) = a.note",
+                array()
+            );
 
             // Remove the dodgy block id in the note column
             execute_sql("UPDATE {artefact} SET note = NULL WHERE artefacttype = 'html' AND note IS NOT NULL");

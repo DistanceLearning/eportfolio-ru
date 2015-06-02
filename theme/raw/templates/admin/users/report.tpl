@@ -12,9 +12,7 @@
   <div class="tabswrap"><ul class="in-page-tabs">
   {foreach from=$tabs item=tab}
     <li {if $tab.selected} class="current-tab"{/if}>
-      <button type="submit" class="linkbtn{if $tab.selected} current-tab{/if}" name="report:{$tab.id}" value="{$tab.name}" />
-        {$tab.name}<span class="accessible-hidden">({str tag=tab}{if $tab.selected} {str tag=selected}{/if})</span>
-      </button>
+      <input type="submit" class="linkbtn{if $tab.selected} current-tab{/if}" name="report:{$tab.id}" value="{$tab.name}">
     </li>
   {/foreach}
   </ul></div>

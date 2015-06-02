@@ -1,79 +1,76 @@
-/**
- * CSS rules for the administration section
- *
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
-
- * This file is distributed under the same terms as Mahara itself
- */
-/* Admin home > Overview */
-#runupgrade,
+/* ADMIN HOME */
+/* Administration Home styles */
 #register-site,
-#site-stats {
+#runupgrade {
     background-color: #1A292F;
-    color: #BEE3F1;
+    border: 0;
 }
-#close-site {
-    color: #BEE3F1;
-	background: #3e0000;
+#register-site fieldset table table th,
+#upgradestable th {
+    background-color: #10171A;
+    border-bottom: 1px dotted #BEE3F1;
 }
-/* Admin home > Site statistics */
+#register-site fieldset table table td,
+#upgradestable td {
+    background-color: #10171A;
+}
+
+#suspenddelete #suspend {
+	background: #1A292F;
+	border: 0;
+}
+
+#register-site-full {
+	width: auto;
+}
+
+/* delete suspend boxes */
+#close-site,
+#suspendinstitution,
+#suspenddelete #delete {
+	color: #333;
+	background: #eccccc;
+}
 .site-stats-table div {
 	background: none;
-	border-bottom: 1px dotted #24353c;
+	border-bottom: 1px dotted #BEE3F1;
 }
-/* Admin home > Register */
-#register-site-full fieldset table table td {
-	border-bottom: 1px dotted #24353c;
+#suspendinstitution .description {
+	color: #333;
 }
-/* Configure site > Menus */
-#menuitemlist table td {
-    border-bottom: 1px dotted #24353c;  
+
+/* CONFIGURE SITE > LINKS AND RESOURCES MENU */
+
+#institutionusers, 
+#staffusers, 
+#adminusers {
+	background: #1b3b46;
+	border: 0;
 }
-/* Configure site > Networking */
-#networkingform_deletesubmit_container {
-	background: #3e0000;
+
+/* add user */
+#adduser td.step1 {
+	background-color: #1b3b46;
+	border: 0;
 }
-#networkingform_deletesubmit_container label {
-    color: #CA0000;
+#adduser td.step2 {
+	background-color: #1b3b46;
+	border: 0;
 }
-/* Users > User search > User account settings */
-#profilepict {
-	background: #000000;
-}
-#suspenddelete #suspend {
-    background-color: #1A292F;
-}
-#suspenddelete #delete {
-    color: #BEE3F1;
-	background: #3e0000;
-}
-/* Users > Site staff */
-.userlistform {
-	background: #10171A;
-}
-/* Users > Add user */
-#adduser .step1,
-#adduser .step2,
-#adduser .step3 {
-	background-color: #1A292F;
+#adduser td.step3 {
+	background-color: #254e5c;
+	border: 0;
 }
 #adduser #or {
 	color: #FFFFFF;
 }
-/* Groups > Adminster groups > Configure */
-#groupquotasform {
-	background-color: #10171A;
+
+#groupadminsform {
+	background:#10171A;
+	border: 1px solid #0C2839;
 }
-/* Groups > Group categories */
-#groupcategories {
-	background-color: #10171A;
-}
-/* Institutions > Institutions > Edit */
-#suspendinstitution {
-	background: #3e0000;
-}
-#institution fieldset.collapsible table tr.checkbox {
-    border-top: 1px dotted #24353c;
+
+#profilepict {
+	background: #000000;
+	border: 0;
 }

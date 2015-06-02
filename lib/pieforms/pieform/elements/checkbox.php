@@ -19,8 +19,8 @@
  * @package    pieform
  * @subpackage element
  * @author     Nigel McNie <nigel@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -44,9 +44,6 @@ function pieform_element_checkbox(Pieform $form, $element) {/*{{{*/
         $checked = true;
     }
     else if (!$form->is_submitted() && !empty($element['defaultvalue'])) {
-        $checked = true;
-    }
-    else if (!empty($element['readonly']) && !empty($element['defaultvalue'])) {
         $checked = true;
     }
 

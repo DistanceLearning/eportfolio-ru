@@ -1,11 +1,26 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd (http://www.catalyst.net.nz)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage auth-saml
  * @author     Piers Harding <piers@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2011 Catalyst IT Ltd http://catalyst.net.nz
  *
  * This file incorporates work covered by the following copyright and
  * permission notice:
@@ -234,7 +249,7 @@ function auth_saml_loginlink_submit(Pieform $form, $values) {
     ));
     db_commit();
     @session_write_close();
-    redirect('/auth/saml/index.php');
+    redirect('/auth/saml/');
 }
 
 
@@ -362,7 +377,7 @@ function saml_auth_generate_login_form() {
     }
     require_once('pieforms/pieform.php');
     if (count_records('institution', 'registerallowed', 1, 'suspended', 0)) {
-        $registerlink = '<a href="' . get_config('wwwroot') . 'register.php">' . get_string('register') . '</a><br>';
+        $registerlink = '<a href="' . get_config('wwwroot') . 'register.php" tabindex="2">' . get_string('register') . '</a><br>';
     }
     else {
         $registerlink = '';
@@ -400,10 +415,10 @@ function saml_auth_generate_login_form() {
             ),
             'register' => array(
                 'value' => '<div id="login-helplinks">' . $registerlink
-                    . '<a href="' . get_config('wwwroot') . 'forgotpass.php">' . get_string('lostusernamepassword') . '</a></div>'
+                    . '<a href="' . get_config('wwwroot') . 'forgotpass.php" tabindex="2">' . get_string('lostusernamepassword') . '</a></div>'
             ),
             'loginsaml' => array(
-                'value' => ((count_records('auth_instance', 'authname', 'saml') == 0) ? '' : '<a href="' . get_config('wwwroot') . 'auth/saml/index.php">' . get_string('login', 'auth.saml') . '</a>')
+                'value' => ((count_records('auth_instance', 'authname', 'saml') == 0) ? '' : '<a href="' . get_config('wwwroot') . 'auth/saml/" tabindex="2">' . get_string('login', 'auth.saml') . '</a>')
             ),
         )
     )));
@@ -527,13 +542,13 @@ function auth_saml_login_submit(Pieform $form, $values) {
         $authenticated = login_test_all_user_authinstance($username, $password);
         if (empty($authenticated)) {
             $SESSION->add_error_msg(get_string('loginfailed'));
-            redirect('/auth/saml/index.php');
+            redirect('/auth/saml/');
         }
 
     }
     catch (AuthUnknownUserException $e) {
         $SESSION->add_error_msg(get_string('loginfailed'));
-        redirect('/auth/saml/index.php');
+        redirect('/auth/saml/');
     }
 
     auth_check_admin_section();
@@ -570,5 +585,5 @@ function auth_saml_login_submit(Pieform $form, $values) {
     auth_check_required_fields();
 
     // all happy - carry on now
-    redirect('/auth/saml/index.php');
+    redirect('/auth/saml/');
 }

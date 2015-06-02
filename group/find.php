@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -16,15 +32,17 @@ require_once('pieforms/pieform.php');
 define('TITLE', get_string('findgroups'));
 require_once('group.php');
 require_once('searchlib.php');
-$filter = param_alpha('filter', 'canjoin');
+$filter = param_alpha('filter', 'notmember');
 $offset = param_integer('offset', 0);
 $groupcategory = param_signed_integer('groupcategory', 0);
 $groupsperpage = 10;
 $query = param_variable('query', '');
 
-// check that the filter is valid, if not default to 'all'
-if (in_array($filter, array('member', 'notmember', 'canjoin'))) {
-    $type = $filter;
+if ($filter == 'member') {
+    $type = 'member';
+}
+else if ($filter == 'notmember') {
+    $type = 'notmember';
 }
 else { // all or some other text
     $filter = 'all';
@@ -32,16 +50,11 @@ else { // all or some other text
 }
 $elements = array();
 $elements['query'] = array(
-            'title' => get_string('search'),
-            'hiddenlabel' => true,
             'type' => 'text',
             'defaultvalue' => $query);
 $elements['filter'] = array(
-            'title' => get_string('filter'),
-            'hiddenlabel' => true,
             'type' => 'select',
             'options' => array(
-                'canjoin'   => get_string('groupsicanjoin', 'group'),
                 'notmember' => get_string('groupsnotin', 'group'),
                 'member'    => get_string('groupsimin', 'group'),
                 'all'       => get_string('allgroups', 'group')
@@ -54,8 +67,6 @@ if (get_config('allowgroupcategories')
     $options[-1] = get_string('categoryunassigned', 'group');
     $options += $groupcategories;
     $elements['groupcategory'] = array(
-                'title'        => get_string('groupcategory', 'group'),
-                'hiddenlabel'  => true,
                 'type'         => 'select',
                 'options'      => $options,
                 'defaultvalue' => $groupcategory,
@@ -66,7 +77,6 @@ $elements['search'] = array(
             'value' => get_string('search'));
 $searchform = pieform(array(
     'name'   => 'search',
-    'checkdirtychange' => false,
     'method' => 'post',
     'renderer' => 'oneline',
     'elements' => $elements
@@ -124,7 +134,9 @@ if ($groups['data']) {
 group_prepare_usergroups_for_display($groups['data'], 'find');
 
 $params = array();
-$params['filter'] = $filter;
+if ($filter != 'notmember') {
+    $params['filter'] = $filter;
+}
 if ($groupcategory != 0) {
     $params['groupcategory'] = $groupcategory;
 }
@@ -144,7 +156,7 @@ $pagination = build_pagination(array(
 ));
 
 function search_submit(Pieform $form, $values) {
-    redirect('/group/find.php?filter=' . $values['filter'] . ((isset($values['query']) && ($values['query'] != '')) ? '&query=' . urlencode($values['query']) : '') . (!empty($values['groupcategory']) ? '&groupcategory=' . intval($values['groupcategory']) : ''));
+    redirect('/group/find.php?filter=' . $values['filter'] . (!empty($values['query']) ? '&query=' . urlencode($values['query']) : '') . (!empty($values['groupcategory']) ? '&groupcategory=' . intval($values['groupcategory']) : ''));
 }
 
 $smarty = smarty();

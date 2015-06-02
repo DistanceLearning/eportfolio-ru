@@ -1,17 +1,31 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2010 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage antispam
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2010 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
 defined('INTERNAL') || die();
-
-define('PROBATION_MAX_POINTS', 10);
 
 function available_spam_traps() {
     $results = array();
@@ -56,141 +70,5 @@ if (!function_exists('checkdnsrr')) {
             }
         }
         return false;
-    }
-}
-
-
-/**
- * Check whether a user is on probation.
- * @param int $userid
- * @return boolean TRUE if the user is on probation, FALSE if the user is not on probation
- */
-function is_probationary_user($userid = null) {
-    global $USER;
-
-    // Check whether a new user threshold is in place or not.
-    if (!is_using_probation()) {
-        return false;
-    }
-
-    // Get the user's information
-    if ($userid == null) {
-        $user = $USER;
-    }
-    else {
-        $user = new User();
-        $user->find_by_id($userid);
-    }
-
-    // Admins and staff get a free pass
-    if ($user->get('admin') || $user->get('staff') || $user->is_institutional_admin() || $user->is_institutional_staff()) {
-        return false;
-    }
-
-    // We actually store new user points in reverse. When your account is created, you get $newuserthreshold points, and
-    // we decrease those when you do something good, and when it hits 0 you're no longer a new user.
-    $userspoints = get_field('usr', 'probation', 'id', $user->get('id'));
-    if ($userspoints > 0) {
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-
-/**
- * Activity that "vouches" for a new user to indicate that they're a real person, should call this
- *
- * @param int $vouchforthisuserid The userid of the person being vouched for
- * @param int $vouchinguserid The userid of the person doing the vouching
- * @return boolean TRUE if we can vouch for the person, FALSE if not
- */
-function vouch_for_probationary_user($probationaryuserid, $vouchinguserid = null, $points = 1) {
-    global $USER;
-
-    // Check whether we're even using this system.
-    if (!is_using_probation()) {
-        return true;
-    }
-
-    if ($vouchinguserid == null) {
-        $vouchinguserid = $USER->get('id');
-    }
-
-    // A new user can't vouch for another new user
-    if (is_probationary_user($vouchinguserid)) {
-        return false;
-    }
-
-    $voucheepoints = get_field('usr', 'probation', 'id', $probationaryuserid);
-    if ($voucheepoints > 0) {
-        set_field('usr', 'probation', max(0, $voucheepoints - $points), 'id', $probationaryuserid);
-    }
-
-    return true;
-}
-
-/**
- * Indicates whether we're using a probation threshold
- * @return boolean
- */
-function is_using_probation() {
-    return (boolean) (get_config('probationenabled') && get_config('probationstartingpoints'));
-}
-
-/**
- * Check for external links and images being posted by a probationary user
- * @param string $text
- * @return BOOLEAN true if the text is okay, false if not
- */
-function probation_validate_content($text) {
-    if (!is_using_probation()) {
-        return true;
-    }
-    if (!has_external_links_or_images($text)) {
-        return true;
-    }
-    if (is_probationary_user()) {
-        return false;
-    }
-    return true;
-}
-
-function has_external_links_or_images($text) {
-    // Check to see whether the post contains any content forbidden to new users
-    // (We do this first, in order to avoid any unnecessary hits to the DB
-    return (boolean) preg_match('#(://)|(<a\b)#i', $text);
-}
-
-/**
- * For creating a drop-down menu to set a user's probation points.
- * @return array Suitable for use in a pieform select element's "options" attribute
- */
-function probation_form_options() {
-    $options = array();
-    $options[0] = get_string('probationzeropoints', 'admin');
-    for ($i = 1; $i <= PROBATION_MAX_POINTS; $i++ ) {
-        $options[$i] = get_string('probationxpoints', 'admin', $i);
-    }
-    return $options;
-}
-
-/**
- * Ensures that a number is in the valid range of probation points (from 0 to PROBATION_MAX_POINTS).
- * It's used primarily in cleaning & validating user input when setting user probation points.
- *
- * @param int $points The number of probation points supplied from the UI
- * @return int A legal number of probation points
- */
-function ensure_valid_probation_points($points) {
-    if ($points < 0) {
-        return 0;
-    }
-    else if ($points > PROBATION_MAX_POINTS) {
-        return PROBATION_MAX_POINTS;
-    }
-    else {
-        return (int) $points;
     }
 }

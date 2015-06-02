@@ -1,4 +1,3 @@
-{if $tags}<p class="tags s"><label>{str tag=tags}:</label> {list_tags owner=$owner tags=$tags}</p>{/if}
 <table id="tasktable">
     <thead>
         <tr>
@@ -12,11 +11,6 @@
     </tbody>
 </table>
 <div id="plans_page_container">{$tasks.pagination|safe}</div>
-{if $license}
-<div class="resumelicense">
-{$license|safe}
-</div>
-{/if}
 <script>
 {literal}
 function rewriteTaskTitles() {

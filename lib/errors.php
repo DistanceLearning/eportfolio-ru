@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -49,11 +65,9 @@ define('DEVMODE_UNPACKEDJS', 8);
 /**#@-*/
 
 
-// Default error reporting settings. Some of these may be changed
-// later in init.php after we've loaded config.php
-$errorlevel = E_ALL & ~E_STRICT;
-error_reporting($errorlevel);
-set_error_handler('error', $errorlevel);
+// Tell PHP about our error settings
+error_reporting(E_ALL);
+set_error_handler('error');
 set_exception_handler('exception');
 
 
@@ -392,8 +406,7 @@ function error ($code, $message, $file, $line, $vars) {
     static $error_lookup = array(
         E_NOTICE => 'Notice',
         E_WARNING => 'Warning',
-        E_STRICT => 'Strict',
-        // These won't get handled here unless PHP's behavior changes
+        // Not sure if these ever get handled here
         E_ERROR => 'Error',
         // These three are not used by this application but may be used by third parties
         E_USER_NOTICE => 'User Notice',
@@ -446,7 +459,7 @@ function exception (Exception $e) {
     if ($USER) {
         if (!($e instanceof MaharaException) || get_class($e) == 'MaharaException') {
             log_warn("An exception was thrown of class " . get_class($e) . ". \nTHIS IS BAD "
-                     . "and should be changed to something extending MaharaException,\n"
+                     . "and should be changed to something extending MaharaException,\n" 
                      . "unless the exception is from a third party library.\n"
                      . "Original trace follows", true, false);
             log_message($e->getMessage(), LOG_LEVEL_WARN, true, true, $e->getFile(), $e->getLine(), $e->getTrace());
@@ -461,17 +474,17 @@ function exception (Exception $e) {
 
 
 interface MaharaThrowable {
-
+    
     public function render_exception();
-
+    
 }
 
-// Standard exceptions  - top level exception class.
+// Standard exceptions  - top level exception class. 
 // all exceptions should extend one of these three.
 
 /**
  * Very top of the tree for exceptions in Mahara.
- * Nothing should extend this directly.
+ * Nothing should extend this directly. 
  * Contains a few helper functions for all exceptions.
  */
 class MaharaException extends Exception {
@@ -501,7 +514,7 @@ class MaharaException extends Exception {
         if (array_key_exists($tag, $strings)) {
             return $strings[$tag];
         }
-
+        
         return 'An error occurred';
     }
 
@@ -598,7 +611,7 @@ class MaharaException extends Exception {
         h1 {
             color: #547c22;
             font-size: 20px;
-            font-weight: normal;
+            font-weight: normal;	
             margin: 0 0 5px 0;
             padding: 0;
             text-transform: capitalize;
@@ -648,11 +661,11 @@ class SystemException extends MaharaException implements MaharaThrowable {
     }
 
     public function strings() {
-        return array_merge(parent::strings(),
+        return array_merge(parent::strings(), 
                            array('message' => 'A nonrecoverable error occurred. '
                                  . 'This probably means you have encountered a bug in the system'));
     }
-
+    
 }
 
 /**
@@ -660,14 +673,14 @@ class SystemException extends MaharaException implements MaharaThrowable {
  * Generally these will be the fault of admins
  */
 class ConfigException extends MaharaException  implements MaharaThrowable {
-
+     
     public function render_exception () {
         return $this->get_string('message') . "\n\n" . $this->getMessage();
     }
 
     public function strings() {
-        return array_merge(parent::strings(),
-                           array('message' => 'The environment where ' . $this->get_sitename()
+        return array_merge(parent::strings(), 
+                           array('message' => 'The environment where ' . $this->get_sitename() 
                            . ' is running is misconfigured and this is causing problems. '
                            . 'You probably need to contact a server administrator to get this fixed. '
                            . 'Details, if any, follow:'));
@@ -686,8 +699,8 @@ class UserException extends MaharaException implements MaharaThrowable {
     }
 
     public function strings() {
-        return array_merge(parent::strings(),
-                           array('message' => 'Something in the way you\'re interacting with '
+        return array_merge(parent::strings(),  
+                           array('message' => 'Something in the way you\'re interacting with ' 
                                  . $this->get_sitename()
                                  . " is causing an error.\nDetails if any, follow:"));
     }
@@ -699,7 +712,7 @@ class UserException extends MaharaException implements MaharaThrowable {
  */
 class NotFoundException extends UserException {
     public function strings() {
-        return array_merge(parent::strings(),
+        return array_merge(parent::strings(), 
                            array('message' => get_string('notfoundexception', 'error'),
                                  'title'   => get_string('notfound', 'error')));
     }
@@ -711,16 +724,13 @@ class NotFoundException extends UserException {
 }
 
 
-/**
+/** 
  * The configuration that Mahara is trying to be run in is insane
  */
 class ConfigSanityException extends ConfigException {
     public function strings() {
         return array_merge(parent::strings(), array('message' => ''));
     }
-}
-
-class FeatureNotEnabledException extends ConfigException {
 }
 
 /**
@@ -801,8 +811,8 @@ class InvalidEmailException extends EmailException {}
  */
 class EmailDisabledException extends EmailException {}
 
-/**
- * Exception - artefact not found
+/** 
+ * Exception - artefact not found 
  */
 class ArtefactNotFoundException extends NotFoundException {}
 
@@ -811,7 +821,7 @@ class ArtefactNotFoundException extends NotFoundException {}
  */
 class BlockInstanceNotFoundException extends NotFoundException {}
 
-/**
+/** 
  * Exception - interaction instance not found
  */
 class InteractionInstanceNotFoundException extends NotFoundException {}
@@ -869,16 +879,11 @@ class CollectionNotFoundException extends NotFoundException {}
 class FileNotFoundException extends NotFoundException {}
 
 /**
- * Exception - For when a skin is not found
- */
-class SkinNotFoundException extends NotFoundException {}
-
-/**
  * Exception - Access denied. Throw this if a user is trying to view something they can't
  */
 class AccessDeniedException extends UserException {
     public function strings() {
-        return array_merge(parent::strings(),
+        return array_merge(parent::strings(), 
                            array('message' => get_string('accessdeniedexception', 'error'),
                                  'title'   => get_string('accessdenied', 'error')));
     }
@@ -927,12 +932,12 @@ class GroupAccessDeniedException extends AccessDeniedException {
 }
 
 /**
- * Exception - Access totally denied, the user won't be able to access it even if they log in
+ * Exception - Access totally denied, the user won't be able to access it even if they log in 
  * as the administrator
  */
 class AccessTotallyDeniedException extends UserException {
     public function strings() {
-        return array_merge(parent::strings(),
+        return array_merge(parent::strings(), 
                            array('message' => get_string('accessdeniedexception', 'error'),
                                  'title'   => get_string('accessdenied', 'error')));
     }

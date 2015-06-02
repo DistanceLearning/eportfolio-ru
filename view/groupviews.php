@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -21,8 +37,6 @@ require(dirname(dirname(__FILE__)) . '/init.php');
 require_once(get_config('libroot') . 'view.php');
 require_once(get_config('libroot') . 'group.php');
 require_once('pieforms/pieform.php');
-
-$offset = param_integer('offset', 0);
 
 define('GROUP', param_integer('group'));
 $group = group_current_group();
@@ -42,6 +56,7 @@ $can_edit = $role && group_role_can_edit_views($group, $role);
 if (!$can_edit) {
 
     $limit   = param_integer('limit', 5);
+    $offset  = param_integer('offset', 0);
 
     $data = View::view_search(null, null, (object) array('group' => $group->id), null, $limit, $offset);
     // Add a copy view form for all templates in the list
@@ -57,48 +72,23 @@ if (!$can_edit) {
         'limit' => $limit,
         'offset' => $offset,
     ));
-}
-else {
-    list($searchform, $data, $pagination) = View::views_by_owner($group->id);
-    $createviewform = pieform(create_view_form($group->id));
-}
-$js = <<< EOF
-addLoadEvent(function () {
-    p = {$pagination['javascript']}
-EOF;
-if ($offset > 0) {
-    $js .= <<< EOF
-    if ($('groupviews')) {
-        getFirstElementByTagAndClassName('a', null, 'groupviews').focus();
-    }
-    if ($('myviews')) {
-        getFirstElementByTagAndClassName('a', null, 'myviews').focus();
-    }
-EOF;
-}
-else {
-    $js .= <<< EOF
-    if ($('searchresultsheading')) {
-        addElementClass('searchresultsheading', 'hidefocus');
-        setNodeAttribute('searchresultsheading', 'tabIndex', -1);
-        $('searchresultsheading').focus();
-    }
-EOF;
-}
-$js .= '});';
 
-$smarty = smarty(array('paginator'));
-$smarty->assign('INLINEJAVASCRIPT', $js);
+    $smarty = smarty();
+    $smarty->assign('views', $data->data);
+    $smarty->assign('pagination', $pagination['html']);
+    $smarty->display('view/groupviews.tpl');
+    exit;
+
+}
+
+list($searchform, $data, $pagination) = View::views_by_owner($group->id);
+
+$createviewform = pieform(create_view_form($group->id));
+
+$smarty = smarty();
+$smarty->assign('editlocked', $role == 'admin');
 $smarty->assign('views', $data->data);
 $smarty->assign('pagination', $pagination['html']);
-if (!$can_edit) {
-    $smarty->display('view/groupviews.tpl');
-}
-else {
-    $smarty->assign('query', param_variable('query', null));
-    $smarty->assign('querystring', get_querystring());
-    $smarty->assign('editlocked', $role == 'admin');
-    $smarty->assign('searchform', $searchform);
-    $smarty->assign('createviewform', $createviewform);
-    $smarty->display('view/index.tpl');
-}
+$smarty->assign('searchform', $searchform);
+$smarty->assign('createviewform', $createviewform);
+$smarty->display('view/index.tpl');

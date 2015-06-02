@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -80,7 +96,7 @@ if ($membershiptype == 'request') {
 }
 
 $results = get_group_user_search_results($group->id, $query, $offset, $limit, $membershiptype, null, null, $sortoptionidx);
-list($html, $pagination, $count, $offset, $membershiptype) = group_get_membersearch_data($results, $group->id, $query, $membershiptype, $setlimit, $sortoptionidx);
+list($html, $pagination, $count, $offset, $membershiptype) = group_get_membersearch_data($results, $group->id, $query, $membershiptype, $setlimit);
 
 // Type-specific instructions
 $instructions = '';
@@ -95,7 +111,6 @@ if ('admin' == $role) {
 
 $searchform = pieform(array(
     'name' => 'search',
-    'checkdirtychange' => false,
     'renderer' => 'oneline',
     'elements' => array(
         'id' => array(
@@ -111,7 +126,6 @@ $searchform = pieform(array(
             'value' => $setlimit
         ),
         'query' => array(
-            'title' => get_string('search') . ': ',
             'type' => 'text',
             'defaultvalue' => $query
         ),
@@ -139,7 +153,6 @@ addLoadEvent(function () {
         var params = {'query': $('search_query').value, 'id':$('search_id').value,
             'membershiptype':$('search_membershiptype').value,
             'setlimit':$('search_setlimit').value,
-            'limit':$('setlimitselect').value,
             'sortoption':$('search_sortoption').value
             };
         p.sendQuery(params);
@@ -184,7 +197,7 @@ $smarty->display('group/members.tpl');
 
 function search_submit(Pieform $form, $values) {
     redirect('/group/members.php?id=' . $values['id'] .
-                    ((isset($values['query']) && ($values['query'] != '')) ? '&query=' . urlencode($values['query']) : '') .
+                    (!empty($values['query']) ? '&query=' . urlencode($values['query']) : '') .
                     (!empty($values['membershiptype']) ? '&membershiptype=' . urlencode($values['membershiptype']) : '') .
                     (!empty($values['setlimit']) ? '&setlimit=' . urlencode($values['setlimit']) : ''));
 }

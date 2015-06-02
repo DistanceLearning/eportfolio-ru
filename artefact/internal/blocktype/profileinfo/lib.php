@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage blocktype-profileinfo
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -37,10 +53,9 @@ class PluginBlocktypeProfileinfo extends PluginBlocktype {
             $configdata['artefactids'][] = $configdata['email'];
         }
 
-        $viewowner = get_field('view', 'owner', 'id', $instance->get('view'));
-
         // Get data about the profile fields in this blockinstance
         if (!empty($configdata['artefactids'])) {
+            $viewowner = get_field('view', 'owner', 'id', $instance->get('view'));
             foreach ($configdata['artefactids'] as $id) {
                 try {
                     $artefact = artefact_instance_from_id($id);
@@ -63,7 +78,6 @@ class PluginBlocktypeProfileinfo extends PluginBlocktype {
             $downloadpath = get_config('wwwroot') . 'thumb.php?type=profileiconbyid&id=' . $configdata['profileicon'];
             $downloadpath .= '&maxwidth=80';
             $smarty->assign('profileiconpath', $downloadpath);
-            $smarty->assign('profileiconalt', get_string('profileimagetext', 'mahara', display_default_name(get_user($viewowner))));
         }
 
         // Override the introduction text if the user has any for this 
@@ -221,14 +235,6 @@ class PluginBlocktypeProfileinfo extends PluginBlocktype {
                 }
                 else {
                     unset($configdata['email']);
-                }
-            }
-            if (isset($configdata['profileicon'])) {
-                if ($newicon = get_field('usr', 'profileicon', 'id', $view->get('owner'))) {
-                    $configdata['profileicon'] = $newicon;
-                }
-                else {
-                    unset($configdata['profileicon']);
                 }
             }
         }

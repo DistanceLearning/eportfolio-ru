@@ -2,7 +2,7 @@
 <div id="editaccesswrap">
 <div class="fl presets-container">
   <div id="potentialpresetitems">
-    <h3 class="title">{{str tag=sharewith section=view}}</h3>
+    <h3>{{str tag=sharewith section=view}}</h3>
   </div>
   <fieldset id="viewacl-advanced" class="collapsible collapsed">
     <legend><a href="" id="viewacl-advanced-show">{{str tag=otherusersandgroups section=view}}</a></legend>
@@ -23,33 +23,27 @@
   </fieldset>
 </div>
 
-<table id="accesslisttable" class="fr hidden fullwidth hidefocus" tabindex="-1">
+<table id="accesslisttable" class="fr hidden fullwidth">
   <thead>
-    <tr class="accesslist-head">
-      <th><span class="accessible-hidden">{{str tag=profileicon section=view}}</span></th>
-      <th>{{str tag=Added section=view}}</th>
-      <th>{{str tag=startdate section=view}}</th>
-      <th>{{str tag=stopdate section=view}}</th>
-      <th class="center comments{{if $allowcomments}} hidden{{/if}}">{{str tag=Comments section=artefact.comment}}</th>
-      <th><span class="accessible-hidden">{{str tag=edit}}</span></th>
+    <tr class="accesslist-head1">
+      <th colspan="2">{{str tag=Added section=view}}</th>
+      <th colspan="2">{{str tag=accessdates section=view}}</th>
+      <th colspan="2" class="center comments{{if $allowcomments}} hidden{{/if}}">{{str tag=Comments section=artefact.comment}}</th>
+      <th></th>
+    </tr>
+    <tr class="accesslist-head2">
+      <th></th>
+      <th></th>
+      <th>{{str tag=From}}:</th>
+      <th>{{str tag=To}}:</th>
+      <th colspan="2" class="center comments{{if $allowcomments}} hidden{{/if}}">{{str tag=Allow section=artefact.comment}} {{str tag=Moderate section=artefact.comment}}</th>
+      <th></th>
     </tr>
   </thead>
   <tbody id="accesslistitems">
   </tbody>
 </table>
 
-<table id="accesslisttabledefault" class="fr hidden fullwidth hidefocus" tabindex="-1">
-  <thead>
-    <tr class="accesslist-head">
-      <th>{{str tag=Added section=view}}</th>
-    </tr>
-  </thead>
-  <tbody id="accesslistitems">
-    <tr>
-      <td>{{str tag=defaultaccesslistmessage section=view}}</td>
-    </tr>
-  </tbody>
-</table>
 
 <div class="cb"></div>
 </div>
@@ -60,14 +54,7 @@ var count = 0;
 
 // Given a row, render it on the left hand side
 function renderPotentialPresetItem(item) {
-    var accessString;
-    if (item.type == 'group' || item.type == 'institution') {
-        accessString = get_string('addaccess' + item.type, item.name);
-    }
-    else {
-        accessString = get_string('addaccess', item.name);
-    }
-    var addButton = BUTTON({'type': 'button'}, accessString);
+    var addButton = BUTTON({'type': 'button'}, {{jstr tag=add}});
     var attribs = {};
     if (item.preset) {
         attribs = {'class': 'preset'};
@@ -81,29 +68,19 @@ function renderPotentialPresetItem(item) {
 
     if (item.type == 'allgroups') {
         connect(addButton, 'onclick', function() {
-            var rows = [];
             forEach(myGroups, function(g) {
-                rows.push(renderAccessListItem(g));
+                appendChildNodes('accesslist', renderAccessListItem(g));
             });
-            if (rows.length > 0) {
-                getFirstElementByTagAndClassName('input', null, rows[0]).focus();
-            }
         });
     }
     else {
         connect(addButton, 'onclick', function() {
-            var row = renderAccessListItem(item);
-            getFirstElementByTagAndClassName('input', null, row).focus();
+            appendChildNodes('accesslist', renderAccessListItem(item));
         });
     }
     appendChildNodes('potentialpresetitems', row);
 
     return row;
-}
-
-function renderAccessListDefault() {
-    addElementClass('accesslisttable', 'hidden');
-    removeElementClass('accesslisttabledefault', 'hidden');
 }
 
 // Given a row, render it on the right hand side
@@ -114,13 +91,11 @@ function renderAccessListItem(item) {
                         'name': 'accesslist[' + count + '][allowcomments]',
                         'id'  :  'allowcomments' + count,
                         'value':  1});
-    var allowfdbklabel = LABEL({'for': 'allowcomments' + count}, get_string('Allow'));
     var approvefdbk = INPUT({
                         'type': 'checkbox',
                         'name': 'accesslist[' + count + '][approvecomments]',
                         'id'  :  'approvecomments' + count,
                         'value':  1});
-    var approvefdbklabel = LABEL({'for': 'approvecomments' + count}, get_string('Moderate'));
 
     if (item['allowcomments']==1) {
         setNodeAttribute(allowfdbk,'checked',true);
@@ -151,7 +126,7 @@ function renderAccessListItem(item) {
     }
     var icon = null;
     if (item.type == 'user') {
-        icon = IMG({'src': config.wwwroot + 'thumb.php?type=profileicon&id=' + item.id + '&maxwidth=25&maxheight=25'});
+        icon = IMG({'src': config.wwwroot + 'thumb.php?type=profileicon&id=' + item.id + '&maxwidth=20&maxheight=20'});
     }
 
     // if this item is 'public' and public pages are disabled
@@ -166,12 +141,12 @@ function renderAccessListItem(item) {
     var notpublicorallowed = (item.accesstype != 'public' || item.publicallowed);
 
     var row = TR({'class': cssClass, 'id': 'accesslistitem' + count},
-        TD({'class': 'icon-container'}, icon),
-        TD({'class': 'accesslistname'}, name),
+        TD(null, icon),
+        TH({'class': 'accesslistname'}, name),
         TD(null, makeCalendarInput(item, 'start', notpublicorallowed), makeCalendarLink(item, 'start', notpublicorallowed)),
         TD(null, makeCalendarInput(item, 'stop', notpublicorallowed), makeCalendarLink(item, 'stop', notpublicorallowed)),
-        TD({'class': 'center comments' + (allowcomments ? ' hidden' : '')}
-            , allowfdbk, allowfdbklabel, ' ', approvefdbk, approvefdbklabel),
+        TD({'class': 'center comments' + (allowcomments ? ' hidden' : '')}, allowfdbk),
+        TD({'class': 'center comments' + (allowcomments ? ' hidden' : '')}, approvefdbk),
         TD({'class': 'right removebutton'}, removeButton,
             INPUT({
                 'type': 'hidden',
@@ -202,19 +177,10 @@ function renderAccessListItem(item) {
     connect(removeButton, 'onclick', function() {
         removeElement(row);
         if (!getFirstElementByTagAndClassName('tr', null, 'accesslistitems')) {
-            renderAccessListDefault();
-            $('accesslisttabledefault').focus();
-        }
-        else {
-            $('accesslisttable').focus();
-        }
-        // Update the formchangechecker state
-        if (typeof formchangemanager !== 'undefined') {
-            formchangemanager.setFormStateById('{{$formname}}', FORM_CHANGED);
+            addElementClass('accesslisttable', 'hidden');
         }
     });
     appendChildNodes('accesslistitems', row);
-    addElementClass('accesslisttabledefault', 'hidden');
     removeElementClass('accesslisttable', 'hidden');
 
     if (notpublicorallowed) {
@@ -232,20 +198,10 @@ function renderAccessListItem(item) {
         $j(row).find('.pieform-calendar-toggle').hide();
     }
     count++;
-    // Update the formchangechecker state
-    if (typeof formchangemanager !== 'undefined') {
-        formchangemanager.setFormStateById('{{$formname}}', FORM_CHANGED);
-    }
-
-    return row;
 }
 
 function makeCalendarInput(item, type, disabled) {
-    var label = LABEL({
-        'for': type + 'date_' + count,
-        'class': 'accessible-hidden'
-    }, get_string(type + 'date'));
-    var input = INPUT({
+    input = INPUT({
         'type':'text',
         'name': 'accesslist[' + count + '][' + type + 'date]',
         'id'  :  type + 'date_' + count,
@@ -255,7 +211,7 @@ function makeCalendarInput(item, type, disabled) {
 
     input.disabled = (disabled == 0);
 
-    return SPAN(null, label, input);
+    return input;
 }
 
 function makeCalendarLink(item, type) {
@@ -265,8 +221,8 @@ function makeCalendarLink(item, type) {
         'onclick': 'return false;', // @todo do with mochikit connect
         'class'  : 'pieform-calendar-toggle'},
         IMG({
-            'src': '{{theme_url filename='images/btn_calendar.png'}}',
-            'alt': get_string('element.calendar.opendatepicker', 'pieforms')})
+            'src': '{{theme_url filename='images/calendar.gif'}}',
+            'alt': ''})
     );
 
     return link;
@@ -302,15 +258,8 @@ function setupCalendar(item, type) {
         "button"    : type + 'date_' + count + '_btn',
         //"dateStatusFunc" : dateStatusFunc,
         //"onSelect"       : selectedFunc
-        "onUpdate"  : updateFormChangeChecker,
         "showsTime" : true
     });
-}
-
-function updateFormChangeChecker() {
-    if (typeof formchangemanager !== 'undefined') {
-        formchangemanager.setFormStateById('{{$formname}}', FORM_CHANGED);
-    }
 }
 
 // SETUP
@@ -322,7 +271,7 @@ forEach(potentialPresets, function(preset) {
 });
 var myInstitutions = {{$myinstitutions|safe}};
 if (myInstitutions.length) {
-    appendChildNodes('potentialpresetitems', H3({'class': 'title'}, '{{str tag=sharewithmyinstitutions section=view}}'));
+    appendChildNodes('potentialpresetitems', H6(null, '{{str tag=sharewithmyinstitutions section=view}}'));
     var i = 0;
     var maxInstitutions = 5;
     forEach(myInstitutions, function(preset) {
@@ -345,7 +294,7 @@ if (myInstitutions.length) {
 var allGroups = {{$allgroups|safe}};
 var myGroups = {{$mygroups|safe}};
 if (myGroups) {
-    appendChildNodes('potentialpresetitems', H3({'class': 'title'}, {{jstr tag=sharewithmygroups section=view}}));
+    appendChildNodes('potentialpresetitems', H6(null, {{jstr tag=sharewithmygroups section=view}}));
     renderPotentialPresetItem(allGroups);
     var i = 0;
     var maxGroups = 10;
@@ -367,7 +316,7 @@ if (myGroups) {
 }
 var faves = {{$faves|safe}};
 if (faves) {
-    appendChildNodes('potentialpresetitems', H3({'class': 'title'}, {{jstr tag=sharewithusers section=view}}));
+    appendChildNodes('potentialpresetitems', H6(null, {{jstr tag=sharewithusers section=view}}));
     forEach(faves, renderPotentialPresetItem);
 }
 var loggedinindex = {{$loggedinindex}};
@@ -427,7 +376,7 @@ searchTable.rowfunction = function(rowdata, rownumber, globaldata) {
     rowdata.type = searchTable.type;
     rowdata.type = rowdata.type == 'friend' ? 'user' : rowdata.type;
 
-    var buttonTD = TD({'class': 'buttontd'});
+    var buttonTD = TD({'style': 'white-space:nowrap;'});
 
     var addButton = BUTTON({'type': 'button', 'class': 'button'}, {{jstr tag=add}});
     connect(addButton, 'onclick', function() {
@@ -437,7 +386,7 @@ searchTable.rowfunction = function(rowdata, rownumber, globaldata) {
 
     var identityNodes = [], profileIcon = null, roleSelector = null;
     if (rowdata.type == 'user') {
-        profileIcon = IMG({'src': config.wwwroot + 'thumb.php?type=profileicon&maxwidth=25&maxheight=25&id=' + rowdata.id});
+        profileIcon = IMG({'src': config.wwwroot + 'thumb.php?type=profileicon&maxwidth=20&maxheight=20&id=' + rowdata.id});
         identityNodes.push(A({'href': rowdata.url, 'target': '_blank'}, rowdata.name));
     }
     else if (rowdata.type == 'group') {
@@ -460,8 +409,8 @@ searchTable.rowfunction = function(rowdata, rownumber, globaldata) {
 
     return TR({'class': 'r' + (rownumber % 2)},
         buttonTD,
-        TD({'class': 'sharewithusersname'}, identityNodes),
-        TD({'class': 'right icon-container'}, profileIcon)
+        TD({'style': 'vertical-align: middle;'}, identityNodes),
+        TD({'class': 'center', 'style': 'vertical-align:top;width:20px;'}, profileIcon)
     );
 }
 searchTable.updateOnLoad();
@@ -476,16 +425,13 @@ function search(e) {
 
 // Right hand side
 addLoadEvent(function () {
-    {{if $defaultaccesslist}}
-    renderAccessListDefault();
-    {{else}}
     var accesslist = {{$accesslist|safe}};
     if (accesslist) {
         forEach(accesslist, function(item) {
             renderAccessListItem(item);
         });
     }
-    {{/if}}
+    update_loggedin_access();
 });
 
 addLoadEvent(function() {

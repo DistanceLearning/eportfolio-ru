@@ -19,8 +19,8 @@
  * @package    pieform
  * @subpackage renderer
  * @author     Nigel McNie <nigel@catalyst.net.nz>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2008 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -64,12 +64,12 @@ function pieform_renderer_div(Pieform $form, $element) {/*{{{*/
 
     // Description - optional description of the element, or other note that should be visible
     // on the form itself (without the user having to hover over contextual help 
-    if ((!$form->has_errors() || $form->get_property('showdescriptiononerror')) && !empty($element['descriptionhtml'])) {
-        $result .= '<div class="description"> ' . $element['descriptionhtml'] . "</div>";
+    if ((!$form->has_errors() || $form->get_property('showdescriptiononerror')) && !empty($element['description'])) {
+        $result .= '<div class="description"> ' . $element['description'] . "</div>";
     }
 
     if (!empty($element['error'])) {
-        $result .= '<div class="errmsg">' . $element['errorhtml'] . '</div>';
+        $result .= '<div class="errmsg">' . hsc($element['error']) . '</div>';
     }
 
     $result .= "</div>\n";

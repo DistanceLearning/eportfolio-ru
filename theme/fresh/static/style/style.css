@@ -1,344 +1,364 @@
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2012 Catalyst IT Ltd (http://www.catalyst.net.nz)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author     Paul Walker <paul.walker@catalyst-eu.net>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
-
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2012 Catalyst IT Europe http://catalyst-eu.net
  */
 
-/******************** Body ********************/
-body,
-body#micro {	
-    background: #0c2839 url(../images/bg.jpg) repeat-x 0 0;
+/* styles based on elements */
+body, body#micro {
+    background: #10171A url(../images/bg.gif) repeat top center;	
 	color: #BEE3F1;
 }
-/******************** General headings ********************/
+a, a:visited, a:link, a:active {
+    color: #7EF000;
+    text-decoration: none;
+}
+a:hover, a:focus {
+    color: #00AEF1;
+    text-decoration: underline;
+}
 h1,
 h2 {
-    color: #FFFFFF;
+    color: #7EF000;
     font-weight: normal;
 }
 h3,
 h4,
 h5,
 h6 {
-    color: #FFFFFF;
+    color: #00AEF1;
 }
-/******************** General text ********************/
-a,
-a:visited,
-a:link,
-a:active {
-    color: #7EF000;
-    text-decoration: none;
-}
-a:hover,
-a:focus {
-    color: #7EF000;
-    text-decoration: underline;
-}
+
 .description,
 .unvalidated,
 .postdetails,
 .postedon {
 	color: #c7c7c7;
 }
-/* some common listing text styles */
-.title a {
+
+/**************************** Tables ****************************/
+.main-column thead th {
+    color: #BEE3F1;
+	border-bottom: 1px dotted #BEE3F1;
+}
+.main-column tbody th {
+    color: #BEE3F1;
+    border-bottom: none;
+}
+/* table with th border-bottom */
+#searchresults thead th,
+.filelist,
+.tag-results #results {
+	border-bottom: 1px dotted #BEE3F1;
+}
+/* table with tfoot border-top */
+#searchresults tfoot td,
+#adminstitutionslist tfoot td,
+#profileicons tfoot td,
+#activitylist tfoot td,
+.tag-results #results {
+	border-top: 1px dotted #BEE3F1;
+}
+.main-column table h3 a,
+.main-column table h3 a:visited,
+.main-column table h3 a:link,
+.listing div h3 a,
+.listing div h3 a:visited,
+.listing div h3 a:link {
+    color: #00AEF1 !important;
+}
+.tablerenderer-loading {
+    border: 1px solid #000;
+	background-color: #000;
     color: #00AEF1;
 }
-/******************** Tables ********************/
-thead th {
-    border-bottom: 1px solid #000000;
+/* table with th border-bottom */
+#searchresults thead th, .filelist, .tag-results #results {
+	border-bottom: 1px solid #BEE3F1;
 }
-/* Alternative row background */
-.r0,
-.r0 td,
-.d0 {
-    background-color: #182e35;
+/* table with tfoot border-top */
+#searchresults tfoot td, #adminstitutionslist tfoot td, #profileicons tfoot td, #activitylist tfoot td {
+	border-top: 1px solid #BEE3F1;
 }
-.r1,
-.r1 td,
-.d1 {
-    background-color: #112329;
+.listing.twocolumn td {
+    border-color: #080D0F;
 }
-/* Highlight row background  */
-tr.highlight td,
-tr.highlight-file td {
-	background-color: #000000;
+/* Alternative row background colours */
+.r0, .r0 td, .d0, .friends {
+    border-bottom: 1px solid #080D0F;
+    background: #1C3740;
 }
-/******************** Forms ********************/
-/* fieldset */
+.r1, .r1 td, .d1 {
+    border-bottom: 1px solid #080D0F;
+    background-color: #1A292F;
+}
+tr.folder td {
+    background: #10171A;
+    border-bottom: 1px solid #080D0F !important;
+}
+tr.highlight td {
+  background-color: #000 !important;
+  border-bottom: none;
+    border-bottom: 1px solid #080D0F;
+}
+.filelist tr.highlight-file td {
+    color: #666666;
+}
+.filelist tr.folder td a {
+    color: #0084d7;
+}
+.filelist tr td a {
+    color: #00AEF1;
+}
+tr.incomplete td {
+    background: #400d0d;
+    color: #FFFFFF;
+    border-bottom: 1px solid #080D0F;
+}
+tr.incomplete a.btn-edit {
+    color: #458400;
+}
+
+/**************************** Pagination ****************************/
+div.pagination a {
+    border: 0;
+    background-color: #1A292F;
+}
+div.pagination .disabled {
+    background: none;
+    color: #080D0F;
+}
+div.pagination .selected {
+	border: 0;
+}
+
+/**************************** Forms ****************************/
+/* Label */
+label {
+    color: #BEE3F1;
+}
+/* required */
+.required th, .required label, .requiredmarker, #register_tandc_container th {
+	color: #f45e5e;
+}
+/* override required colour to normal colour */
+.required label.plain, .required.radio td label, .required.emaillist td label {
+    color: #BEE3F1;
+}
+
+/* Legend */
+legend {
+	color: #00AEF1;
+	font-family:Georgia, "Times New Roman", Times, serif;
+}
+legend a,
+legend a:link,
+legend a:visited,
+legend a:active,
+legend a:hover {
+	color: #00AEF1 !important;
+}
+
+
+/* Fieldset */
 fieldset {
     border: 1px solid #BEE3F1;
 }
-/******************** Buttons ********************/
-/* Buttons to override with colour */
-/* input buttons */
-tr.submitcancel input.submit,
-tr.submitcancel input.cancel,
-tr.submit input.submit,
-tr.submit input.cancel,
-input#profileform_submit,
+
+
+/****************************** Buttons ****************************/
+/** input buttons **/
+.btn,
+input.submit,
+input.cancel,
+button,
+.buttondk,
+input.button,
+input.select,
 input#files_filebrowser_edit_artefact,
-input#files_filebrowser_edit_cancel,
-input#instconf_folder_edit_artefact,
-input#instconf_folder_edit_cancel,
-input#instconf_artefactids_edit_artefact,
-input#instconf_artefactids_edit_cancel,
-input#instconf_artefactid_edit_artefact,
-input#instconf_artefactid_edit_cancel,
-.rbuttons .btn, 
-.rbuttons .btn:visited,
-.rbuttons .btn:link,
-.rbuttons input.submit,
-#resumewrap input.openedit,
-#resumewrap button,
-#view-wizard-controls input.submit,
-.submitwrap input.submit,
-#editaccess_submit_container input.submitcancel,
-#collectiondonewrap .btn,
-#collectiondonewrap .btn:visited,
-#collectiondonewrap .btn:link,
-input#export_submit,
-#sitelicenses .btn,
-#adduser #adduser_submit,
-input#login_submit,
-.login-externallink a.btn,
-input#viewlayout_submit,
-input#files_filebrowser_upload,
-input#designskinform_submit,
-input#cancel_designskinform_submit {
-    background: url(../images/btn_bkgd.png) repeat-x 0 50%;
-	border-color: #1c3c47;
-	color: #FFFFFF;
+ul.groupuserstatus li a {
+    background: #1b3b46 url(../images/mainnav-bg.gif) repeat-x center;
+	border-color: #386d82 #1A292F #1A292F #386d82;
+	color: #FFF !important;
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0;
 }
-/* hover for buttons */
-tr.submitcancel input.submit:hover,
-tr.submitcancel input.cancel:hover,
-tr.submit input.submit:hover,
-tr.submit input.cancel:hover,
-input#profileform_submit:hover,
+/** hover for buttons **/
+.btn:hover,
+input.submit:hover,
+input.cancel:hover,
+button:hover,
+.buttondk:hover,
+input.button:hover,
+input.select:hover,
 input#files_filebrowser_edit_artefact:hover,
-input#files_filebrowser_edit_cancel:hover,
-input#instconf_folder_edit_artefact:hover,
-input#instconf_folder_edit_cancel:hover,
-input#instconf_artefactids_edit_artefact:hover,
-input#instconf_artefactids_edit_cancel:hover,
-input#instconf_artefactid_edit_artefact:hover,
-input#instconf_artefactid_edit_cancel:hover,
-.rbuttons .btn:hover,
-.rbuttons input.submit:hover,
-#resumewrap input.openedit:hover,
-#resumewrap button:hover,
-#view-wizard-controls input.submit:hover,
-.submitwrap input.submit:hover,
-#editaccess_submit_container input.submitcancel:hover,
-#collectiondonewrap .btn:hover,
-input#export_submit:hover,
-#sitelicenses .btn:hover,
-#adduser #adduser_submit:hover,
-input#login_submit:hover,
-.login-externallink a.btn:hover,
-input#viewlayout_submit:hover,
-input#files_filebrowser_upload:hover,
-input#designskinform_submit:hover,
-input#cancel_designskinform_submit:hover {
-	background: url(../images/btn_bkgd_hover.png) repeat-x 0 50%;
-	border-color: #1c3c47;
-	color: #FFFFFF;
+ul.groupuserstatus li a:hover {
+	color: #FFF;
+    text-decoration:none;
+    background: #254e5c url(../images/mainnav-bg-hover.gif) repeat-x center;
+	border-color: #1A292F #386d82 #386d82 #1A292F;
 }
-/* depress for buttons */
-tr.submitcancel input.submit:active,
-tr.submitcancel input.cancel:active,
-tr.submit input.submit:active,
-tr.submit input.cancel:active,
-input#profileform_submit:active,
+/** Depress for buttons **/
+.btn:active,
+input.submit:active,
+input.cancel:active,
+button:active,
+.buttondk:active,
+input.button:active,
+input.select:active,
 input#files_filebrowser_edit_artefact:active,
-input#files_filebrowser_edit_cancel:active,
-input#instconf_folder_edit_artefact:active,
-input#instconf_folder_edit_cancel:active,
-input#instconf_artefactids_edit_artefact:active,
-input#instconf_artefactids_edit_cancel:active,
-input#instconf_artefactid_edit_artefact:active,
-input#instconf_artefactid_edit_cancel:active,
-.rbuttons .btn:active,
-.rbuttons input.submit:active,
-#resumewrap input.openedit:active,
-#resumewrap button:active,
-#view-wizard-controls input.submit:active,
-.submitwrap input.submit:active,
-#editaccess_submit_container input.submitcancel:active,
-#collectiondonewrap .btn:active,
-input#export_submit:active,
-#sitelicenses .btn:active,
-#adduser #adduser_submit:active,
-input#login_submit:active,
-.login-externallink a.btn:active,
-input#viewlayout_submit:active,
-input#files_filebrowser_upload:active,
-input#designskinform_submit:active,
-input#cancel_designskinform_submit:active {
-	background: url(../images/btn_bkgd_focus.png) repeat-x 0 50%;
-	border-color: #1c3c47;
-	color: #FFFFFF;
-}  
-/* made to look like default grey buttons to match graphic icon buttons */
-#forumslist input.btn-subscribe,
-input#addviews_submit,
-input#edituser_suspend_submit,
-input#friendscontrol_submit,
-input#usertype_typesubmit,
-.subpage .skinsbtns .btn {
-    border: 1px solid #707070;
-    background: url(../images/btn_bkgd_grey.png) repeat-x 0 50%;
-    color: #333333;
+ul.groupuserstatus li a:active {
+    background: #254e5c url(../images/mainnav-bg-hover.gif) repeat-x center;
+	border-color: #1A292F #386d82 #386d82 #1A292F;
+	color: #FFF;
 }
-#forumslist input.btn-subscribe:hover,
-input#addviews_submit:hover,
-input#edituser_suspend_submit:hover,
-input#friendscontrol_submit:hover,
-input#usertype_typesubmit:hover,
-.subpage .skinsbtns .btn:hover {
-    border: 1px solid #707070;
-    background: url(../images/btn_bkgd_grey_hover.png) repeat-x 0 50%;
-    color: #333333;
-}
-#forumslist input.btn-subscribe:active,
-input#addviews_submit:active,
-input#edituser_suspend_submit:active,
-input#friendscontrol_submit:active,
-input#usertype_typesubmit:active,
-.subpage .skinsbtns .btn:active {
-    border: 1px solid #707070;
-    background: url(../images/btn_bkgd_grey_focus.png) repeat-x 0 50%;
-    color: #333333;
-}
-/* reset some that need grey button colour text */
-ul.groupuserstatus li .submit input.submit,
-ul.groupuserstatus li .submit input.submit:hover,
-ul.groupuserstatus li .submit input.submit:active {
-    color: #333333;
+/* buttons that look like links with icons */
+.icon {
+	color: #7EF000;
 }
 /* buttons that look like links */
-.linkbtn,
-#userview .user-icon .linkbtn {
-	color: #7EF000;
+.linkbtn, #main-column-container ul.actionlist li.friend form input, #main-column-container ul.actionlist li.approvefriend form input, #userview .user-icon form div.submit input.submit {
+	color: #7EF000 !important;
     text-decoration: none;
 }
-/******************** Pagination ********************/
-div.pagination a {
-    background-color: #004058;
-    color: #76d9ff;
+/* links that need to look like buttons */
+span.btn a.icon, a span.icon {
+    color: #FFFFFF;
 }
-div.pagination .disabled {
-    color: #525252;
+/* Search buttons */
+#usf_submit,
+#usf_submit:hover {
+	background: transparent url(../images/btn-search.png) no-repeat !important;
+	border: 0;
+	color: #7EF000;
+	text-indent: -999px;
+	font-size: 1%;
+	cursor: pointer;
+	vertical-align: bottom;
+	height: 24px;
+	width: 24px;
+	margin-left: 2px;
 }
-/******************** Layout ********************/
-#header,
-#footer {
-    width: 95%;
+
+
+/**************************** Top of page elements ****************************/
+#container, #containerX {
+    background: #0c2839 url(../images/bg.jpg) repeat-x 3px 0;
+    max-width: 1232px;
 }
-#mainmiddlewrap {
-	background: none;
+#top-wrapper {
+	background: transparent;
+    width: 98%;
 }
-#mainmiddle {
-	background: #080D0F;
+#loading-box {
+    background-color: #000;
 }
-/**************** Messages ****************/
-.message,
-div.ok,
-div.error,
-div.info,
-div.warning,
-.errmsg,
-.attentionmessage,
-.deletemessage {
-    color: #333333;
+.viewheader .nav {
+  border-bottom: 1px dotted #1C3740;
+  color: #1C3740;
 }
-.message a {
-    color: #0081b3;
+.viewheader .title {
+	color:#BEE3F1;
 }
-/* delete messages without icon */
-.deletemessage {
-    background: #ECCCCC;
-}
-/******************** Header ********************/
-/* site logo */
 #site-logo {
     margin: 10px 0 0 0;
 }
-/* header right */
+/* Search and language bar */
+#usf_query_container input {
+    color: #333333;
+	width: 205px;
+}
 #header-right label {
 	color: #FFFFFF;
 }
-/* top navigation */
+
+/**************** TOP NAVIGATION ****************/
 #right-nav li {
 	color: #83a0b3;
 }
 #right-nav li a {
-	color: #FFFFFF;
+	color: #fff;
 }
 #right-nav li.identity a {
 	color: #83a0b3;
 }
-/******************** Small header ********************/
-#micro .viewtitle,
-#micro .collection-title {
-	color:#BEE3F1;
+#right-nav li.selected a {
+  color: #fff;
+  font-weight: normal;
+  text-decoration: underline;
 }
-.viewheadertop #mainnav-container #mainnav a,
-.viewheadertop #mainnav-container #mainnav a:link,
-.viewheadertop #mainnav-container #mainnav a:visited,
-.viewheadertop #mainnav-container #mainnav a:active,
-.viewheadertop #mainnav-container #mainnav a:hover {
-    color: #7EF000;
-}
-/******************** Main navigation ********************/
-.main-nav {
+#main-nav {
+    padding: 0;
+    margin: 0;
     background: transparent;
-    margin: 0 auto;
-    max-width: 1280px;
-    min-width: 960px;
-	text-align: right;
+    border-bottom: 0;
+    height: 30px;
 }
-.main-nav li {
-	margin: 0 0 0 3px;
+#main-nav ul {
+	float: right;
 }
-.main-nav li a,
-.main-nav li a:link,
-.main-nav li a:visited,
-.main-nav li a:active {
-    background: url(../images/mainnav-bg.png) repeat-x 50%;
+#main-nav li {
     color: #FFFFFF;
+    text-decoration: none;
     font-weight: normal;
+	margin: 0 0 0 3px;
+	padding: 0;
 }
-.main-nav li a:hover, .main-nav li a:focus {
+#main-nav li a,
+#main-nav li a:link,
+#main-nav li a:visited,
+#main-nav li a:active {
+	padding: 7px 15px;
+    background: #1C3740 url(../images/mainnav-bg.gif) repeat-x center;
     color: #FFFFFF;
 }
-.main-nav li.selected a,
-.main-nav li.selected a:link,
-.main-nav li.selected a:visited,
-.main-nav li.selected a:active {
-	background: #009ad5 url(../images/subnav-bg.png) repeat-x 0 50%;
+#main-nav li a:hover {
+    color: #FFFFFF;
+    text-decoration: underline;
 }
-/******************** Sub navigation ********************/
+#main-nav li.selected a,
+#main-nav li.selected a:link,
+#main-nav li.selected a:visited,
+#main-nav li.selected a:active {
+    color: #FFFFFF;
+	background: #00AEF1;
+	padding: 7px 15px;
+}
+
+/**************** SUB NAVIGATION ****************/
 #sub-nav {
-    background: #009ad5;
-    margin: 0 auto;
-    max-width: 1280px;
-    min-width: 960px;
-    text-align: right;
-    height: 26px;
+    font-weight: bold;
+    background: #00AEF1 url(../images/subnav-bg.gif) repeat-x center;
+    height: 30px;
+    line-height: 32px;
+    border: 0;
+}
+#sub-nav ul {
+    float: right;
 }
 #sub-nav li a,
 #sub-nav li a:link,
 #sub-nav li a:visited,
 #sub-nav li a:active {
     color: #FFFFFF;
-    font-weight: bold;
+    padding: 0px 15px;
 }
 #sub-nav li a:hover {
     color: #FFFFFF;
@@ -348,212 +368,189 @@ div.warning,
 #sub-nav li.selected a:link,
 #sub-nav li.selected a:visited,
 #sub-nav li.selected a:active {
+    color: #FFFFFF;
     text-decoration: underline;
 }
-/******************** Dropdown sub navigation ********************/
-.main-nav .dropdown-sub {
-    left: -3px;
+
+/**************** IN PAGE TAB NAVIGATION ****************/
+ul.in-page-tabs,
+ul.edit-view-tabs {
+    background: none;
 }
-.main-nav .dropdown-sub li a,
-.main-nav .dropdown-sub li a:link,
-.main-nav .dropdown-sub li a:visited,
-.main-nav .dropdown-sub li a:active {
-    background: #1b3b46;
-    color: #FFFFFF;
+ul.in-page-tabs li,
+ul.edit-view-tabs li {
+  margin: 0 3px 0 0 !important;
+  background: none;
+    display: inline-block;
 }
-.main-nav .dropdown-sub li a:hover, .main-nav .dropdown-sub li a:focus {
-    background: #00aef1;
-    color: #FFFFFF;
+ul.in-page-tabs li a, ul.in-page-tabs li a:link, ul.in-page-tabs li a:visited, ul.in-page-tabs li a:active, ul.in-page-tabs li input.linkbtn,
+ul.edit-view-tabs li a, ul.edit-view-tabs li a:link, ul.edit-view-tabs li a:visited, ul.edit-view-tabs li a:active {
+  color: #FFF;
+  font-weight: normal;
+  background: #1C3740 url(../images/mainnav-bg.gif) repeat-x center;
 }
-/******************** Tabs ********************/
-ul.in-page-tabs li a,
-ul.in-page-tabs li a:link,
-ul.in-page-tabs li a:visited,
-ul.in-page-tabs li a:active,
-ul.in-page-tabs li input.linkbtn,
-ul.in-page-tabs li button.linkbtn,
-ul.searchtab li span.inactive {
-	color: #FFFFFF;
-	background: url(../images/mainnav-bg.png) repeat-x 0 50%;
+ul.in-page-tabs li a:hover, ul.in-page-tabs li input.linkbtn:hover,
+ul.edit-view-tabs li a:hover {
+  color: #FFF;
+  background: #1C3740 url(../images/mainnav-bg.gif) repeat-x center;
+  text-decoration: underline;
+}
+ul.in-page-tabs li a.current-tab, ul.in-page-tabs li a.current-tab:link, ul.in-page-tabs li a.current-tab:visited, ul.in-page-tabs li a.current-tab:active, ul.in-page-tabs li input.linkbtn.current-tab,
+ul.edit-view-tabs li a.current-tab, ul.in-page-tabs li a.current-tab:link, ul.edit-view-tabs li a.current-tab:visited, ul.edit-view-tabs li a.current-tab:active {
+  color: #FFF;
+  font-weight: bold;
+  background: #00AEF1 url(../images/subnav-bg.gif) repeat-x center;
+}
+
+.subpage {
+  border: 0;
+  border-top: 10px solid #009ad5;
+  background: #1A292F;
+}
+.grouppageswrap {
 	border: 0;
 }
-ul.in-page-tabs li a:hover,
-ul.in-page-tabs li input:hover,
-ul.in-page-tabs li button:hover, {
-	color: #FFFFFF;
-	background: url(../images/mainnav-bg.png) repeat-x 0 50%;
-	text-decoration: underline;
+
+
+/**************** MAIN CONTENT *****************/
+#mainmiddle {
+	background: #080D0F;
+    width: 98%;
 }
-ul.in-page-tabs li a.current-tab,
-ul.in-page-tabs li a.current-tab:link,
-ul.in-page-tabs li a.current-tab:visited,
-ul.in-page-tabs li a.current-tab:active,
-ul.in-page-tabs li input.current-tab,
-ul.in-page-tabs li button.current-tab {
-	background: url(../images/subnav-bg.png) repeat-x 0 50%;
+#micro #main-column-container {
+	background: #080D0F;
+}
+/* system messages between nav and main content */
+/* different message types */
+#messages .ok,
+div.ok {
+    color: #2da000;
+    background-color: #cfe7c5;
+}
+.message.info,
+div.info {
+	background: #366900;
+}
+#messages .error,
+div.error {
+    color: #dd0221;
+    background-color: #eccccc;
+}
+#messages .info {
+    color: #1666a9;
+    background-color: #c7d8e6;
+}
+/* system messages */
+.message {
+    background-color: #1C3740;
     border: 0;
-    color: #FFFFFF;
 }
-/* tab body */
-.subpage {
-    border: 0;
-	border-top: 10px solid #009ad5;
-	background: #10191d;
-	margin-top: 0;
+
+.sitemessage {
+	color: #333;
 }
-/******************** Sidebar ********************/
-/* general sidebar styles */
+
+/**************** SIDEBAR *********/
 #left-column,
 #right-column {
-    margin-top: 15px;
+	background: transparent;
+    margin-top: 10px;
 }
-.sideblock {
-    margin-right: 10px;
-}
-.sideblock {
-    margin-right: 10px;
-}
-.sideblock .sidebar-header {
-    background: #009ad5;
+div.sideblock .sidebar-header {
+    background: #00AEF1 url(../images/subnav-bg.gif) repeat-x center;
     padding: 5px 10px;
+    margin-right: 10px;
 }
-.sideblock h3,
-.sideblock h3 a,
-.sideblock h3 a:link,
-.sideblock h3 a:visited,
-.sideblock h3 a:active {
-	color: #FFFFFF;
+div.sideblock .sidebar-content {
+    margin-right: 10px;
 }
-/* Sidebar login */
-#sb-loginbox .sidebar-content {
-    padding: 5px 0;
-}
-/* Sidebar group navigation */
-#sb-groupnav ul li a.selected {
+div.sideblock h3 {
     color: #FFFFFF;
 }
-/* Sidebar profile */
-#sb-profile .sidebar-header {
-	min-height: 55px;
+div.sideblock h3 a,
+div.sideblock h3 a:link,
+div.sideblock h3 a:visited,
+div.sideblock h3 a:active {
+	color: #FFF !important;
 }
-#sb-profile ul ul a {
-    color: #00AEF1;
+div.sideblock ul li {
+	font-weight: bold;
+	color: #7EF000;
 }
-/* Sidebar quota/group quota bar */
+div.sideblock ul ul {
+	list-style-type: square;
+}
+
+/* Side Login */
+#loginform_container #login_login_container,
+#loginform_container #login_login_extra_container {
+    border: 0;
+    background: #000000;
+}
+
+/* Side Profile */
+#sb-profile #user-profileicon {
+	padding-top: 35px;
+}
+#user-profileicon img {
+	border: 0;
+}
+#sb-profile .sidebar-content {
+	min-height: 60px;
+}
+
+/* Side Quota Bar */
 #quota_used {
     color: #00AEF1;
 }
 #quota_total {
-    color: #00AEF1;
+    color: #7EF000;
 }
-/* Sidebar tags */
-#sb-tags {
-    overflow: hidden;
+#quota_bar,
+#quota_bar_100 {
+    background: url(../images/quota_bar_bg.gif) no-repeat;
 }
-/******************** Footer ********************/
+#quota_fill {
+    background-image: url(../images/quota_bar_highlight.gif);
+}
+
+
+/******************** FOOTER ****************************/
 #footer-wrap {
-    color: #888888;
+    width: 98%;
+    color: #888;
 }
 #footer a,
 #footer a:link,
-#footer a:visited,
 #footer a:active,
+#footer a:visited,
 #footer a:hover {
     color: #FFFFFF;
 }
-/******************** Page by page styles (listed by navigation order) ********************/
-/* Login page */
-#loginform_container #login_login_container,
-#loginform_container #login_login_extra_container {
-    background: #000000;
-}
-/* persona button */
-/* link body */
-a.persona-button{
-    background: #1b3b46;
-    background: -moz-linear-gradient(top, #254e5c, #1b3b46);
-    background: -ms-linear-gradient(top, #254e5c, #1b3b46);
-    background: -o-linear-gradient(top, #254e5c, #1b3b46);
-    background: -webkit-linear-gradient(top, #254e5c, #1b3b46);
-    background: linear-gradient(top, #254e5c, #1b3b46);
-}
-a.persona-button:hover{
-    background: #1b3b46;
-    background: -moz-linear-gradient(top, #254e5c, #1b3b46);
-    background: -ms-linear-gradient(top, #254e5c, #1b3b46);
-    background: -o-linear-gradient(top, #254e5c, #1b3b46);
-    background: -webkit-linear-gradient(top, #254e5c, #1b3b46);
-    background: linear-gradient(top, #254e5c, #1b3b46);
-}
-a.persona-button span:before{ /* Icon BG */
-    background: #42a9dd;
-    background: -moz-linear-gradient(top, #50b8e8, #3095ce);
-    background: -ms-linear-gradient(top, #50b8e8, #3095ce);
-    background: -o-linear-gradient(top, #50b8e8, #3095ce);
-    background: -webkit-linear-gradient(top, #50b8e8, #3095ce);
-    background: linear-gradient(top, #50b8e8, #3095ce);
-}
-a.persona-button:before{ /* Triangle */
-    background: #42a9dd;
-    background: -moz-linear-gradient(-45deg, #50b8e8, #3095ce);
-	background: -ms-linear-gradient(-45deg, #50b8e8, #3095ce);
-	background: -o-linear-gradient(-45deg, #50b8e8, #3095ce);
-	background: -webkit-linear-gradient(-45deg, #50b8e8, #3095ce);
-	background: linear-gradient(-45deg, #3095ce, #50b8e8); /* flipped for updated spec */
-}
-/* Dashboard */
-.home-info-table {
-    border: 3px solid #0C2839;
-    background: #000000;
-}
-.home-info p.subtitle {
+
+
+/****************************** PAGE BY PAGE STYLES **********************************/
+.fileupload, .uploaddisabled, #createfolder, #upload {
+    background: #1C3740;
     border: 0;
-    background: #0C2839;
-	color: #cccccc;
 }
-/* Content > Files */
-.uploaddisabled,
-.fileupload,
-#createfolder {
-    background: #13282f;
+#editpost_filebrowser_upload_browse, #editpost_filebrowser_open_upload_browse_container {
+    border-color: #10171A;
 }
-#file_dropzone_container {
-    background-color: #344f58;
-    -webkit-box-shadow: inset 0px 0px 5px 0px #13282f;
-	box-shadow: inset 0px 0px 5px 0px #13282f;
+/* Userlists used in admin section and on edit interaction form */
+.userlisttable tbody tr th {
+	color: #BEE3F1;
 }
-#file_dropzone_container .dz-message {
-    color: #8ebacb;
-}
-/* edit row background */
-tr.editrow,
-tr.editrow td,
-tr#files_filebrowser_edit_row,
-tr#files_filebrowser_edit_row td {
-	background: #000000 !important;
-	border-bottom: 0;
-}
-/* folder row background */
-tr.folder td {
-    background: #10171A;
-	border-bottom: 1px solid #000000;
-}
-/* Content > Journals > Journal posts */
 #postlist .published {
     background: #000000;
 }
 #postlist .draft {
     background: #1a0e0e;
 }
-#postlist .postdescription h1,
-#postlist .postdescription h2,
-#postlist .postdescription h3,
-#postlist .postdescription h4,
-#postlist .postdescription h5,
-#postlist .postdescription h6 {
-    color: #FFFFFF;
+#postlist .postdescription h1, #postlist .postdescription h2, #postlist .postdescription h3, #postlist .postdescription h4, #postlist .postdescription h5, #postlist .postdescription h6 {
+    color: #759fb0;
 }
-/* attachments */
+/* Attached file lists */
 table.attachments {
 	border: 2px solid #10171A;
     background-color: #10171A;
@@ -564,114 +561,109 @@ table.attachments {
 table.attachments td {
 	border-bottom: 2px solid #10171A;
 }
-/* Content > Journals > Edit */
-#editpost_filebrowser_upload_browse,
-#editpost_filebrowser_open_upload_browse_container {
-    background: #10171A;
+
+/* User/view */
+#userview {
+	background-color: transparent;
+	border-color: #1C3740;
 }
-/* Content > tests */
-tr.incomplete td {
-    background: #400d0d;
-    color: #FFFFFF;
+#userview .user-icon {
+	background: none;
+	border: 0;
 }
-/* page/collection submission form */
-.submissionform {
-	background: #10171A;
+
+/* My Views */
+#myviews td {
+    border:none;
 }
-.submitted-viewitem {
-    background: #000000;   
+#myviews .submit-viewitem {
+	background: #080D0F;
 }
-/* Portfolio > Pages > Edit layout */
-#togglecustomlayoutoptions {
-	background: #0C2839;
-	border-color: #0C2839;
-}
-#createcustomlayoutpane {
-	background: #0C2839;
-}
-#previewcustomlayoutpane {
-	background: #10171A;
-}
-/* Portfolio > Pages > Copy a page */
-#copyview .searchquery {
-	background: #0C2839;
-}
-/* Portfolio > Pages > Edit page > Choose skin tab */
-div.currentskin {
-    background: #000000;
-}
-ul.userskins,
-ul.siteskins,
-ul.favorskins {
-    background: #10171A;
-}
-/* Portfolio > Collections > Edit collection */
-#collectionpageswrap {
-    background: #10171A;
-}
-#collectionpages {
-    background: #000000;
-    border-color: #10171A;
-}
-/* Portfolio > Shared by me > Edit access */
-#editaccess #editaccess_collections_container,
-#editaccess #editaccess_views_container,
-#editaccess #editaccess_accesslist_container,
-#editaccess #editaccess_more_container {
-	background: #10171A;
-}
-#editaccesswrap {
-    background: #000000;
-}
-.accesslist-head2 th {
-    border-bottom: 1px dotted #D1D1D1;
-}
-#accesslistitems td {
-	color: #FFFFFF;
-}
-/* Portfolio > Skins */
-.skinthumb {
-	background: #10171A;
-}
-/* Portfolio > Skins > Edit skin */
-#designskinform_view_background_image_open_upload_browse_container,
-#designskinform_view_background_image_upload_browse,
-#designskinform_body_background_image_open_upload_browse_container,
-#designskinform_body_background_image_upload_browse {
-	background: #000000;
-}
-/* Portfolio > Export */
-#export fieldset table colgroup col {
-    border-color: #080D0F;
-}
+
+/* Copy a view */
 #viewpreview {
-    border: 10px solid #000000;
-    background: #10171A;
+  border: 10px solid #363636;
+  background-color: #000000;
 }
-/* Groups > Group's about page */
-ul.groupuserstatus {
-    background: #10171A;
+#viewpreviewinner {
+  border: 0;
+  background: none;
 }
-/* Groups > Group's members page */
-.memberssearch {
-    background: #10171A;
+
+/* View access */
+#viewacl_lhs {
+	border: 1px solid #1C3740;
+}
+#viewacl_lhs #results thead th {
+	background: none;
+}
+#viewacl_lhs #results tfoot td {
+	background: none;
+}
+#accesslistitems .ai-container {
+	background: #1C3740;
+}
+#accesslistitems .ai-container table th {
+	color: #BEE3F1;
+}
+#potentialpresetitems div {
+	border-bottom: 0;
+}
+
+
+#friendslist td, #onlinelist td, #adminlist td, #stafflist td, #pendinglist td {
+	border-bottom: 0;
+}
+
+/* Group: about */
+.group-info {
+    border: 0;
+    background-color: #000000;
+}
+
+.main-column .groupviewsection table h3 a {
+    color: #7EF000 !important;
+}
+
+/* Home page info boxes */
+
+#home-info-container {
+    border: 1px solid #0C2839;
+    background: #000000;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+.home-info {
+    border: 0;
+    background: none;
+}
+.home-info p.subtitle {
+    border: 0;
+    background: #0C2839;
+	color: #cccccc;
+}
+#export fieldset {
+    background: #0C2839;
+	border:0;
+}
+#friendslist ul.actionlist li {
+	border-top: 1px solid #080D0F;
 }
 /* Forum */
+
+/* Forum list */
+#forumslist th {
+    border-bottom: 1px dotted #BEE3F1;
+}
+/* Topic list */
+#forumtopicstable th {
+    border-bottom: 1px dotted #BEE3F1;
+}
+/* topic types */
 .stickytopic td {
     background-color: #10171A;
-}
-.forumpost {
-    background: #080D0F;
-    border: 2px solid #080D0F;
-}
-.forumpostleft {
-    background: #080D0F;
-}
-.postedits {
-    background: #000000;
-}
-.replyto {
-    background-color: #10171A;
+    border-bottom: 1px solid #080D0F;
 }
 .deletedpost {
     background-color: #10171A;
@@ -679,66 +671,154 @@ ul.groupuserstatus {
 .editstopost {
     background-color: #10171A;
 }
-/* Groups > My/Find Friends */
-ul.actionlist li.denyrequest a,
-ul.actionlist li.editgroup a,
-ul.actionlist li.friend a,
-ul.actionlist li.messages a,
-ul.actionlist li.removefriend a,
-ul.actionlist li form input.submit {
-    border: 1px solid #1b3b46;
-    color: #FFFFFF;
-    background-color: #254e5c;
+/* admin & moderator */
+.groupadmin {
+    color: #3366CC;
 }
-ul.actionlist li.denyrequest a:hover,
-ul.actionlist li.editgroup a:hover,
-ul.actionlist li.friend a:hover,
-ul.actionlist li.messages a:hover,
-ul.actionlist li.removefriend a:hover,
-ul.actionlist li form input.submit:hover {
-    background-color: #2c5968;
-    color: #FFFFFF;
+.moderator {
+    color: #993399;
 }
-ul.actionlist li.denyrequest a:active,
-ul.actionlist li.editgroup a:active,
-ul.actionlist li.friend a:active,
-ul.actionlist li.messages a:active,
-ul.actionlist li.removefriend a:active,
-ul.actionlist li form input.submit:active {
-    background-color: #336171;
-    color: #FFFFFF;
-    border: 1px solid #184554;
-}
-div#groupbox #groupboxwrap {
-    border: 10px solid #000000;
-    background: #10171A;
-}
-/* Universal search */
-#universal-search-container {
-    background: #10171A;
-}
-ul.searchtab li span.inactive {
-    color: #3d6876;
-}
-/* Wall */
-.wallpost {
-    border-bottom: 1px solid #080D0F;
-	background: #1C3740;
-}
-#wall .private {
-    background: #274f5c;
-}
-/* My tags */
-#results_filter {
-    background: #009ad5;
-}
-#results_filter .filtername a {
-    background-color: #bcecff;
-    border-color: #abe8ff;
-}
-.edittag {
+/* Posts */
+.forumpost {
+    border: 0;
     background-color: #10171A;
 }
-.deletetag {
-    background-color: #3e0000;
+.forumpostleft {
+    background-color: #000000;
+}
+.forumpostleft h5 {
+    color: #BEE3F1;
+}
+.posttime {
+    color: #BEE3F1;
+}
+.postedits {
+    background: #000;
+}
+#viewforum div.pagination {
+    background: none;
+}
+/* collection */
+#collectionnavwrap {
+	background: #0C2839;
+}
+#feedback_pagination {
+	background: #080D0F;
+	border-top: 1px dotted #BEE3F1;
+}
+.morelinkwrap,
+#myviews .submitted-viewitem {
+	background: none;
+}
+.viewfooter .releaseviewform {
+	background: #080D0F;
+}
+.memberswrap {
+	border: 0;
+    background: #080D0F;
+}
+.memberssearch {
+	background: #080D0F;
+	border: 0;
+}
+tr.editrow, tr.editrow td {
+	background: #000000 !important;
+	border-bottom: 1px solid #080D0F;
+}
+
+#viewforum {
+	border: 0;
+    background: #000000;
+}
+#editaccess #editaccess_collections_container,
+#editaccess #editaccess_views_container,
+#editaccess #editaccess_accesslist_container,
+#editaccess #editaccess_more_container {
+	background: #000000;
+	border: 0;
+}
+.main-column .accesslist-head2 th {
+    color: #BEE3F1;
+}
+#editaccess .checkboxes label {
+	color: #00AEF1;
+}
+#editaccess fieldset legend,
+#editaccess fieldset legend a {
+	color: #7EF000;
+}
+#accesslistitems .ai-container th, #accesslistitems .ai-container td {
+	border-bottom: 1px solid #000000;
+	color: #FFFFFF;
+}
+.wallpost {
+	background: #10171A;
+	border-color: #080D0F;
+}
+
+div.groupbox {
+  border: 10px solid #363636;
+  background-color: #000000;
+}
+div.groupbox div.jointype {
+	border: 0;
+}
+#addmembers {
+	background: #000000;
+	border: 0;
+}
+.userlist .userlisttable tbody tr th {
+    color: #BEE3F1;
+}
+/**************** DROPDOWN NAVIGATION ****************/
+#main-nav .dropdown-sub {
+    top: 30px;
+    left: -3px;
+}
+#main-nav .dropdown-sub li a,
+#main-nav .dropdown-sub li a:link,
+#main-nav .dropdown-sub li a:visited,
+#main-nav .dropdown-sub li a:active {
+    padding: 6px 13px;
+    background: #1b3b46;
+    color: #FFF;
+    text-decoration: none;
+}
+#main-nav .dropdown-sub li a:hover {
+    background: #00aef1;
+    color: #FFF;
+    text-decoration: none;
+}
+/* Persona button */
+a.persona-button{
+		background: #1b3b46;
+		background: -moz-linear-gradient(top, #254e5c, #1b3b46);
+		background: -ms-linear-gradient(top, #254e5c, #1b3b46);
+		background: -o-linear-gradient(top, #254e5c, #1b3b46);
+		background: -webkit-linear-gradient(top, #254e5c, #1b3b46);
+		background: linear-gradient(top, #254e5c, #1b3b46);
+}
+a.persona-button:hover{
+		background: #1b3b46;
+		background: -moz-linear-gradient(top, #254e5c, #1b3b46);
+		background: -ms-linear-gradient(top, #254e5c, #1b3b46);
+		background: -o-linear-gradient(top, #254e5c, #1b3b46);
+		background: -webkit-linear-gradient(top, #254e5c, #1b3b46);
+		background: linear-gradient(top, #254e5c, #1b3b46);
+}
+a.persona-button span:before{ /* Icon BG */
+		background: #42a9dd;
+		background: -moz-linear-gradient(top, #50b8e8, #3095ce);
+		background: -ms-linear-gradient(top, #50b8e8, #3095ce);
+		background: -o-linear-gradient(top, #50b8e8, #3095ce);
+		background: -webkit-linear-gradient(top, #50b8e8, #3095ce);
+		background: linear-gradient(top, #50b8e8, #3095ce);
+}
+a.persona-button:before{ /* Triangle */
+    background: #42a9dd;
+    background: -moz-linear-gradient(-45deg, #50b8e8, #3095ce);
+		background: -ms-linear-gradient(-45deg, #50b8e8, #3095ce);
+		background: -o-linear-gradient(-45deg, #50b8e8, #3095ce);
+		background: -webkit-linear-gradient(-45deg, #50b8e8, #3095ce);
+		background: linear-gradient(-45deg, #3095ce, #50b8e8); /* flipped for updated spec */
 }

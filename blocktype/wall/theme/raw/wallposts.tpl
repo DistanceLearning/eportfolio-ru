@@ -1,6 +1,6 @@
 {include file="header.tpl"}
 
-    <h1>{$displayname}: {str tag='wall' section='blocktype.wall'}</h1>
+    <h2>{$displayname}: {str tag='wall' section='blocktype.wall'}</h2>
     <div class="rbuttons"><a href="{profile_url($owner)}" class="btn">{str tag='backtoprofile' section='blocktype.wall'}</a></div>
     {include file="blocktype:wall:inlineposts.tpl"}
 

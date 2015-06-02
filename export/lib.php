@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage export
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -53,11 +69,6 @@ abstract class PluginExport extends Plugin {
      * is passed to the constructor
      */
     const EXPORT_LIST_OF_ARTEFACTS = -5;
-
-    /*
-     * Export only certain collections and their artefacts
-     */
-    const EXPORT_COLLECTIONS = -6;
 
     /**
      * Maximum filename length in UTF-8 encoding characters
@@ -147,7 +158,6 @@ abstract class PluginExport extends Plugin {
      * @param mixed $artefacts can be:
      *                         - PluginExport::EXPORT_ALL_ARTEFACTS
      *                         - PluginExport::EXPORT_ARTEFACTS_FOR_VIEWS
-     *                         - PluginExport::EXPORT_COLLECTIONS
      *                         - array, containing:
      *                             - int - artefact ids
      *                             - stdclass objects - db rows
@@ -175,10 +185,6 @@ abstract class PluginExport extends Plugin {
         if ($views == self::EXPORT_ALL_VIEWS) {
             $tmpviews = get_column_sql('SELECT id FROM {view} WHERE owner = ? ORDER BY id', array($userid));
             $this->viewexportmode = $views;
-        }
-        else if (is_array($views) && $artefacts == self::EXPORT_COLLECTIONS) {
-            $tmpviews = $views;
-            $this->viewexportmode = self::EXPORT_COLLECTIONS;
         }
         else if (is_array($views)) {
             $tmpviews = $views;
@@ -233,9 +239,6 @@ abstract class PluginExport extends Plugin {
             }
             if ($artefacts == self::EXPORT_ARTEFACTS_FOR_VIEWS) {
                 $this->artefactexportmode = $artefacts;
-            }
-            else if ($artefacts == self::EXPORT_COLLECTIONS) {
-                $this->artefactexportmode = self::EXPORT_ARTEFACTS_FOR_VIEWS;
             }
             else {
                 $tmpartefacts = array_unique(array_merge($tmpartefacts, $artefacts));

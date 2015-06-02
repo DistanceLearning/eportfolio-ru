@@ -171,7 +171,7 @@ class XMLDBmysql extends XMLDBGenerator {
     }
 
     /**
-     * Given one XMLDBTable and one XMLDBField, return the SQL statements needded to create its enum
+     * Given one XMLDBTable and one XMLDBField, return the SQL statements needded to create its enum 
      * (usually invoked from getModifyEnumSQL()
      */
     function getCreateEnumSQL($xmldb_table, $xmldb_field) {
@@ -179,8 +179,8 @@ class XMLDBmysql extends XMLDBGenerator {
         return $this->getAlterFieldSQL($xmldb_table, $xmldb_field);
     }
 
-    /**
-     * Given one XMLDBTable and one XMLDBField, return the SQL statements needded to drop its enum
+    /**     
+     * Given one XMLDBTable and one XMLDBField, return the SQL statements needded to drop its enum 
      * (usually invoked from getModifyEnumSQL()
      */
     function getDropEnumSQL($xmldb_table, $xmldb_field) {
@@ -189,7 +189,7 @@ class XMLDBmysql extends XMLDBGenerator {
     }
 
     /**
-     * Given one XMLDBTable and one XMLDBField, return the SQL statements needded to create its default
+     * Given one XMLDBTable and one XMLDBField, return the SQL statements needded to create its default 
      * (usually invoked from getModifyDefaultSQL()
      */
     function getCreateDefaultSQL($xmldb_table, $xmldb_field) {
@@ -217,7 +217,7 @@ class XMLDBmysql extends XMLDBGenerator {
     }
 
     /**
-     * Given one XMLDBTable and one XMLDBField, return the SQL statements needded to drop its default
+     * Given one XMLDBTable and one XMLDBField, return the SQL statements needded to drop its default 
      * (usually invoked from getModifyDefaultSQL()
      */
     function getDropDefaultSQL($xmldb_table, $xmldb_field) {
@@ -253,7 +253,7 @@ class XMLDBmysql extends XMLDBGenerator {
     }
 
     /**
-     * Given one XMLDBTable returns one array with all the check constrainsts
+     * Given one XMLDBTable returns one array with all the check constrainsts 
      * in the table (fetched from DB)
      * Each element contains the name of the constraint and its description
      * If no check constraints are found, returns an empty array

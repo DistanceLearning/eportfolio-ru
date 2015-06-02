@@ -1,16 +1,28 @@
 /**
  * Javascript for the view menu
  * @source: http://gitorious.org/mahara/mahara
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
  *
+ * @licstart
+ * Copyright (C) 2006-2010  Catalyst IT Ltd
+ *
+ * The JavaScript code in this page is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GNU GPL) as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.  The code is distributed WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+ *
+ * As additional permission under GNU GPL version 3 section 7, you
+ * may distribute non-source (e.g., minimized or compacted) forms of
+ * that code without the copy of the GNU GPL normally required by
+ * section 4, provided you include this license notice and a URL
+ * through which recipients can access the Corresponding Source.
+ * @licend
  */
 
 function addFeedbackSuccess(form, data) {
     addElementClass('add_feedback_form', 'hidden');
-    if ($('overlay')) {
-        removeElement('overlay');
-    }
     paginator.updateResults(data);
     // Clear rating from previous submission
     forEach(getElementsByTagAndClassName('input', 'star', 'add_feedback_form_rating_container'), function (r) {
@@ -33,18 +45,6 @@ function objectionSuccess(form, data) {
     formSuccess(form, data);
 }
 
-function moveFeedbackForm(tinymceused) {
-    if (tinymceused) {
-        tinyMCE.execCommand('mceRemoveControl', false, 'add_feedback_form_message');
-    }
-    form = $('add_feedback_form');
-    removeElement(form);
-    appendChildNodes($('add_feedback_link').parentNode, form);
-    if (tinymceused) {
-       tinyMCE.execCommand('mceAddControl', false, 'add_feedback_form_message');
-    }
-}
-
 function rewriteCancelButtons() {
     if ($('add_feedback_form')) {
         var buttons = getElementsByTagAndClassName('input', 'cancel', 'add_feedback_form');
@@ -56,9 +56,6 @@ function rewriteCancelButtons() {
                 connect(button, 'onclick', function (e) {
                     e.stop();
                     addElementClass('add_feedback_form', 'hidden');
-                    if ($('overlay')) {
-                        removeElement('overlay');
-                    }
                     return false;
                 });
             }
@@ -82,38 +79,18 @@ addLoadEvent(function () {
                 (!document.documentElement || typeof(document.documentElement.style.maxHeight) == "undefined");
 
             connect('add_feedback_link', 'onclick', function(e) {
-                var tinymceused = (typeof(tinyMCE) != 'undefined' && typeof(tinyMCE.get('add_feedback_form_message')) != 'undefined');
-
                 e.stop();
                 if ($('objection_form')) {
                     addElementClass('objection_form', 'hidden');
                 }
                 removeElementClass('add_feedback_form', 'js-hidden');
                 removeElementClass('add_feedback_form', 'hidden');
-                if (typeof(feedbacklinkinblock) != 'undefined') {
-                    // need to display it as a 'popup' form
-                    moveFeedbackForm(tinymceused);
-                    addElementClass('add_feedback_form', 'blockinstance');
-                    addElementClass('add_feedback_form', 'configure');
-                    addElementClass('add_feedback_form', 'feedback_form_overlay');
-                    var formposition = new Object();
-                    formposition.x = (((getViewportDimensions().w / 2) - 300) > 0) ? (getViewportDimensions().w / 2) - 300 : 0;
-                    formposition.y = 30;
-                    setElementPosition('add_feedback_form', formposition);
-                    appendChildNodes(document.body, DIV({id: 'overlay'}));
-                }
+
                 // IE6 fails to hide tinymce properly after feedback
                 // submission, so force it to reload the page by disconnecting
                 // the submit handler
                 if (isIE6) {
                     disconnectAll('add_feedback_form', 'onsubmit');
-                }
-
-                if (tinymceused) {
-                    tinyMCE.get('add_feedback_form_message').focus();
-                }
-                else {
-                    $('add_feedback_form_message').focus();
                 }
 
                 return false;
@@ -140,10 +117,7 @@ addLoadEvent(function () {
     if ($('toggle_watchlist_link')) {
         connect('toggle_watchlist_link', 'onclick', function (e) {
             e.stop();
-            if (typeof artefactid === 'undefined') {
-                artefactid = null;
-            }
-            sendjsonrequest(config.wwwroot + 'view/togglewatchlist.json.php', {'view': viewid, 'artefact': artefactid}, 'POST', function(data) {
+            sendjsonrequest(config.wwwroot + 'view/togglewatchlist.json.php', {'view': viewid}, 'POST', function(data) {
                 $('toggle_watchlist_link').innerHTML = data.newtext;
             });
         });

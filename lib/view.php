@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -37,15 +53,11 @@ class View {
     private $ownerobj;
     private $groupobj;
     private $institutionobj;
-    private $numcolumns; // now redundant
-    private $columnsperrow; // assoc array of rows set and get using view_rows_columns db table
-    private $numrows;
+    private $numcolumns;
     private $layout;
     private $theme;
-    private $rows;
     private $columns;
-    private $dirtyrows; // for when we change stuff
-    private $dirtycolumns; // now includes reference to row [row][column]
+    private $dirtycolumns; // for when we change stuff
     private $tags;
     private $categorydata;
     private $template;
@@ -60,29 +72,16 @@ class View {
     private $accessconf;
     private $locked;
     private $urlid;
-    private $skin;
 
     /**
-     * Which view layout is considered the "default" for views with the given
-     * number of columns. Must be present in $layouts of course.
-     */
-    public static $defaultcolumnlayouts = array(
-            1 => '100',
-            2 => '50,50',
-            3 => '33,33,33',
-            4 => '25,25,25,25',
-            5 => '20,20,20,20,20',
-    );
-
-    /**
-     * Valid view column layouts. These are read at install time and inserted into
-     * view_layout_columns, but not updated afterwards, so if you're changing one
-     * you'll need to do that manually.
+     * Valid view layouts. These are read at install time and inserted into
+     * view_layout, but not updated afterwards, so if you're changing one
+     * you'll need to do that manually. Actually, you'd better talk to the
+     * Mahara dev team about what else needs changing if you do touch this.
      *
-     * The key represents the number of columns, and the value is an array of all the
-     * view_layout_columns records that have that number of columns
+     * A hash of columns => list of view widths
      */
-    public static $basic_column_layouts = array(
+    public static $layouts = array(
         1 => array(
             '100',
         ),
@@ -94,8 +93,6 @@ class View {
         3 => array(
             '33,33,33',
             '25,50,25',
-            '25,25,50',
-            '50,25,25',
             '15,70,15',
         ),
         4 => array(
@@ -108,120 +105,16 @@ class View {
     );
 
     /**
-     * The default layout options to be read at install time.
-     * Each view_layout record is based on the array key and the count of its values.
-     * Each view_layout_rows_columns record is based on the sub array.
-     * For example:
-     *  18 => array(
-     *              1 => '100',
-     *              2 => '50,50',
-     *              3 => '100'
-     *              'order' => 3
-     *  ),
-     * will insert a record in view_layout with id = 18 and rows = 3
-     * and will insert 3 records in view_layout_rows_columns:
-     *  - viewlayout = 18, rows = 1, columns = 1
-     *  - viewlayout = 18, rows = 2, columns = 2
-     *  - viewlayout = 18, rows = 3, columns = 1
-     * And the "order" key indicates that this should be the 3rd option in the layout menu
+     * Which view layout is considered the "default" for views with the given
+     * number of columns. Must be present in $layouts of course.
      */
-    public static $defaultlayoutoptions = array(
-        1 => array(
-                1 => '100',
-                'order' => 1,
-            ),
-        2 => array(
-                1 => '50,50',
-                'order' => 2,
-            ),
-        3 => array(
-                1 => '67,33',
-                'order' => 3,
-            ),
-        4 => array(
-                1 => '33,67',
-                'order' => 4,
-            ),
-        5 => array(
-                1 => '33,33,33',
-                'order' => 5,
-            ),
-        6 => array(
-                1 => '25,50,25',
-                'order' => 6,
-            ),
-        7 => array(
-                1 => '25,25,50'
-            ),
-        8 => array(
-                1 => '50,25,25'
-            ),
-        9 => array(
-                1 => '15,70,15'
-            ),
-        10 => array(
-                1 => '25,25,25,25'
-            ),
-        11 => array(
-                1 => '20,30,30,20'
-            ),
-        12 => array(
-                1 => '20,20,20,20,20'
-            ),
-        13 => array(
-                1 => '100',
-                2 => '25,50,25'
-            ),
-        14 => array(
-                1 => '100',
-                2 => '33,67',
-                'order' => 7
-            ),
-        15 => array(
-                1 => '100',
-                2 => '67,33'
-            ),
-        16 => array(
-                1 => '100',
-                2 => '50,50'
-            ),
-        17 => array(
-                1 => '100',
-                2 => '33,33,33',
-                'order' => 8
-            ),
-        18 => array(
-                1 => '100',
-                2 => '50,50',
-                3 => '100'
-            ),
-        19 => array(
-                1 => '100',
-                2 => '33,33,33',
-                3 => '100',
-                'order' => 9
-            ),
-        20 => array(
-                1 => '100',
-                2 => '25,50,25',
-                3 => '100'
-            ),
-        21 => array(
-                1 => '100',
-                2 => '50,50',
-                3 => '33,33,33',
-                'order' => 10
-            ),
+    public static $defaultlayouts = array(
+        1 => '100',
+        2 => '50,50',
+        3 => '33,33,33',
+        4 => '25,25,25,25',
+        5 => '20,20,20,20,20',
     );
-
-    public static $maxlayoutrows = 6; // see number of colours avail in layoutpreview.php
-
-    /**
-     * For retrieving and checking numbers of columnns in any given row
-     * Initialised in constructor
-     * An array of objects which represent each row in view_layout_columns
-     */
-    public static $layoutcolumns;
 
     public function __construct($id=0, $data=null) {
         global $USER;
@@ -280,10 +173,6 @@ class View {
             }
         }
 
-        if (empty(self::$layoutcolumns)) {
-            self::$layoutcolumns = get_records_assoc('view_layout_columns', '', '', 'columns,id');
-        }
-
         // Add in owner and group objects if we already happen to have them from view_search(), etc.
         if (isset($data['user']) && isset($data['user']->id) && $data['user']->id == $this->owner) {
             $this->ownerobj = $data['user'];
@@ -296,21 +185,14 @@ class View {
         }
 
         $this->atime = time();
-        $this->rows = array();
         $this->columns = array();
-        $this->dirtyrows = array();
         $this->dirtycolumns = array();
-
-        // set only for existing views - _create provides default value
-        if (empty($this->columnsperrow)) {
-            $this->columnsperrow = get_records_assoc('view_rows_columns', 'view', $this->get('id'), 'row', 'row, columns');
-        }
     }
 
     /**
      * Creates a new View for the given user/group/institution.
-     *
-     * You can specify who the view is being created _by_ with the second
+     * 
+     * You can specify who the view is being created _by_ with the second 
      * parameter. This defaults to the current logged in user's ID.
      *
      * @param array $viewdata See View::_create
@@ -327,21 +209,21 @@ class View {
     }
 
     /**
-     * Creates a View for the given user, based off a given template and other
+     * Creates a View for the given user, based off a given template and other 
      * View information supplied.
      *
-     * Will set a default title of 'Copy of $viewtitle' if title is not
+     * Will set a default title of 'Copy of $viewtitle' if title is not 
      * specified in $viewdata and $titlefromtemplate == false.
      *
      * @param array $viewdata See View::_create
      * @param int $templateid The ID of the View to copy
-     * @param int $userid     The user who has issued the command to create the
+     * @param int $userid     The user who has issued the command to create the 
      *                        view. See View::_create
      * @param int $checkaccess Whether to check that the user can see the view before copying it
-     * @return array A list consisting of the new view, the template view and
-     *               information about the copy - i.e. how many blocks and
+     * @return array A list consisting of the new view, the template view and 
+     *               information about the copy - i.e. how many blocks and 
      *               artefacts were copied
-     * @throws SystemException under various circumstances, see the source for
+     * @throws SystemException under various circumstances, see the source for 
      *                         more information
      */
     public static function create_from_template($viewdata, $templateid, $userid=null, $checkaccess=true, $titlefromtemplate=false) {
@@ -361,7 +243,7 @@ class View {
             throw new SystemException("View::create_from_template: This template has been deleted");
         }
 
-        if ($checkaccess && !$template->get('template') && !$user->can_edit_view($template)) {
+        if (!$template->get('template') && !$user->can_edit_view($template)) {
             throw new SystemException("View::create_from_template: Attempting to create a View from another View that is not marked as a template");
         }
         else if ($checkaccess && !can_view_view($templateid, $userid)) {
@@ -383,10 +265,6 @@ class View {
             $view->set('dirty', true);
         }
 
-        $view->urlid = generate_urlid($view->title, get_config('cleanurlviewdefault'), 3, 100);
-        $viewdata['owner'] = $userid;
-        $view->urlid = self::new_urlid($view->urlid, (object)$viewdata);
-
         try {
             $copystatus = $view->copy_contents($template);
         }
@@ -396,35 +274,6 @@ class View {
         }
 
         $view->commit();
-
-        // if layout is set, and it's not a default layout
-        // add an entry to usr_custom_layout if one does not already exist
-        if ($template->get('layout') !== null) {
-            $customlayout = get_record('view_layout', 'id', $template->get('layout'), 'iscustom', 1);
-            if ($customlayout !== false) {
-                // is the owner of the copy going to be a group or institution or not?
-                $owner = $view->owner;
-                $group = $view->group;
-                $institution = $view->institution;
-                $haslayout = false;
-
-                if (!empty($group)) {
-                    $owner = null;
-                    $haslayout = get_record('usr_custom_layout', 'layout', $template->get('layout'), 'group', $group);
-                }
-                if (!empty($institution)) {
-                    $owner = null;
-                    $haslayout = get_record('usr_custom_layout', 'layout', $template->get('layout'), 'institution', $institution);
-                }
-                else if (isset($owner)) {
-                    $haslayout = get_record('usr_custom_layout', 'layout', $template->get('layout'), 'usr', $owner);
-                }
-
-                if (!$haslayout) {
-                    $newcustomlayout = insert_record('usr_custom_layout', (object) array('usr' => $owner, 'group' => $group, 'institution' => $institution, 'layout' => $template->get('layout')) );
-                }
-            }
-        }
 
         $blocks = get_records_array('block_instance', 'view', $view->get('id'));
         if ($blocks) {
@@ -463,33 +312,33 @@ class View {
     }
 
     /**
-     * Creates a new View for the given user, based on the given information
+     * Creates a new View for the given user, based on the given information 
      * about the view.
      *
-     * Validation of the view data is performed, then the View is created. If
+     * Validation of the view data is performed, then the View is created. If 
      * the View is to be owned by a group, that group is given access to it.
      *
-     * @param array $viewdata Data about the view. You can pass in most fields
+     * @param array $viewdata Data about the view. You can pass in most fields 
      *                        that appear in the view table.
      *
-     *                        Note that you set who owns the View by setting
-     *                        either the owner, group or institution field as
+     *                        Note that you set who owns the View by setting 
+     *                        either the owner, group or institution field as 
      *                        approriate.
      *
-     *                        Currently, you cannot pass in access data. Use
-     *                        $view->set_access() after retrieving the $view
+     *                        Currently, you cannot pass in access data. Use 
+     *                        $view->set_access() after retrieving the $view 
      *                        object.
      *
-     * @param int $userid The user who has issued the command to create the
-     *                    View (note: this is different from the "owner" of the
+     * @param int $userid The user who has issued the command to create the 
+     *                    View (note: this is different from the "owner" of the 
      *                    View - a group or institution could be the "owner",
      *                    but it's a _user_ who requests a View is created for it)
      * @return View The created View
-     * @throws SystemException if the View data is invalid - mostly this is due
+     * @throws SystemException if the View data is invalid - mostly this is due 
      *                         to owner information being specified incorrectly.
      */
     private static function _create(&$viewdata, $userid) {
-        // If no owner information is provided, assume that the view is being
+        // If no owner information is provided, assume that the view is being 
         // created by the user for themself
         if (!isset($viewdata['owner']) && !isset($viewdata['group']) && !isset($viewdata['institution'])) {
             $viewdata['owner'] = $userid;
@@ -551,12 +400,10 @@ class View {
 
         // Create the view
         $defaultdata = array(
-            'numcolumns'    => 2,
-            'numrows'       => 1,
-            'columnsperrow' => self::default_columnsperrow(),
-            'template'      => 0,
-            'type'          => 'portfolio',
-            'title'         => (array_key_exists('title', $viewdata)) ? $viewdata['title'] : self::new_title(get_string('Untitled', 'view'), (object)$viewdata),
+            'numcolumns'  => 3,
+            'template'    => 0,
+            'type'        => 'portfolio',
+            'title'       => (array_key_exists('title', $viewdata)) ? $viewdata['title'] : self::new_title(get_string('Untitled', 'view'), (object)$viewdata),
         );
 
         $data = (object)array_merge($defaultdata, $viewdata);
@@ -570,46 +417,15 @@ class View {
         $view->commit();
 
         if (isset($viewdata['group'])) {
-            require_once('activity.php');
-
-            // Although group views are owned by the group, the view creator is treated as owner here.
-            $beforeusers = activity_get_viewaccess_users($view->get('id'), $userid, 'viewaccess');
-
             // By default, group views should be visible to the group
             insert_record('view_access', (object) array(
                 'view'  => $view->get('id'),
                 'group' => $viewdata['group'],
                 'ctime' => db_format_timestamp(time()),
             ));
-
-            // Notify group members
-            $accessdata = new StdClass;
-            $accessdata->view = $view->get('id');
-            $accessdata->owner = $userid;
-            $accessdata->oldusers = $beforeusers;
-            activity_occurred('viewaccess', $accessdata);
-        }
-
-        if (isset($viewdata['layout'])) {
-            // e.g. importing via LEAP2A
-            $layoutsrowscols = get_records_select_array('view_layout_rows_columns', 'viewlayout = ?', array($viewdata['layout']));
-            if ($layoutsrowscols) {
-                delete_records('view_rows_columns', 'view', $view->get('id'));
-                foreach ($layoutsrowscols as $layoutrow) {
-                    insert_record('view_rows_columns', (object)array( 'view' => $view->get('id'), 'row' => $layoutrow->row, 'columns' =>  self::$layoutcolumns[$layoutrow->columns]->columns));
-                }
-            }
         }
 
         return new View($view->get('id')); // Reread to ensure defaults are set
-    }
-
-    public function default_columnsperrow() {
-        $default = array(1 => (object)array('row' => 1, 'columns' => 3, 'widths' => '33,33,33'));
-        if (!$id = get_field('view_layout_columns', 'id', 'columns', $default[1]->columns, 'widths', $default[1]->widths)) {
-            throw new SystemException("View::default_columnsperrow: Default columns = 3, widths = '33,33,33' not in view_layout_columns table");
-        }
-        return $default;
     }
 
     public function get($field) {
@@ -624,9 +440,6 @@ class View {
         }
         if ($field == 'collection') {
             return $this->get_collection();
-        }
-        if ($field == 'columnsperrow') {
-            return $this->get_columnsperrow();
         }
         return $this->{$field};
     }
@@ -659,13 +472,6 @@ class View {
         return $this->collection;
     }
 
-    public function get_columnsperrow() {
-        if (!isset($this->columnsperrow)) {
-            $this->columnsperrow = get_records_assoc('view_rows_columns', 'view', $this->get('id'), 'row', 'row, columns');
-        }
-        return $this->columnsperrow;
-    }
-
     public function collection_id() {
         if ($collection = $this->get_collection()) {
             return $collection->get('id');
@@ -683,13 +489,13 @@ class View {
         if ($this->deleted) {
             return;
         }
-
+      
         if (!empty($this->dirty)) {
             return $this->commit();
         }
     }
 
-    /**
+    /** 
      * This method updates the contents of the view table only.
      */
     public function commit() {
@@ -718,7 +524,6 @@ class View {
         }
 
         if (isset($this->tags)) {
-            $this->tags = check_case_sensitive($this->tags, 'view_tag');
             delete_records('view_tag', 'view', $this->get('id'));
             foreach ($this->get_tags() as $tag) {
                 //truncate the tag before insert it into the database
@@ -731,13 +536,6 @@ class View {
             delete_records('view_autocreate_grouptype', 'view', $this->get('id'));
             foreach ($this->copynewgroups as $grouptype) {
                 insert_record('view_autocreate_grouptype', (object)array( 'view' => $this->get('id'), 'grouptype' => $grouptype));
-            }
-        }
-
-        if (isset($this->columnsperrow)) {
-            delete_records('view_rows_columns', 'view', $this->get('id'));
-            foreach ($this->get_columnsperrow() as $viewrow) {
-                insert_record('view_rows_columns', (object)array( 'view' => $this->get('id'), 'row' => $viewrow->row, 'columns' => $viewrow->columns));
             }
         }
 
@@ -776,7 +574,7 @@ class View {
 
     public function find_artefact_children($artefact, $allchildren, &$refs) {
 
-        $children = array();
+        $children = array();        
         if ($allchildren) {
             foreach ($allchildren as $child) {
                 if ($child->parent != $artefact->id) {
@@ -785,7 +583,7 @@ class View {
                 $children[$child->id] = array();
                 $children[$child->id]['artefact'] = $child;
                 $refs[$child->id] = $child;
-                $children[$child->id]['children'] = $this->find_artefact_children($child,
+                $children[$child->id]['children'] = $this->find_artefact_children($child, 
                                                             $allchildren, $refs);
             }
         }
@@ -843,7 +641,6 @@ class View {
             }
         }
         handle_event('deleteview', $this->id);
-        delete_records('view_rows_columns', 'view', $this->id);
         delete_records('view','id',$this->id);
         if (!empty($this->owner) && $this->is_submitted()) {
             // There should be no way to delete a submitted view,
@@ -967,6 +764,7 @@ class View {
         return $a->approvecomments - $b->approvecomments;
     }
 
+
     public static function update_view_access($config, $viewids) {
 
         db_begin();
@@ -1008,199 +806,6 @@ class View {
         }
 
         db_commit();
-    }
-
-    /*Return preview image for creation of custom layout
-     */
-    public function updatecustomlayoutpreview($values) {
-        global $THEME;
-        require_once(get_config('libroot') . 'layoutpreviewimage.php');
-
-        $require = array('numrows');
-        foreach ($require as $require) {
-            if (!array_key_exists($require, $values) || empty($values[$require])) {
-                throw new ParamOutOfRangeException(get_string('missingparam' . $require, 'error'));
-            }
-        }
-
-        $numrows = $values['numrows'];
-        $collayouts = array();
-        for ($i=0; $i<$numrows; $i++) {
-            if (array_key_exists('row'. ($i+1), $values)) {
-                $collayouts['row' . ($i+1)] = $values['row' . ($i+1)];
-            }
-        }
-
-        $previewimage = 'vl-';
-        $alttext = '';
-        $customlayout = array();
-        for ($i=0; $i<$numrows; $i++) {
-            $id = $collayouts['row' . ($i+1)];
-            $widths = get_field('view_layout_columns', 'widths', 'id', $id);
-            $hyphenatedwidths = str_replace(',', '-', $widths);
-            $customlayout[$i+1] = $hyphenatedwidths;
-            $previewimage .= $hyphenatedwidths;
-            $alttext .= $hyphenatedwidths;
-            if ($i != $numrows -1) {
-                $previewimage .= '_';
-                $alttext .= ' / ';
-            }
-        }
-
-        if (LayoutPreviewImage::preview_exists($previewimage)) {
-            $img = get_config('wwwroot') . 'thumb.php?type=customviewlayout&cvl=' . $previewimage;
-            $data = array('data' => $img, 'alttext' => $alttext, 'newimage' => 0);
-            return $data;
-        }
-        else {
-            // generate thumbnail images with GD
-            $data= array();
-            $data['layout'] = $customlayout;
-            $data['description'] = 'test';
-            $data['owner'] = 1;
-
-            $previewlayoutimage = new LayoutPreviewImage($data);
-            $newpreviewimage = $previewlayoutimage->create_preview();
-
-            if ($newpreviewimage) {
-                $img = get_config('wwwroot') . 'thumb.php?type=customviewlayout&cvl=' . $previewimage;
-                $data = array('data' => $img, 'alttext' => $alttext, 'newimage' => 1);
-                return $data;
-            }
-            else {
-                $msg = '<p>' . get_string('previewimagegenerationfailed', 'error') . '</p>';
-                $data = array('data' => $msg, 'alttext' => $alttext, 'newimage' => 0);
-                return $data;
-            }
-        }
-    }
-
-    public function addcustomlayout($values) {
-        global $THEME;
-        $require = array('numrows');
-        foreach ($require as $require) {
-            if (!array_key_exists($require, $values) || empty($values[$require])) {
-                throw new ParamOutOfRangeException(get_string('missingparam' . $require, 'error'));
-            }
-        }
-
-        $numrows = $values['numrows'];
-        $alttext = '';
-        $rowscolssql = '';
-        $rowscols = array();
-        $resultids = array();
-        $layoutid = 0;
-
-        for ($i=0; $i<$numrows; $i++) {
-            if (array_key_exists('row'. ($i+1), $values)) {
-                $rowscolssql .= '(row = ' . ($i+1) . ' AND columns = ' . $values['row' . ($i+1)] . ')';
-                if ($i != $numrows-1) {
-                    $rowscolssql .= ' OR ';
-                }
-                $widths = get_field('view_layout_columns', 'widths', 'id', $values['row' . ($i+1)]);
-                $hyphenatedwidths = str_replace(',', '-', $widths);
-                $alttext .= $hyphenatedwidths;
-                if ($i != $numrows -1) {
-                    $alttext .= ' / ';
-                }
-                $rowscols[$i+1] = $values['row' . ($i+1)];
-            }
-        }
-
-        $owner = $this->owner;
-        $group = $this->group;
-        $institution = $this->institution;
-        if (!empty($group)) {
-            $owner = null;
-            $andclause = 'AND ucl.group = ?';
-            $andclausevalue = $group;
-        }
-        else if (!empty($institution)) {
-            $owner = null;
-            $andclause = 'AND ucl.institution = ?';
-            $andclausevalue = $institution;
-        }
-        else if (isset($owner)) {
-            $andclause = 'AND ucl.usr = ?';
-            $andclausevalue = $owner;
-        }
-        else {
-            // no group or owner or institution set
-            // site pages should have institution set
-            throw new SystemException("View::addcustomlayout: No owner, group or institution set for view.");
-        }
-
-        // check for existing layout
-        $sql = 'SELECT vlrc.viewlayout AS id
-                FROM
-                {view_layout} vl
-                INNER JOIN {view_layout_rows_columns} vlrc
-                ON vl.id = vlrc.viewlayout
-                INNER JOIN (
-                    SELECT
-                    viewlayout, COUNT(*)
-                    FROM {view_layout_rows_columns}
-                    GROUP BY viewlayout
-                    HAVING COUNT(*) = ?
-                    ) vlrc2
-                ON vlrc.viewlayout = vlrc2.viewlayout
-                INNER JOIN {usr_custom_layout} ucl
-                ON ucl.layout = vl.id
-                WHERE (' . $rowscolssql . ')
-                AND (
-                   vl.iscustom = 0
-                   OR (
-                       vl.iscustom = 1 ' . $andclause . '
-                      )
-                )
-                GROUP BY vlrc.viewlayout
-                HAVING count(*) = ?
-                LIMIT 1';
-        $layoutids = get_records_sql_array($sql, array($numrows, $andclausevalue, $numrows));
-
-        if ($layoutids) {
-            $data = array('layoutid' => $layoutids[0]->id, 'newlayout' => 0);
-            return $data;
-        }
-        else {
-
-            db_begin();
-            // no existing layout of this kind, create it
-            $newlayoutid = insert_record('view_layout', (object) array('rows' => $numrows, 'iscustom' => 1), 'id', true);
-            if (!$newlayoutid) {
-                db_rollback();
-                throw new SystemException("View::addcustomlayout: Couldn't create new layout record.");
-            }
-
-            if (isset($owner)) {
-                $newcustomlayout = insert_record('usr_custom_layout', (object) array('usr' => $owner, 'group' => null, 'institution' => null, 'layout' => $newlayoutid));
-            }
-            else if (isset($group)) {
-                $newcustomlayout = insert_record('usr_custom_layout', (object) array('usr' => null, 'group' => $group, 'institution' => null, 'layout' => $newlayoutid));
-            }
-            else if (isset($institution)) {
-                $newcustomlayout = insert_record('usr_custom_layout', (object) array('usr' => null, 'group' => null, 'institution' => $institution, 'layout' => $newlayoutid));
-            }
-            if (!$newcustomlayout) {
-                db_rollback();
-                throw new SystemException("View::addcustomlayout: Couldn't create new usr custom layout record.");
-            }
-
-            for ($i=0; $i<$numrows; $i++) {
-                if (array_key_exists(($i+1), $rowscols)) {
-                    $numcols = get_field('view_layout_columns', 'columns', 'id', $rowscols[$i+1]);
-                    $newrec = insert_record('view_layout_rows_columns', (object) array('viewlayout' => $newlayoutid, 'row' => ($i+1), 'columns' => $rowscols[$i+1]));
-                    if (!$newrec) {
-                        db_rollback();
-                        throw new SystemException("View::addcustomlayout: Couldn't create new vlrc record.");
-                    }
-                }
-            }
-
-            db_commit();
-            $data = array('layoutid' => $newlayoutid, 'newlayout' => 1, 'alttext' => $alttext);
-            return $data;
-        }
     }
 
     public function is_public() {
@@ -1421,13 +1026,8 @@ class View {
 
         // Ensure view is correct
         $access->view = $this->id;
-        $whereobject = clone $access;
-        unset($whereobject->ctime);
-        // Add ctime if needing to insert row
-        if (!isset($access->ctime)) {
-            $access->ctime = db_format_timestamp(time());
-        }
-        ensure_record_exists('view_access', $whereobject, $access);
+
+        ensure_record_exists('view_access', $access, $access);
     }
 
     public function add_owner_institution_access($instnames=array()) {
@@ -1497,7 +1097,7 @@ class View {
         $ownerlang = get_user_language($this->get('owner'));
         $url = $this->get_url(false);
         require_once('activity.php');
-        activity_occurred('maharamessage',
+        activity_occurred('maharamessage', 
             array(
                 'users' => array($this->get('owner')),
                 'subject' => get_string_from_language($ownerlang, 'viewreleasedsubject', 'group', $this->get('title'),
@@ -1556,18 +1156,15 @@ class View {
                 $classes[] = 'current';
             }
             if ($classes) {
-                $cat['class'] = hsc(implode(' ', $classes));
+                $cat['class'] = hsc(implode(' ', $classes)); 
             }
         }
 
         // Because of the reference in the above loop, $cat refers to the last item
         $cat['class'] = (isset($cat['class'])) ? $cat['class'] . ' last' : 'last';
 
-        $blocktypelist = $this->build_blocktype_list($category);
         $smarty = smarty_core();
         $smarty->assign('categories', $categories);
-        $smarty->assign('selectedcategory', $category);
-        $smarty->assign('blocktypelist', $blocktypelist);
         $smarty->assign('viewid', $this->get('id'));
         $smarty->assign('new', $new);
         return $smarty->fetch('view/blocktypecategorylist.tpl');
@@ -1576,8 +1173,8 @@ class View {
     /**
      * Gets the name of the first blocktype category for this View.
      *
-     * This can change based on what blocktypes allow themselves to be in what
-     * types of View. For example, in a group View, blog blocktypes aren't
+     * This can change based on what blocktypes allow themselves to be in what 
+     * types of View. For example, in a group View, blog blocktypes aren't 
      * allowed (yet), so the first blocktype category shown won't be "blog"
      */
     public function get_default_category() {
@@ -1586,13 +1183,13 @@ class View {
     }
 
     /**
-     * Gets information about blocktype categories for blocks that can be put
+     * Gets information about blocktype categories for blocks that can be put 
      * in this View
      *
-     * For each category, returns its name, a localised title and the number of
+     * For each category, returns its name, a localised title and the number of 
      * blocktypes in the category that can be put in this View.
      *
-     * If a category has no blocktypes that can be put in this View, it is not
+     * If a category has no blocktypes that can be put in this View, it is not 
      * returned
      */
     private function get_category_data() {
@@ -1623,7 +1220,6 @@ class View {
                     $categories[$blocktypecategory->sort] = array(
                         'name'  => $blocktypecategory->category,
                         'title' => call_static_method("PluginBlocktype", "category_title_from_name", $blocktypecategory->category),
-                        'description' => call_static_method("PluginBlocktype", "category_description_from_name", $blocktypecategory->category),
                     );
                 }
             }
@@ -1636,8 +1232,8 @@ class View {
      * Returns HTML for the blocktype list for a particular category
      *
      * @param string $category   The category to build the blocktype list for
-     * @param bool   $javascript Set to true if the caller is a json script,
-     *                           meaning that nothing for the standard HTML version
+     * @param bool   $javascript Set to true if the caller is a json script, 
+     *                           meaning that nothing for the standard HTML version 
      *                           alone should be output
      */
     public function build_blocktype_list($category, $javascript=false) {
@@ -1651,14 +1247,14 @@ class View {
     }
 
     /**
-     * Process view changes. This function is used both by the json stuff and
+     * Process view changes. This function is used both by the json stuff and 
      * by normal posts
      */
     public function process_changes($category='', $new=0) {
         global $SESSION, $USER;
 
         // Security
-        // TODO this might need to be moved below the requestdata check below, to prevent non owners of the view being
+        // TODO this might need to be moved below the requestdata check below, to prevent non owners of the view being 
         // rejected
         if (!$USER->can_edit_view($this)) {
             throw new AccessDeniedException(get_string('canteditdontown', 'view'));
@@ -1680,8 +1276,8 @@ class View {
                 break;
             }
         }
-        // TODO Scan GET for an action. The only action that is GETted is
-        // confirming deletion of a blockinstance. It _should_ be a POST, but
+        // TODO Scan GET for an action. The only action that is GETted is 
+        // confirming deletion of a blockinstance. It _should_ be a POST, but 
         // that can be fixed later.
         if (!$action) {
             foreach ($_GET as $key => $value) {
@@ -1736,7 +1332,7 @@ class View {
                             . '<input type="submit" class="submit" name="removeblock_submit" value="' . get_string('yes') . '">'
                             . '</form>';
                         $baselink = get_config('wwwroot') . 'view/blocks.php?id=' . $this->get('id') . '&c=' . $category . '&new=' . $new;
-                        $SESSION->add_info_msg(get_string('confirmdeleteblockinstance', 'view')
+                        $SESSION->add_info_msg(get_string('confirmdeleteblockinstance', 'view') 
                             . '&nbsp;' . $yesform . ' <a href="' . $baselink . '">' . get_string('no') . '</a>', false);
                         redirect($baselink);
                         exit;
@@ -1750,12 +1346,10 @@ class View {
                     // And we're done here for now
                     return;
                 }
-            case 'moveblockinstance': // requires action_moveblockinstance_id_\d_row_\d_column_\d_order_\d
-            case 'addcolumn': // requires action_addcolumn_\d_row_\d_before_\d
-            case 'removecolumn': // requires action_removecolumn_\d_row_\d_column_\d
+            case 'moveblockinstance': // requires action_moveblockinstance_id_\d_column_\d_order_\d
+            case 'addcolumn': // requires action_addcolumn_before_\d
+            case 'removecolumn': // requires action_removecolumn_column_\d
             case 'changetheme':
-            case 'updatecustomlayoutpreview':
-            case 'addcustomlayout':
             break;
             default:
                 throw new InvalidArgumentException(get_string('noviewcontrolaction', 'error', $action));
@@ -1771,6 +1365,8 @@ class View {
             $data = (object)array(
                 'view' => $this->get('id'),
             );
+            require_once('activity.php');
+            activity_occurred('watchlist', $data);
 
             if (!defined('JSON')) {
                 $message = $this->get_viewcontrol_ok_string($action);
@@ -1797,7 +1393,7 @@ class View {
         return array('message' => $message, 'data' => $returndata);
     }
 
-    /**
+    /** 
      * Parses the string and returns a hash of values
      *
      * @param string $action expects format name_value_name_value
@@ -1812,7 +1408,7 @@ class View {
         }
         $lastkey = null;
         foreach ($bits as $index => $bit) {
-            if ($index % 2 == 0) {
+            if ($index % 2 == 0) { 
                 $lastkey = $bit;
             }
             else {
@@ -1829,98 +1425,74 @@ class View {
     * @private
     * @return void
     */
-    private function build_column_datastructure($row, $force=false) {
-        if (!empty($this->columns[$row]) && empty($force)) { // we've already built it up
+    private function build_column_datastructure($force=false) {
+        if (!empty($this->columns) && empty($force)) { // we've already built it up
             return;
         }
 
         $sql = 'SELECT bi.*
             FROM {block_instance} bi
             WHERE bi.view = ?
-            AND bi.row = ?
             ORDER BY bi.column, bi.order';
-        if (!$data = get_records_sql_array($sql, array($this->get('id'), $row))) {
+        if (!$data = get_records_sql_array($sql, array($this->get('id')))) {
             $data = array();
         }
 
         // fill up empty columns array keys
-        $columnsperrow = $this->get('columnsperrow');
-        $numcolumnsthisrow = $columnsperrow[$row]->columns;
-
-        for ($i = 1; $i <= $numcolumnsthisrow; $i++) {
-            $this->columns[$row][$i] = array('blockinstances' => array());
+        for ($i = 1; $i <= $this->get('numcolumns'); $i++) {
+            $this->columns[$i] = array('blockinstances' => array());
         }
 
         // Set column widths
-        // This often returns the default layout for number of rows, as layout is often null at this point
         $layout = $this->get_layout();
         $i = 0;
         $is_ie6 = isset($_SERVER['HTTP_USER_AGENT']) && (false !== strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 6.0'));
-        foreach (explode(',', $layout->rows[$row]['widths']) as $width) {
+        foreach (explode(',', $layout->widths) as $width) {
             // IE6 has interesting padding issues that mean we have to tell
             // porkies so all the columns stay beside each other
             if ($is_ie6) {
                 $width -= 2;
             }
-            $this->columns[$row][++$i]['width'] = $width;
+            $this->columns[++$i]['width'] = $width;
         }
 
         foreach ($data as $block) {
             require_once(get_config('docroot') . 'blocktype/lib.php');
             $block->view_obj = $this;
             $b = new BlockInstance($block->id, (array)$block);
-            $this->columns[$row][$block->column]['blockinstances'][] = $b;
+            $this->columns[$block->column]['blockinstances'][] = $b;
         }
 
     }
 
     /*
-    *
-    * wrapper around get_column_datastructure
-    * returns all rows
-    * @return mixed array
-    */
-    public function get_row_datastructure() {
-        $rowdata = array();
-        // make sure we've already built up the structure
-        for ($i = 1; $i <= $this->numrows; $i++) {
-            $force = false;
-            if (array_key_exists($i, $this->dirtycolumns) || array_key_exists($i, $this->dirtyrows)) {
-                $force = true;
-            }
-            $this->build_column_datastructure($i, $force);
-            $rowdata[$i] = $this->columns[$i];
-        }
-        return $rowdata;
-    }
-
-    /*
+    * returns the datastructure for the view's column(s)
     *
     * @param int $column optional, defaults to returning all columns
     * @return mixed array
     */
-    public function get_column_datastructure($row=1, $column=0) {
+    public function get_column_datastructure($column=0) {
         // make sure we've already built up the structure
         $force = false;
-        if (isset($this->dirtycolumns[$row]) && array_key_exists($column, $this->dirtycolumns[$row])) {
+        if (array_key_exists($column, $this->dirtycolumns)) {
             $force = true;
         }
-        $this->build_column_datastructure($row, $force);
+        $this->build_column_datastructure($force);
 
         if (empty($column)) {
-            return $this->columns[$row];
+            return $this->columns;
         }
 
-        if (!array_key_exists($column, $this->columns[$row])) {
+        if (!array_key_exists($column, $this->columns)) {
             throw new ParamOutOfRangeException(get_string('invalidcolumn', 'view', $column));
         }
 
 
-        return $this->columns[$row][$column];
+        return $this->columns[$column];
     }
 
     // ******** functions to do with the view creation ui ************** //
-
+    
     /**
      * small wrapper around get_string to return a success string
      * for the given view control function
@@ -1941,43 +1513,17 @@ class View {
 
 
     /**
-     * Build_rows - for each row build_columms
-     * Returns the HTML for the rows of this view
-     */
-    public function build_rows($editing=false) {
-        $numrows = $this->get('numrows');
-        $result = '';
-        for ($i = 1; $i <= $numrows; $i++) {
-            $result .= $this->build_columns($i, $editing);
-        }
-        return $result;
-    }
-
-    /**
      * Returns the HTML for the columns of this view
      */
-    public function build_columns($row, $editing=false) {
-        global $USER;
-        $columnsperrow = $this->get('columnsperrow');
-        $currentrownumcols = $columnsperrow[$row]->columns;
+    public function build_columns($editing=false) {
+        $numcols = $this->get('numcolumns');
 
         $result = '';
-        for ($i = 1; $i <= $currentrownumcols; $i++) {
-            $result .= $this->build_column($row, $i, $editing);
+        for ($i = 1; $i <= $numcols; $i++) {
+            $result .= $this->build_column($i, $editing);
         }
 
-        $smarty = smarty_core();
-        $smarty->assign('javascript',  defined('JSON'));
-        $smarty->assign('row',         $row);
-        $smarty->assign('numcolumns',  $currentrownumcols);
-        $smarty->assign('rowcontent',  $result);
-        $smarty->assign('addremovecolumns', $USER->get_account_preference('addremovecolumns'));
-
-        if ($editing) {
-            // TODO look into this - necessary?
-            return $smarty->fetch('view/rowediting.tpl');
-        }
-        return $smarty->fetch('view/rowviewing.tpl');
+        return $result;
     }
 
     /**
@@ -1986,9 +1532,9 @@ class View {
      * @param int $column   The column to build
      * @param int $editing  Whether the view is being built in edit mode
      */
-    public function build_column($row, $column, $editing=false) {
+    public function build_column($column, $editing=false) {
         global $USER;
-        $data = $this->get_column_datastructure($row, $column);
+        $data = $this->get_column_datastructure($column);
         static $installed = array();
         if (empty($installed)) {
             $installed = plugins_installed('blocktype');
@@ -2018,14 +1564,18 @@ class View {
             }
         }
 
-        $columnsperrow = $this->get('columnsperrow');
-        $thisrownumcolumns = $columnsperrow[$row]->columns;
+        // Widths don't appear to apply to divs unless they have at least
+        // _some_ content - at least in gecko (make a view with a particular
+        // layout like 25/50/25 and make the middle column empty and you'll see
+        // what I mean)
+        if ($blockcontent == '') {
+            $blockcontent = '&nbsp;';
+        }
 
         $smarty = smarty_core();
         $smarty->assign('javascript',  defined('JSON'));
         $smarty->assign('column',      $column);
-        $smarty->assign('row',         $row);
-        $smarty->assign('numcolumns',  $thisrownumcolumns);
+        $smarty->assign('numcolumns',  $this->get('numcolumns'));
         $smarty->assign('blockcontent', $blockcontent);
 
         if (isset($data['width'])) {
@@ -2042,15 +1592,15 @@ class View {
 
     /**
      * adds a block with the given type to a view
-     *
+     * 
      * @param array $values parameters for this function
      *                      blocktype => string name of blocktype to add
      *                      column    => int column to add to
      *                      order     => position in column
-     *
+     * 
      */
     public function addblocktype($values) {
-        $requires = array('blocktype', 'row', 'column', 'order');
+        $requires = array('blocktype', 'column', 'order');
         foreach ($requires as $require) {
             if (!array_key_exists($require, $values) || empty($values[$require])) {
                 throw new ParamOutOfRangeException(get_string('missingparam'. $require, 'error'));
@@ -2079,14 +1629,13 @@ class View {
                 'title'      => $newtitle,
                 'view'       => $this->get('id'),
                 'view_obj'   => $this,
-                'row'        => $values['row'],
                 'column'     => $values['column'],
                 'order'      => $values['order'],
             )
         );
-        $this->shuffle_cell($values['row'], $values['column'], $values['order']);
+        $this->shuffle_column($values['column'], $values['order']);
         $bi->commit();
-        $this->dirtycolumns[$values['row']][$values['column']] = 1;
+        $this->dirtycolumns[$values['column']] = 1;
 
         if ($values['returndata']) {
             // Return new block rendered in both configure mode and (editing) display mode
@@ -2106,9 +1655,6 @@ class View {
      *                      block     => block to add
      */
     public function addblockinstance(BlockInstance $bi) {
-        if (!$bi->get('row')) {
-            $bi->set('row', 1);
-        }
         if (!$bi->get('column')) {
             $bi->set('column', 1);
         }
@@ -2118,11 +1664,11 @@ class View {
         if (!$bi->get('view')) {
             $bi->set('view', $this->get('id'));
         }
-        $this->shuffle_cell($bi->get('row'), $bi->get('column'), $bi->get('order'));
+        $this->shuffle_column($bi->get('column'), $bi->get('order'));
         $bi->commit();
     }
 
-    /**
+    /** 
      * deletes a block instance from the view
      *
      * @param array $values parameters for this function
@@ -2134,15 +1680,11 @@ class View {
         }
         require_once(get_config('docroot') . 'blocktype/lib.php');
         $bi = new BlockInstance($values['id']); // get it so we can reshuffle stuff
-        // Check if the block_instance belongs to this view
-        if ($bi->get('view') != $this->get('id')) {
-            throw new AccessDeniedException(get_string('blocknotinview', 'view', $bi->get('id')));
-        }
         db_begin();
         $bi->delete();
-        $this->shuffle_cell($bi->get('row'), $bi->get('column'), null, $bi->get('order'));
+        $this->shuffle_column($bi->get('column'), null, $bi->get('order'));
         db_commit();
-        $this->dirtycolumns[$bi->get('row')][$bi->get('column')] = 1;
+        $this->dirtycolumns[$bi->get('column')] = 1;
     }
 
     /**
@@ -2150,47 +1692,42 @@ class View {
     *
     * @param array $values parameters for this function
     *                      id     => int of block instance to move
-    *                      row      => int current row
     *                      column => int column to move to
     *                      order  => position in new column to insert at
     */
     public function moveblockinstance($values) {
-        $requires = array('id', 'row', 'column', 'order');
-        foreach ($requires as $require) {
+        $require = array('id', 'column', 'order');
+        foreach ($require as $require) {
             if (!array_key_exists($require, $values) || empty($values[$require])) {
                 throw new ParamOutOfRangeException(get_string('missingparam' . $require, 'error'));
             }
         }
         require_once(get_config('docroot') . 'blocktype/lib.php');
         $bi = new BlockInstance($values['id']);
-        // Check if the block_instance belongs to this view
-        if ($bi->get('view') != $this->get('id')) {
-            throw new AccessDeniedException(get_string('blocknotinview', 'view', $bi->get('id')));
-        }
         db_begin();
-        // moving within the same column and row
-        if ($bi->get('row') == $values['row'] && $bi->get('column') == $values['column']) {
-            if ($values['order'] == $bi->get('order') + 1 || $values['order'] == $bi->get('order') -1) {
+        // moving within the same column
+        if ($bi->get('column') == $values['column']) {
+            if ($values['order'] == $bi->get('order') + 1
+                || $values['order'] == $bi->get('order') -1) {
                 // we're switching two, it's a bit different
                 // set the one we're moving to out of range (to 0)
-                // double quotes required for field names to avoid exception
-                set_field_select('block_instance', 'order', 0,                 '"view" = ? AND "row" = ? AND "column" = ? AND "order" = ?', array($this->get('id'), $values['row'], $values['column'], $values['order']) );
+                set_field('block_instance', 'order', 0,                 'view', $this->get('id'), 'column', $values['column'], 'order', $values['order']);
                 // set the new order
-                set_field_select('block_instance', 'order', $values['order'],  '"view" = ? AND "row" = ? AND "column" = ? AND "order" = ?', array($this->get('id'), $values['row'], $values['column'], $bi->get('order')) );
+                set_field('block_instance', 'order', $values['order'],  'view', $this->get('id'), 'column', $values['column'], 'order', $bi->get('order'));
                 // move the old one back to where the moving one was.
-                set_field_select('block_instance', 'order', $bi->get('order'), '"view" = ? AND "row" = ? AND "column" = ? AND "order" = ?', array($this->get('id'), $values['row'], $values['column'], 0) );
+                set_field('block_instance', 'order', $bi->get('order'), 'view', $this->get('id'), 'column', $values['column'], 'order', 0);
                 // and set it in the object for good measure.
                 $bi->set('order', $values['order']);
             }
-            else if ($values['order'] == $this->get_current_max_order($values['row'], $values['column'])) {
+            else if ($values['order'] == $this->get_current_max_order($values['column'])) {
                 // moving to the very bottom
-                set_field_select('block_instance', 'order', 0, '"view" = ? AND "row" = ? AND "column" = ? AND "order" = ?', array($this->get('id'), $values['row'], $values['column'], $bi->get('order')) );
-                $this->shuffle_helper('order', 'down', '>=', $bi->get('order'), '"column" = ? AND "row" = ?', array($bi->get('column'), $values['row']));
-                set_field_select('block_instance', 'order', $values['order'], '"order" = ? AND "view" = ? AND "row" = ? AND "column" = ?', array(0, $this->get('id'), $values['row'], $values['column']));
+                set_field('block_instance', 'order', 0, 'view', $this->get('id'), 'column', $values['column'], 'order', $bi->get('order'));
+                $this->shuffle_helper('order', 'down', '>=', $bi->get('order'), '"column" = ?', array($bi->get('column')));
+                set_field('block_instance', 'order', $values['order'], 'view', $this->get('id'), 'column', $values['column'], 'order', 0);
                 $bi->set('order', $values['order']);
             }
             else {
-                $this->shuffle_cell($values['row'], $bi->get('column'), $values['order'], $bi->get('order'));
+                $this->shuffle_column($bi->get('column'), $values['order'], $bi->get('order'));
                 if ($bi->get('order') < $values['order']) {
                     // When moving a block down within a column, the final order is one less
                     // than the 'desired' order because of the empty space created when the
@@ -2198,26 +1735,25 @@ class View {
                     $values['order'] -= 1;
                 }
             }
-        }
+        } 
         // moving to another column
         else {
             // first figure out if we've asked to add it somewhere sensible
             // eg if we're moving a low down block into an empty column
-            $newmax = $this->get_current_max_order($values['row'], $values['column']);
+            $newmax = $this->get_current_max_order($values['column']);
             if ($values['order'] > $newmax+1) {
                 $values['order'] = $newmax+1;
             }
             // remove it from the old column
-            $this->shuffle_cell($bi->get('row'), $bi->get('column'), null, $bi->get('order'));
+            $this->shuffle_column($bi->get('column'), null, $bi->get('order'));
             // and make a hole in the new column
-            $this->shuffle_cell($values['row'], $values['column'], $values['order']);
+            $this->shuffle_column($values['column'], $values['order']);
         }
         $bi->set('column', $values['column']);
-        $bi->set('row', $values['row']);
         $bi->set('order', $values['order']);
         $bi->commit();
-        $this->dirtycolumns[$values['row']][$bi->get('column')] = 1;
-        $this->dirtycolumns[$values['row']][$values['column']] = 1;
+        $this->dirtycolumns[$bi->get('column')] = 1;
+        $this->dirtycolumns[$values['column']] = 1;
         db_commit();
     }
 
@@ -2228,29 +1764,27 @@ class View {
     public function get_all_blocktype_javascript() {
         $javascriptfiles = array();
         $initjavascripts = array();
-        $view_data = $this->get_row_datastructure();
-        foreach ($view_data as $row_data) {
-            foreach($row_data as $column) {
-                foreach($column['blockinstances'] as $blockinstance) {
-                    $pluginname = $blockinstance->get('blocktype');
-                    if (!safe_require_plugin('blocktype', $pluginname)) {
-                        continue;
+        $view_data = $this->get_column_datastructure();
+        foreach($view_data as $column) {
+            foreach($column['blockinstances'] as $blockinstance) {
+                $pluginname = $blockinstance->get('blocktype');
+                if (!safe_require_plugin('blocktype', $pluginname)) {
+                    continue;
+                }
+                $instancejs = call_static_method(
+                    generate_class_name('blocktype', $pluginname),
+                    'get_instance_javascript',
+                    $blockinstance
+                );
+                foreach($instancejs as $jsfile) {
+                    if (is_array($jsfile) && isset($jsfile['file'])) {
+                        $javascriptfiles[] = $this->add_blocktype_path($blockinstance, $jsfile['file']);;
+                        if (isset($jsfile['initjs'])) {
+                            $initjavascripts[] = $jsfile['initjs'];
+                        }
                     }
-                    $instancejs = call_static_method(
-                        generate_class_name('blocktype', $pluginname),
-                        'get_instance_javascript',
-                        $blockinstance
-                    );
-                    foreach($instancejs as $jsfile) {
-                        if (is_array($jsfile) && isset($jsfile['file'])) {
-                            $javascriptfiles[] = $this->add_blocktype_path($blockinstance, $jsfile['file']);;
-                            if (isset($jsfile['initjs'])) {
-                                $initjavascripts[] = $jsfile['initjs'];
-                            }
-                        }
-                        else if (is_string($jsfile)) {
-                            $javascriptfiles[] = $this->add_blocktype_path($blockinstance, $jsfile);;
-                        }
+                    else if (is_string($jsfile)) {
+                        $javascriptfiles[] = $this->add_blocktype_path($blockinstance, $jsfile);;
                     }
                 }
             }
@@ -2259,36 +1793,6 @@ class View {
             'jsfiles' => array_unique($javascriptfiles),
             'initjs'  => array_unique($initjavascripts)
         );
-    }
-
-    /**
-     * Returns a list of required css files.
-     */
-    public function get_all_blocktype_css() {
-        global $THEME;
-        $cssfiles = array();
-        $view_data = $this->get_row_datastructure();
-        foreach ($view_data as $row_data) {
-            foreach ($row_data as $column) {
-                foreach ($column['blockinstances'] as $blockinstance) {
-                    $pluginname = $blockinstance->get('blocktype');
-                    if (!safe_require_plugin('blocktype', $pluginname)) {
-                        continue;
-                    }
-                    $artefactdir = '';
-                    if ($blockinstance->get('artefactplugin') != '') {
-                        $artefactdir = 'artefact/' . $blockinstance->get('artefactplugin') . '/';
-                    }
-                    $hrefs = $THEME->get_url('style/style.css', true, $artefactdir . 'blocktype/' . $pluginname);
-                    $hrefs = array_reverse($hrefs);
-
-                    foreach ($hrefs as $href) {
-                        $cssfiles[] = '<link rel="stylesheet" type="text/css" href="' . $href . '?v=' . get_config('release'). '">';
-                    }
-                }
-            }
-        }
-        return array_unique($cssfiles);
     }
 
     /**
@@ -2313,34 +1817,8 @@ class View {
      * the blockinstances present in the view.
      */
     public function get_blocktype_javascript() {
-        $view_data = $this->get_row_datastructure();
-        $javascript = array();
-        foreach($view_data as $row) {
-            foreach($row as $column) {
-                foreach($column['blockinstances'] as $blockinstance) {
-                    $pluginname = $blockinstance->get('blocktype');
-                    safe_require('blocktype', $pluginname);
-                    $instancejs = call_static_method(
-                        generate_class_name('blocktype', $pluginname),
-                        'get_instance_javascript',
-                        $blockinstance
-                    );
-                    foreach($instancejs as &$jsfile) {
-                        if (strpos($jsfile, 'http://') === false) {
-                            if ($artefactplugin = get_field('blocktype_installed', 'artefactplugin', 'name', $pluginname)) {
-                                $jsfile = 'artefact/' . $artefactplugin . '/blocktype/' .
-                                    $pluginname . '/' . $jsfile;
-                            }
-                            else {
-                                $jsfile = 'blocktype/' . $blockinstance->get('blocktype') . '/' . $jsfile;
-                            }
-                        }
-                    }
-                    $javascript = array_merge($javascript, $instancejs);
-                }
-            } // cols
-        } // rows
-        return array_unique($javascript);
+        $js = $this->get_all_blocktype_javascript();
+        return $js['jsfiles'];
     }
 
     private $blockinstance_currently_being_configured = 0;
@@ -2365,10 +1843,6 @@ class View {
     public function configureblockinstance($values) {
         require_once(get_config('docroot') . 'blocktype/lib.php');
         $bi = new BlockInstance($values['id']);
-        // Check if the block_instance belongs to this view
-        if ($bi->get('view') != $this->get('id')) {
-            throw new AccessDeniedException(get_string('blocknotinview', 'view', $bi->get('id')));
-        }
         return $bi->render_editing(true);
     }
 
@@ -2377,49 +1851,34 @@ class View {
      *
      * @param array $values parameters for this function
      *                      before => int column to insert the new column before
-     *                      returndata => boolean whether to return the html
+     *                      returndata => boolean whether to return the html 
      *                                    for the new column or not (ajax requests need this)
      *
      */
     public function addcolumn($values) {
-
-        if (!array_key_exists('before', $values) || empty($values['before']) || !array_key_exists('row', $values) || empty($values['row'])) {
+        if (!array_key_exists('before', $values) || empty($values['before'])) {
             throw new ParamOutOfRangeException(get_string('missingparamcolumn', 'error'));
         }
-
-        $columnsperrow = $this->get('columnsperrow');
-        $columnsthisrow = clone $columnsperrow[$values['row']];
-        $thisrownumcolumns = $columnsperrow[$values['row']]->columns;
-
-        // simple check for valid number of columns
-        $newlayouts = get_records_sql_array('SELECT vlc.id
-            FROM {view_layout_columns} vlc
-            WHERE vlc.columns = ?', array($thisrownumcolumns + 1) );
-
-        if (!$newlayouts) {
+        if (!array_key_exists($this->get('numcolumns') + 1, self::$layouts)) {
             throw new ParamOutOfRangeException(get_string('cantaddcolumn', 'view'));
         }
         db_begin();
-
-        $columnsthisrow->columns = $thisrownumcolumns + 1;
-        $columnsperrow[$values['row']] = $columnsthisrow;
-        $this->set('columnsperrow', $columnsperrow); //set makes dirty=1, which enables commit; numcolumnsperrrow used as check by layout submit function
-
-        if ($values['before'] != ($thisrownumcolumns + 1)) {
-            $this->shuffle_helper('column', 'up', '>=', $values['before'], 'row = ?', array($values['row']));
+        $this->set('numcolumns', $this->get('numcolumns') + 1);
+        if ($values['before'] != ($this->get('numcolumns') + 1)) {
+            $this->shuffle_helper('column', 'up', '>=', $values['before']);
         }
         $this->set('layout', null);
         $this->commit();
-
-        $currentrowcolumns = $columnsperrow[$values['row']]->columns;
-        for ($i = $values['before']; $i <= $currentrowcolumns; $i++) {
-            $this->dirtycolumns[$values['row']][$i] = 1;
+        // @TODO this could be optimised by actually moving the keys around,
+        // but I don't think there's much point as the objects aren't persistent
+        // unless we're in ajax land, in which case it would be an optimisation
+        for ($i = $values['before']; $i <= $this->get('numcolumns'); $i++) {
+            $this->dirtycolumns[$i] = 1;
         }
-
-        $this->columns[$values['row']][$currentrowcolumns] = null; // set the key
+        $this->columns[$this->get('numcolumns')] = null; // set the key 
         db_commit();
         if ($values['returndata']) {
-            return $this->build_column($values['row'], $values['before'], true);
+            return $this->build_column($values['before'], true);
         }
     }
 
@@ -2429,202 +1888,57 @@ class View {
      *
      * @param array $values parameters for this function
      *                      column => int column to remove
-     *
+     * 
      */
     public function removecolumn($values) {
-        if (!array_key_exists('column', $values) || empty($values['column']) || !array_key_exists('row', $values) || empty($values['row'])) {
+        if (!array_key_exists('column', $values) || empty($values['column'])) {
             throw new ParamOutOfRangeException(get_string('missingparamcolumn', 'error'));
         }
-        if (!array_key_exists('removerow', $values)) {
-            $values['removerow'] = false;
+        if (!array_key_exists($this->get('numcolumns') - 1, self::$layouts)) {
+            throw new ParamOutOfRangeException(get_string('cantremovecolumn', 'view'));
         }
-        $columnsperrow = $this->get('columnsperrow');
-        $numcolumnsthisrow = clone $columnsperrow[$values['row']];
-        $thisrownumcolumns = $columnsperrow[$values['row']]->columns;
-
-        if (!$values['removerow']) {
-            // simple check for valid number of columns
-            $newlayouts = get_records_sql_array('SELECT vlc.id
-                                                FROM {view_layout_columns} vlc
-                                                WHERE vlc.columns = ?', array($thisrownumcolumns - 1) );
-            if (!$newlayouts) {
-                throw new ParamOutOfRangeException(get_string('cantremovecolumn', 'view'));
-            }
-        }
-        else if ($thisrownumcolumns == 0) {
-             throw new ParamOutOfRangeException(get_string('cantremovecolumn', 'view'));
-        }
-
         db_begin();
-        $numcolumns = $thisrownumcolumns - 1;
-
-        // if removing row, move blocks to previous row
-        if ($values['removerow']) {
-            $prevrownumcolumns = $columnsperrow[$values['row']-1]->columns;
-            $prevrowcolumnmax = array(); // keep track of where we're at in each column
-            $currentcol = 1;
-            if ($blocks = $this->get_column_datastructure($values['row'], $values['column'])) {
-                // we have to rearrange them first
-                foreach ($blocks['blockinstances'] as $block) {
-                    if ($currentcol > $prevrownumcolumns) {
-                        $currentcol = 1;
-                    }
-                    if ($currentcol == $values['column']) {
-                        $currentcol++; // don't redistrubute blocks here!
-                    }
-                    if (!array_key_exists($currentcol, $prevrowcolumnmax)) {
-                        $prevrowcolumnmax[$currentcol] = $this->get_current_max_order($values['row']-1, $currentcol);
-                    }
-                    $this->shuffle_cell($values['row']-1, $currentcol, $prevrowcolumnmax[$currentcol]+1);
-                    $this->shuffle_cell($values['row'], $currentcol, null, $block->get('order'));
-                    $block->set('row', $values['row']-1);
-                    $block->set('column', $currentcol);
-                    $block->set('order', $prevrowcolumnmax[$currentcol]+1);
-                    $block->commit();
-                    $prevrowcolumnmax[$currentcol]++;
-                    $currentcol++;
+        $numcolumns = $this->get('numcolumns') - 1;
+        $columnmax = array(); // keep track of where we're at in each column
+        $currentcol = 1;
+        if ($blocks = $this->get_column_datastructure($values['column'])) {
+            // we have to rearrange them first
+            foreach ($blocks['blockinstances'] as $block) {
+                if ($currentcol > $numcolumns) {
+                    $currentcol = 1;
                 }
-            }
-        }
-        else {
-            $columnmax = array(); // keep track of where we're at in each column
-            $currentcol = 1;
-            if ($blocks = $this->get_column_datastructure($values['row'], $values['column'])) {
-                // we have to rearrange them first
-                foreach ($blocks['blockinstances'] as $block) {
-                    if ($currentcol > $numcolumns) {
-                        $currentcol = 1;
-                    }
-                    if ($currentcol == $values['column']) {
-                        $currentcol++; // don't redistrubute blocks here!
-                    }
-                    if (!array_key_exists($currentcol, $columnmax)) {
-                        $columnmax[$currentcol] = $this->get_current_max_order($values['row'], $currentcol);
-                    }
-                    $this->shuffle_cell($values['row'], $currentcol, $columnmax[$currentcol]+1);
-                    $block->set('row', $values['row']);
-                    $block->set('column', $currentcol);
-                    $block->set('order', $columnmax[$currentcol]+1);
-                    $block->commit();
-                    $columnmax[$currentcol]++;
-                    $currentcol++;
+                if ($currentcol == $values['column']) {
+                    $currentcol++; // don't redistrubute blocks here!
                 }
+                if (!array_key_exists($currentcol, $columnmax)) {
+                    $columnmax[$currentcol] = $this->get_current_max_order($currentcol);
+                }
+                $this->shuffle_column($currentcol, $columnmax[$currentcol]+1);
+                $block->set('column', $currentcol);
+                $block->set('order', $columnmax[$currentcol]+1);
+                $block->commit();
+                $columnmax[$currentcol]++;
+                $currentcol++;
             }
         }
 
         $this->set('layout', null);
-        $numcolumnsthisrow->columns = $thisrownumcolumns - 1;
-        $columnsperrow[$values['row']] = $numcolumnsthisrow;
-        $this->set('columnsperrow', $columnsperrow); //set makes dirty=1, which enables commit; columnsperrrow used as check by layout submit function
+        $this->set('numcolumns', $this->get('numcolumns') - 1);
         // now shift all blocks one left and we're done
-        $this->shuffle_helper('column', 'down', '>', $values['column'], 'row = ?', array($values['row']));
-        $this->commit();
-        db_commit();
-        unset($this->columns[$values['row']]); // everything has changed
-    }
-    /**
-     * adds a row to a view
-     *
-     * @param array $values parameters for this function
-     *                      before => int row to insert the new row before
-     *                      returndata => boolean whether to return the html
-     *                                    for the new row or not (ajax requests need this)
-     *
-     */
-    public function addrow($values) {
-
-        if (!array_key_exists('before', $values) || empty($values['before']) || !array_key_exists('newlayout', $values) || empty($values['newlayout'])) {
-            throw new ParamOutOfRangeException(get_string('exceededmaxrows', 'error'));
-        }
-
-        if ($values['before'] > self::$maxlayoutrows) {
-            throw new ParamOutOfRangeException(get_string('invalidnumrows', 'error'));
-        }
-
-        $columnsperrow = $this->get('columnsperrow');
-
-        db_begin();
-        $this->set('numrows', $this->get('numrows') + 1);
-        if ($values['before'] != ($this->get('numrows'))) {
-            $this->shuffle_helper('row', 'up', '>=', $values['before']);
-        }
-        $this->set('layout', null);
-
-        $layoutrows = $this->get_layoutrows();
-        $newrowcolumnsindex = $layoutrows[$values['newlayout']][$values['before']];
-        $newrownumcolumns = self::$layoutcolumns[$newrowcolumnsindex]->columns;
-
-        $columnsperrow[$values['before']] = (object)array('row' => $values['before'], 'columns' => $newrownumcolumns);
-        $this->set('columnsperrow', $columnsperrow); //set makes dirty=1, which enables commit; columnsperrrow used as check by layout submit function
-
-        $this->commit();
-        // @TODO this could be optimised by actually moving the keys around,
-        // but I don't think there's much point as the objects aren't persistent
-        // unless we're in ajax land, in which case it would be an optimisation
-        for ($i = $values['before']; $i <= $this->get('numrows'); $i++) {
-            $this->dirtyrows[$i] = 1;
-        }
-        $this->rows[$this->get('numrows')] = null; // set the key
-        db_commit();
-        if ($values['returndata']) {
-            return $this->build_row($values['before'], true); // MK follow up - AJAX
-        }
-    }
-
-    /**
-     * removes an entire row and redistributes its blocks
-     *
-     * @param array $values parameters for this function
-     *                      row => int row to remove
-     *
-     */
-    public function removerow($values) {
-        // $layoutrows declared in layout.php
-        global $SESSION;
-
-        if (!array_key_exists('row', $values) || empty($values['row'])) {
-            throw new ParamOutOfRangeException(get_string('missingparamrow', 'error'));
-        }
-
-        db_begin();
-        // for each column, call removecolumn
-        // first retrieve number of columns in row
-        $layoutrows = $this->get_layoutrows();
-        $layout = $values['layout'];
-        $thisrownumcolumns = $layout->rows[$values['row']]['columns'];
-
-        for ($i = $thisrownumcolumns; $i > 0 ; $i--) {
-            $this->removecolumn(array('row' => $values['row'], 'column' => $i, 'removerow' => true));
-        }
-
-        // check for sucessful removal of columns
-        $dbcolumns = get_field('view_rows_columns', 'columns', 'view', $this->get('id'), 'row', $values['row']);
-
-        if ($dbcolumns != 0) {
-            db_rollback();
-            $SESSION->add_error_msg(get_string('changecolumnlayoutfailed', 'view'));
-            redirect(get_config('wwwroot') . 'view/layout.php?id=' . $this->get('id') . ($new ? '&new=1' : ''));
-        }
-
-        $this->set('numrows', $this->get('numrows') - 1);
-        $this->set('layout', null);
-
-        $columnsperrow = $this->get('columnsperrow');
-        unset($columnsperrow[$values['row']]);
-        $this->set('columnsperrow', $columnsperrow); //set makes dirty=1, which enables commit; columnsperrrow used as check by layout submit function
+        $this->shuffle_helper('column', 'down', '>', $values['column']);
 
         $this->commit();
         db_commit();
-        unset($this->rows[$values['row']]);
+        unset($this->columns); // everything has changed
     }
-    /**
-     * helper function for re-ordering block instances within a cell row x column
-     * @param int $row     the row
-     * @param int $column  the column of the cell to re-order
+
+    /** 
+     * helper function for re-ordering block instances within a column
+     * @param int $column the column to re-order
      * @param int $insert the order we need to insert
      * @param int $remove the order we need to move out of the way
      */
-    private function shuffle_cell($row, $column, $insert=0, $remove=0) {
+    private function shuffle_column($column, $insert=0, $remove=0) {
         /*
         inserting something in the middle from somewhere else (insert and remove)
         we're either reshuffling after a delete, (no insert),
@@ -2633,20 +1947,21 @@ class View {
         // inserting and removing
         if (!empty($remove)) {
             // move it out of range (set to 0)
-            set_field_select('block_instance', 'order', 0, '"order" = ? AND "view" = ? AND "row" = ? AND "column" = ?', array($remove, $this->get('id'), $row, $column));
+            set_field('block_instance', 'order', 0, 'order', $remove, 'column', $column, 'view', $this->get('id'));
+
             if (!empty($insert)) {
                 // shuffle everything up
-                $this->shuffle_helper('order', 'up', '>=', $insert, '"row" = ? AND "column" = ?', array($row, $column));
+                $this->shuffle_helper('order', 'up', '>=', $insert, '"column" = ?', array($column)); 
                 // now move it back
-                set_field_select('block_instance', 'order', $insert, '"order" = ? AND "view" = ? AND "row" = ? AND "column" = ?', array(0, $this->get('id'), $row, $column));
+                set_field('block_instance', 'order', $insert, 'view', $this->get('id'), 'column', $column, 'order', 0);
             }
 
             // shuffle everything down
-            $this->shuffle_helper('order', 'down', '>', $remove, '"row" = ? AND "column" = ?', array($row, $column));
+            $this->shuffle_helper('order', 'down', '>', $remove, '"column" = ?', array($column));
         }
         else if (!empty($insert)) {
             // shuffle everything up
-            $this->shuffle_helper('order', 'up', '>=', $insert, '"row" = ? AND "column" = ?', array($row, $column));
+            $this->shuffle_helper('order', 'up', '>=', $insert, '"column" = ?', array($column));
         }
     }
 
@@ -2671,38 +1986,37 @@ class View {
         }
 
         // first move them one but switch to negtaive
-        $sql = 'UPDATE {block_instance}
-                    SET "' . $field .'" = (-1 * ("' . $field . '") ' . (($direction == 'up') ? '-' : '+') . ' 1)
+        $sql = 'UPDATE {block_instance} 
+                    SET "' . $field .'" = (-1 * ("' . $field . '") ' . (($direction == 'up') ? '-' : '+') . ' 1) 
                     WHERE "view" = ? AND "' . $field . '"' . $operator . ' ? ' . $extrawhere;
 
-        execute_sql($sql, array_merge(array($this->get('id'), $value), $extravalues));
+        execute_sql($sql, array_merge(array($this->get('id'), $value), $extravalues)); 
 
         // and now flip to positive again
-        $sql = 'UPDATE {block_instance}
-                    SET "' . $field . '" = ("' . $field . '" * -1)
+        $sql = 'UPDATE {block_instance} 
+                    SET "' . $field . '" = ("' . $field . '" * -1) 
                 WHERE "view" = ? AND "' . $field . '" < 0 ' . $extrawhere;
 
-        execute_sql($sql, array_merge(array($this->get('id')), $extravalues));
+        execute_sql($sql, array_merge(array($this->get('id')), $extravalues)); 
 
     }
 
     /**
      * returns the current max block position within a column
      */
-    private function get_current_max_order($row, $column) {
-        return get_field('block_instance', 'max("order")', 'column', $column, 'view', $this->get('id'), 'row', $row);
+    private function get_current_max_order($column) {
+        return get_field('block_instance', 'max("order")', 'column', $column, 'view', $this->get('id')); 
     }
 
     private function changetheme($values) {
         if ($theme = $values['theme']) {
             $themes = get_user_accessible_themes();
             if (isset($themes[$theme])) {
-                if ($theme == 'sitedefault') {
+                if($theme == 'sitedefault') {
                     $theme = null;
                 }
                 $this->set('theme', $theme);
                 $this->commit();
-                handle_event('saveview', $this->get('id'));
             }
         }
     }
@@ -2741,8 +2055,7 @@ class View {
             default:
                 return display_name($user);
             }
-        }
-        else if ($this->get('group')) {
+        } else if ($this->get('group')) {
             $group = $this->get_group_object();
             return $group->name;
         }
@@ -2757,82 +2070,40 @@ class View {
     }
 
     /**
-     * Returns a record from the view_layout table matching the layout for this View.
+     * Returns a record from the view_layout table matching the layout for this
+     * View.
      *
-     * If the layout for the view is null, and there is only one row,
-     * then this method returns the record for the default layout for
-     * the number of columns the View has.
+     * If the layout for the view is null, then this method returns the record
+     * for the default layout for the number of columns the View has.
      *
-     * It's not meaningful to have a default for multi-row layouts as there are so many possible permutations. (19,530 with equal column spacing alone.)
-     * Therefore we allow for an empty id value to be returned in the absence of a matching layout,
-     * if there is more than one row, but provide the default widths for the columns in each row.
-     * This is to cater for the dynamic adding and removing of columns via AJAX. In this case,
-     * new layouts may be created which do not yet exist. Adding them to the database would confuse the
-     * layout options page. In such cases the view layout is set to null in any case.
+     * Check the view_layout table for what fields you'll get back, but the
+     * most interesting one is 'widths', which is a comma-separated list of %
+     * widths for the columns in the View.
      *
-     *
-     * @return object containing an id from the view_layout table, and an array of rows with column numbers and column widths per row.
+     * @return array A record from the view_layout table.
      */
     public function get_layout() {
-
-        $layout = new StdClass;
-        $layout->rows = array();
-        $layoutid = $this->get('layout');
-        $numrows = $this->get('numrows');
-        $columnsperrow = $this->get('columnsperrow');
-        $owner = $this->get('owner');
-        $queryarray = array($owner, $numrows);
-        $group = $this->get('group');
-        $institution = $this->get('institution');
-
-        if (isset($owner)) {
-            $andclause = '(ucl.usr = 0 OR ucl.usr = ?)';
-        }
-        else if (!empty($group)) {
-            $andclause = '(ucl.usr = 0 OR ucl.group = ?)';
-            $queryarray = array($group, $numrows);
-        }
-        else if (!empty($institution)) {
-            $andclause = '(ucl.usr = 0 OR ucl.institution = ?)';
-            $queryarray = array($institution, $numrows);
-        }
-        else {
-            throw new SystemException("View::get_layout: No owner, group or institution set for view.");
+        static $viewlayouts = null;
+        if ($viewlayouts === null) {
+            $viewlayouts = get_records_assoc('view_layout');
         }
 
-        // get all valid possible layout records
-        $validlayouts = get_records_sql_assoc('
-                SELECT * FROM {view_layout} vl
-                JOIN {usr_custom_layout} ucl
-                ON ((vl.id = ucl.layout) AND ' . $andclause . ')
-                WHERE rows = ?', $queryarray);
+        $layout     = $this->get('layout');
+        $numcolumns = $this->get('numcolumns');
 
-        if ($layoutid) {
-            $layout->id = $layoutid;
-            $layoutsrowscols = get_records_select_array('view_layout_rows_columns', 'viewlayout = ?', array($layoutid));
-            foreach ($layoutsrowscols as $layoutrowcol) {
-                $layout->rows[$layoutrowcol->row]['widths'] = self::$layoutcolumns[$layoutrowcol->columns]->widths;
-                $layout->rows[$layoutrowcol->row]['columns'] = self::$layoutcolumns[$layoutrowcol->columns]->columns;
-            }
-
-        }
-        else if (!$layoutid) {
-            // view.layout is NULL, because the user hasn't chosen a stored layout or has been altering
-            // the number of columns in each row using the "add/delete columns" buttons.
-
-            // get widths for each row, based on equal spacing of columns
-            $layoutid = 0;
-            $layout->id = $layoutid;
-            foreach ($columnsperrow as $row) {
-                $numcolumns = $row->columns;
-                $widths = self::$defaultcolumnlayouts[$numcolumns];
-                $layout->id = get_field('view_layout_columns', 'id', 'columns', $numcolumns, 'widths', $widths);
-                $layout->rows[$row->row]['widths'] = $widths;
-                $layout->rows[$row->row]['columns'] = $numcolumns;
+        if (!$layout) {
+            foreach ($viewlayouts as $layout) {
+                if ($layout->widths == self::$defaultlayouts[$numcolumns]) {
+                    return $layout;
+                }
             }
         }
 
-        return $layout;
+        if (isset($viewlayouts[$layout])) {
+            return $viewlayouts[$layout];
+        }
+
+        throw new SystemException("Unknown view layout (id=$layout)");
     }
 
     /**
@@ -2846,35 +2117,33 @@ class View {
      *               what fields are available.
      */
     public function export_config($format='') {
-        $data = $this->get_row_datastructure();
+        $data = $this->get_column_datastructure();
         $config = array(
             'title'       => $this->get('title'),
             'description' => $this->get('description'),
             'type'        => $this->get('type'),
             'layout'      => $this->get('layout'),
             'tags'        => $this->get('tags'),
-            'numrows'     => $this->get('numrows'),
+            'numcolumns'  => $this->get('numcolumns'),
             'ownerformat' => $this->get('ownerformat'),
         );
 
-        foreach ($data as $rowkey => $row) {
-            foreach ($row as $colkey => $column) {
-                $config['rows'][$rowkey]['columns'][$colkey] = array();
-                foreach ($column['blockinstances'] as $bi) {
-                    safe_require('blocktype', $bi->get('blocktype'));
-                    $classname = generate_class_name('blocktype', $bi->get('blocktype'));
-                    $method = 'export_blockinstance_config';
-                    if (method_exists($classname, $method . "_$format")) {
-                        $method .= "_$format";
-                    }
-                    $config['rows'][$rowkey]['columns'][$colkey][] = array(
-                        'blocktype' => $bi->get('blocktype'),
-                        'title'     => $bi->get('title'),
-                        'config'    => call_static_method($classname, $method, $bi),
-                    );
+        foreach ($data as $key => $column) {
+            $config['columns'][$key] = array();
+            foreach ($column['blockinstances'] as $bi) {
+                safe_require('blocktype', $bi->get('blocktype'));
+                $classname = generate_class_name('blocktype', $bi->get('blocktype'));
+                $method = 'export_blockinstance_config';
+                if (method_exists($classname, $method . "_$format")) {
+                    $method .= "_$format";
                 }
-            } // cols
-        } // rows
+                $config['columns'][$key][] = array(
+                    'blocktype' => $bi->get('blocktype'),
+                    'title'     => $bi->get('title'),
+                    'config'    => call_static_method($classname, $method, $bi),
+                );
+            }
+        }
 
         return $config;
     }
@@ -2897,7 +2166,7 @@ class View {
             'type'        => $config['type'],
             'layout'      => $config['layout'],
             'tags'        => $config['tags'],
-            'numrows'     => $config['numrows'],
+            'numcolumns'  => $config['numcolumns'],
             'ownerformat' => $config['ownerformat'],
         );
         if (isset($config['owner'])) {
@@ -2906,38 +2175,36 @@ class View {
         if (isset($config['group'])) {
             $viewdata['group'] = $config['group'];
         }
-
         if (isset($config['institution'])) {
             $viewdata['institution'] = $config['institution'];
         }
         $view = View::create($viewdata, $userid);
 
-        foreach ($config['rows'] as $rowkey => $row) {
-            foreach ($row['columns'] as $colkey => $column) {
-                $order = 1;
-                foreach ($column as $blockinstance) {
-                    safe_require('blocktype', $blockinstance['type']);
-                    $classname = generate_class_name('blocktype', $blockinstance['type']);
-                    $method = 'import_create_blockinstance';
-                    if (method_exists($classname, $method . "_$format")) {
-                        $method .= "_$format";
-                    }
-                    $bi = call_static_method($classname, $method, $blockinstance, $config);
-                    if ($bi) {
-                        $bi->set('title',  $blockinstance['title']);
-                        $bi->set('row', $rowkey);
-                        $bi->set('column', $colkey);
-                        $bi->set('order',  $order);
-                        $view->addblockinstance($bi);
-
-                        $order++;
-                    }
-                    else {
-                        log_debug("Blocktype {$blockinstance['type']}'s import_create_blockinstance did not give us a blockinstance, so not importing this block");
-                    }
+        $col = 1;
+        foreach ($config['columns'] as $column) {
+            $row = 1;
+            foreach ($column as $blockinstance) {
+                safe_require('blocktype', $blockinstance['type']);
+                $classname = generate_class_name('blocktype', $blockinstance['type']);
+                $method = 'import_create_blockinstance';
+                if (method_exists($classname, $method . "_$format")) {
+                    $method .= "_$format";
                 }
-            } // cols
-        } // rows
+                $bi = call_static_method($classname, $method, $blockinstance, $config);
+                if ($bi) {
+                    $bi->set('title',  $blockinstance['title']);
+                    $bi->set('column', $col);
+                    $bi->set('order',  $row);
+                    $view->addblockinstance($bi);
+
+                    $row++;
+                }
+                else {
+                    log_debug("Blocktype {$blockinstance['type']}'s import_create_blockinstance did not give us a blockinstance, so not importing this block");
+                }
+            }
+            $col++;
+        }
 
         if ($viewdata['type'] == 'profile') {
             $view->set_access(array(
@@ -2961,10 +2228,10 @@ class View {
         $baseurl = '?';
         foreach ($_POST + $_GET as $key => $value) {
             if (in_array($key, $allowed_keys) || preg_match('/^action_.*(_x)?$/', $key)) {
-                $baseurl .= hsc($key) . '=' . hsc($value) . '&';
+                $baseurl .= hsc($key) . '=' . hsc($value) . '&amp;';
             }
         }
-        $baseurl = substr($baseurl, 0, -1);
+        $baseurl = substr($baseurl, 0, -5);
         return $baseurl;
     }
 
@@ -2983,7 +2250,7 @@ class View {
         $search = '';
         if (!empty($data['search']) && param_boolean('s')) {
             $search = param_variable('search', '');
-            // Maybe later, depending on performance - don't search if there's
+            // Maybe later, depending on performance - don't search if there's 
             // not enough characters. Prompts should be added to the UI too.
             //if (strlen($search) < 3) {
             //    $search = '';
@@ -3063,13 +2330,6 @@ class View {
                     foreach ($returnfields as $f) {
                         if ($f == 'safedescription') {
                             $returnartefacts[$artefact->id]['safedescription'] = clean_html($artefact->description);
-                            continue;
-                        }
-                        if ($f == 'attachments') {
-                            // Check if the artefact has attachments - we need to update the instance config form
-                            // to have those attachments selected.
-                            $attachment_ids = get_column('artefact_attachment','attachment', 'artefact', $artefact->id);
-                            $returnartefacts[$artefact->id]['attachments'] = $attachment_ids;
                             continue;
                         }
                         $returnartefacts[$artefact->id][$f] = $artefact->$f;
@@ -3316,12 +2576,8 @@ class View {
                 $expr = 'a.owner IS NOT NULL AND a.owner = ?';
                 array_unshift($selectph, $user->get('id'));
             }
-            if (is_mysql()) {
-                $cols .= ", ($expr) AS editable";
-            }
-            else {
-                $cols .= ", CAST($expr AS INTEGER) AS editable";
-            }
+            $type = is_mysql() ? 'UNSIGNED' : 'INTEGER';
+            $cols .= ", CAST($expr AS $type) AS editable";
         }
 
         $artefacts = get_records_sql_assoc(
@@ -3386,7 +2642,7 @@ class View {
                 INNER JOIN {view_tag} vt ON (vt.view = v.id AND vt.tag = ?)";
             $values[] = $tag;
         }
-        else if ($query != '') { // Include matches on the title, description or tag
+        elseif ($query) { // Include matches on the title, description or tag
             $from .= "
                 LEFT JOIN {view_tag} vt ON (vt.view = v.id AND vt.tag = ?)";
             $like = db_ilike();
@@ -3464,7 +2720,7 @@ class View {
         if (!empty($tag)) {
             $queryparams[] = 'tag=' . urlencode($tag);
         }
-        else if ($query != '') {
+        else if (!empty($query)) {
             $queryparams[] =  'query=' . urlencode($query);
         }
 
@@ -3482,7 +2738,7 @@ class View {
             }
         }
         else {
-            $url = get_config('wwwroot') . 'view/index.php';
+            $url = get_config('wwwroot') . 'view/';
         }
 
         if (!empty($queryparams)) {
@@ -3493,18 +2749,10 @@ class View {
     }
 
     public static function views_by_owner($group=null, $institution=null) {
-        global $USER;
 
         // Pagination configuration
         $setlimit = true;
-        $limit = param_integer('limit', 0);
-        $userlimit = get_account_preference($USER->get('id'), 'viewsperpage');
-        if ($limit > 0 && $limit != $userlimit) {
-            $USER->set_account_preference('viewsperpage', $limit);
-        }
-        else {
-            $limit = $userlimit;
-        }
+        $limit  = param_integer('limit', 20);
         $offset = param_integer('offset', 0);
 
         $query  = param_variable('query', null);
@@ -3527,7 +2775,6 @@ class View {
 
         $searchform = array(
             'name' => 'searchviews',
-            'checkdirtychange' => false,
             'renderer' => 'oneline',
             'elements' => array(
                 'query' => array(
@@ -3536,8 +2783,6 @@ class View {
                     'defaultvalue' => $searchdefault,
                 ),
                 'type' => array(
-                    'title'        => get_string('searchwithin'),
-                    'hiddenlabel'  => true,
                     'type'         => 'select',
                     'options'      => $searchoptions,
                     'defaultvalue' => $searchtype,
@@ -3597,49 +2842,11 @@ class View {
         return array();
     }
 
-    public function get_layoutrows() {
-        $layoutrows = array();
-        $owner = $this->get('owner');
-        $group = $this->get('group');
-        $institution = $this->get('institution');
-        $queryarray = array($owner);
-
-        // get built-in layout options (owner=0) and any custom created layouts
-        if (isset($owner)) {
-            // view owned by individual
-            $whereclause = '(ucl.usr = 0 OR ucl.usr = ?)';
-        }
-        else if (!empty($group)) {
-            // view owned by group
-            $whereclause = '(ucl.usr = 0 OR ucl.group = ?)';
-            $queryarray = array($group);
-        }
-        else if (!empty($institution)) {
-            // view owned by institution
-            $whereclause = '(ucl.usr = 0 OR ucl.institution = ?)';
-            $queryarray = array($institution);
-        }
-        else {
-            throw new SystemException("View::get_layoutrows: No owner, group or institution set for view.");
-        }
-
-        $layoutsrowscols = get_records_sql_array('
-                SELECT vlrc.viewlayout, vlrc.row, vlrc.columns
-                FROM {view_layout_rows_columns} vlrc
-                    JOIN {view_layout} vl ON vlrc.viewlayout = vl.id
-                    JOIN {usr_custom_layout} ucl ON (vl.id = ucl.layout)
-                WHERE ' . $whereclause, $queryarray);
-
-        foreach ($layoutsrowscols as $layout) {
-            $layoutrows[$layout->viewlayout][$layout->row] = $layout->columns;
-        }
-        return $layoutrows;
-    }
     /**
-     * Returns an SQL snippet that can be used in a where clause to get views
+     * Returns an SQL snippet that can be used in a where clause to get views 
      * with the given owner.
      *
-     * @param object $ownerobj An object that has view ownership information -
+     * @param object $ownerobj An object that has view ownership information - 
      *                         either the institution, group or owner fields set
      * @return string
      */
@@ -3715,23 +2922,15 @@ class View {
         $loggedin = $USER->is_logged_in();
         $viewerid = $USER->get('id');
 
-        // Query parameters
-        $fromparams = array();
-        $whereparams = array();
-
         $from = '
             FROM {view} v
             LEFT OUTER JOIN {collection_view} cv ON cv.view = v.id
             LEFT OUTER JOIN {collection} c ON cv.collection = c.id
-            LEFT OUTER JOIN {usr} qu ON (v.owner = qu.id)
             ';
 
         $where = '
             WHERE (v.owner IS NULL OR v.owner > 0)
-                AND (v.group IS NULL OR v.group NOT IN (SELECT id FROM {group} WHERE deleted = 1))
-                AND (qu.suspendedctime is null OR v.owner = ?)';
-
-        $whereparams[] = $viewerid;
+                AND (v.group IS NULL OR v.group NOT IN (SELECT id FROM {group} WHERE deleted = 1))';
 
         if (is_array($types) && !empty($types)) {
             $where .= ' AND v.type IN (';
@@ -3763,19 +2962,21 @@ class View {
                 LEFT JOIN {view_tag} vt ON (vt.view = v.id AND vt.tag = ?)";
             $where .= "
                 AND (v.title $like '%' || ? || '%' OR v.description $like '%' || ? || '%' OR vt.tag = ?";
-            array_push($fromparams, $query);
-            array_push($whereparams, $query, $query, $query);
+            $ph = array($query, $query, $query, $query);
             if ($collection) {
                 $where .= "
                     OR c.name $like '%' || ? || '%' OR c.description $like '%' || ? || '%' ";
-                array_push($whereparams, $query, $query);
+                array_push($ph, $query, $query);
             }
             $where .= ")";
         }
         else if ($tag) { // Filter by the tag
             $from .= "
                 INNER JOIN {view_tag} vt ON (vt.view = v.id AND vt.tag = ?)";
-            $fromparams[] = $tag;
+            $ph = array($tag);
+        }
+        else {
+            $ph = array();
         }
 
         if (is_array($accesstypes)) {
@@ -3797,8 +2998,8 @@ class View {
                         FROM {group_member} m JOIN {group} g ON m.member = ? AND m.group = g.id
                         WHERE m.role = 'admin' OR g.editroles = 'all' OR (g.editroles != 'admin' AND m.role != 'member')
                     )";
-            $whereparams[] = $viewerid;
-            $whereparams[] = $viewerid;
+            $ph[] = $viewerid;
+            $ph[] = $viewerid;
         }
         else {
             $editablesql = 'FALSE';
@@ -3835,8 +3036,8 @@ class View {
                                     AND (va.startdate IS NULL OR va.startdate < current_timestamp)
                                     AND (va.stopdate IS NULL OR va.stopdate > current_timestamp)
                             )";
-                $whereparams[] = $viewerid;
-                $whereparams[] = $viewerid;
+                $ph[] = $viewerid;
+                $ph[] = $viewerid;
             }
             else if ($t == 'user') {
                 $accesssql[] = "v.id IN ( -- user access
@@ -3846,7 +3047,7 @@ class View {
                                     AND (va.startdate IS NULL OR va.startdate < current_timestamp)
                                     AND (va.stopdate IS NULL OR va.stopdate > current_timestamp)
                             )";
-                $whereparams[] = $viewerid;
+                $ph[] = $viewerid;
             }
             else if ($t == 'group') {
                 $accesssql[] = "v.id IN ( -- group access
@@ -3858,7 +3059,7 @@ class View {
                                     AND (va.startdate IS NULL OR va.startdate < current_timestamp)
                                     AND (va.stopdate IS NULL OR va.stopdate > current_timestamp)
                             )";
-                $whereparams[] = $viewerid;
+                $ph[] = $viewerid;
             }
             else if ($t == 'institution') {
                 $accesssql[] = "v.id IN ( -- institution access
@@ -3870,7 +3071,7 @@ class View {
                                     AND (va.startdate IS NULL OR va.startdate < current_timestamp)
                                     AND (va.stopdate IS NULL OR va.stopdate > current_timestamp)
                             )";
-                $whereparams[] = $viewerid;
+                $ph[] = $viewerid;
             }
         }
 
@@ -3890,6 +3091,7 @@ class View {
 
         if (!$ownedby && $ownerquery) {
             $from .= '
+            LEFT OUTER JOIN {usr} qu ON (v.owner = qu.id)
             LEFT OUTER JOIN {group} qg ON (v.group = qg.id)
             LEFT OUTER JOIN {institution} qi ON (v.institution = qi.name)';
             if (strpos(strtolower(get_config('sitename')), strtolower($ownerquery)) !== false) {
@@ -3907,7 +3109,7 @@ class View {
                     OR qi.displayname $like '%' || ? || '%'
                     $sitequery
                 )";
-            $whereparams = array_merge($whereparams, array($ownerquery,$ownerquery,$ownerquery,$ownerquery,$ownerquery));
+            $ph = array_merge($ph, array($ownerquery,$ownerquery,$ownerquery,$ownerquery,$ownerquery));
         }
 
         $orderby = 'title ASC';
@@ -3941,7 +3143,7 @@ class View {
                     $orderby .= "COALESCE(sg.name, si.displayname, CASE WHEN su.preferredname IS NOT NULL AND su.preferredname != '' THEN su.preferredname ELSE su.firstname || ' ' || su.lastname END)";
                 }
                 else {
-                    $orderby .= (!empty($item['tablealias']) ? $item['tablealias'] : 'v') . '.' . $item['column'];
+                    $orderby .= 'v.' . $item['column'];
                 }
 
                 if ($item['desc']) {
@@ -3953,7 +3155,6 @@ class View {
             }
         }
 
-        $ph = array_merge($fromparams, $whereparams);
         $count = count_records_sql('SELECT COUNT(*) ' . $from . $where, $ph);
 
         $viewdata = get_records_sql_assoc('
@@ -4110,7 +3311,7 @@ class View {
                 GROUP BY ownertype, display, g.id
             UNION
                 SELECT 'institution' AS ownertype, i.displayname AS display, i.name AS id, COUNT(v.id)
-                FROM {institution} i INNER JOIN {view} v ON (i.name = v.institution)
+                FROM {institution} i INNER JOIN {view} v ON (i.name = v.institution) 
                 WHERE TRUE $tsql
                 GROUP BY ownertype, display, i.name ORDER BY display";
 
@@ -4133,7 +3334,7 @@ class View {
     }
 
 
-    /**
+    /** 
      * Get views which have been explicitly shared to a group and are
      * not owned by the group
      */
@@ -4280,7 +3481,7 @@ class View {
         }
     }
 
-    public static function set_nav($group, $institution, $share=false, $collection=false) {
+    public static function set_nav($group, $institution, $share=false) {
         if ($group) {
             define('MENUITEM', $share ? 'groups/share' : 'groups/views');
             define('GROUP', $group);
@@ -4292,9 +3493,6 @@ class View {
         else if ($institution) {
             define('INSTITUTIONALADMIN', 1);
             define('MENUITEM', $share ? 'manageinstitutions/share' : 'manageinstitutions/institutionviews');
-        }
-        else if ($collection) {
-            define('MENUITEM', 'myportfolio/collection');
         }
         else {
             define('MENUITEM', $share ? 'myportfolio/share' : 'myportfolio/views');
@@ -4337,11 +3535,9 @@ class View {
 
     public function copy_contents($template) {
         $this->set('numcolumns', $template->get('numcolumns'));
-        $this->set('numrows', $template->get('numrows'));
         $this->set('layout', $template->get('layout'));
         $this->set('description', $template->get('description'));
         $this->set('tags', $template->get('tags'));
-        $this->set('columnsperrow', $template->get('columnsperrow'));
         $blocks = get_records_array('block_instance', 'view', $template->get('id'));
         $numcopied = array('blocks' => 0, 'artefacts' => 0);
         if ($blocks) {
@@ -4414,30 +3610,26 @@ class View {
 
     public static function get_templatesearch_data(&$search) {
         require_once(get_config('libroot') . 'pieforms/pieform.php');
-        $search->sort = (isset($search->sort)) ? $search->sort : null; // for backwards compatibility
-        $results = self::view_search($search->query, $search->ownerquery, null, $search->copyableby, $search->limit, $search->offset, true, $search->sort, null, true);
+        $results = self::view_search($search->query, $search->ownerquery, null, $search->copyableby, $search->limit, $search->offset, true, null, null, true);
 
         foreach ($results->data as &$r) {
             $r['form'] = pieform(create_view_form($search->copyableby->group, $search->copyableby->institution, $r['id'], $r['collid']));
         }
 
         $params = array();
-        if (isset($search->query) && ($search->query != '')) {
-            $params['viewquery'] = $search->query;
+        if (!empty($search->query)) {
+            $params[] = 'viewquery=' . $search->query;
         }
-        if (isset($search->ownerquery) && ($search->ownerquery != '')) {
-            $params['ownerquery'] = $search->ownerquery;
+        if (!empty($search->ownerquery)) {
+            $params[] = 'ownerquery=' . $search->query;
         }
         if (!empty($search->group)) {
-            $params['group'] = $search->group;
+            $params[] = 'group=' . $search->group;
         }
         if (!empty($search->institution)) {
-            $params['institution'] = $search->institution;
+            $params[] = 'institution=' . $search->institution;
         }
-        if (!empty($search->collection)) {
-            $params['searchcollection'] = $search->collection;
-        }
-        $params['viewlimit'] = $search->limit;
+        $params[] = 'viewlimit=' . $search->limit;
 
         $smarty = smarty_core();
         $smarty->assign_by_ref('results', $results->data);
@@ -4447,7 +3639,7 @@ class View {
         $search->pagination = build_pagination(array(
             'id' => 'templatesearch_pagination',
             'class' => 'center',
-            'url' => get_config('wwwroot') . 'view/choosetemplate.php' . (!empty($params) ? ('?' . http_build_query($params)) : ''),
+            'url' => get_config('wwwroot') . 'view/choosetemplate.php?' . join('&amp;', $params),
             'count' => $results->count,
             'limit' => $search->limit,
             'offset' => $search->offset,
@@ -4500,18 +3692,18 @@ class View {
         if ($this->type == 'profile') {
             $title = hsc(display_name($this->owner, null, true));
             if ($long) {
-                return get_string('usersprofile', 'mahara', $title);
+                return '<strong>' . get_string('usersprofile', 'mahara', $title) . '</strong>';
             }
             return $title;
         }
         if ($this->type == 'dashboard') {
-            return get_string('dashboardviewtitle', 'view');
+            return '<strong>' . get_string('dashboardviewtitle', 'view') . '</strong>';
         }
 
         $ownername = hsc($this->formatted_owner());
 
         if ($this->type == 'grouphomepage') {
-            return get_string('aboutgroup', 'group', $ownername);
+            return '<strong>' . get_string('aboutgroup', 'group', $ownername) . '</strong>';
         }
 
         $ownerlink = null;
@@ -4523,7 +3715,7 @@ class View {
             $title = '<a href="' . $this->get_url() . '">' . hsc($this->title) . '</a>';
         }
         else {
-            $title = hsc($this->title);
+            $title = '<strong>' . hsc($this->title) . '</strong>';
         }
 
         if (isset($ownerlink)) {
@@ -4612,7 +3804,7 @@ class View {
             $url = '';
         }
         else if ($this->type == 'grouphomepage') {
-            if (!$useid && $this->get('group')) {
+            if (!$useid) {
                 return group_homepage_url($this->get_group_object(), $full);
             }
             $url = 'group/view.php?id=' . $this->group;
@@ -4822,10 +4014,7 @@ class View {
     function get_views_and_collections($owner=null, $group=null, $institution=null, $matchconfig=null, $includeprofile=true, $submittedgroup=null) {
 
         $excludelocked = $group && group_user_access($group) != 'admin';
-        // Anonymous public viewing of a group with 'Allow submissions' checked needs to avoid including the dummy root profile page.
-        if ($owner == '0') {
-            $includeprofile = false;
-        }
+
         $sql = "
             SELECT v.id, v.type, v.title, v.accessconf, v.ownerformat, v.startdate, v.stopdate, v.template,
                 v.owner, v.group, v.institution, v.urlid, v.submittedgroup, v.submittedhost, " .
@@ -5004,17 +4193,11 @@ class View {
             return $data;
         }
 
-        if (!function_exists('is_probationary_user')) {
-            require_once(get_config('libroot') . 'antispam.php');
-        }
         foreach ($accessgroups as $access) {
             // remove 'Public' from the list if the owner isn't allowed to have them
             if ($access->accesstype == 'public'
-                && (
-                    get_config('allowpublicviews') != 1
-                    || (isset($ownerobj) && !$ownerobj->institution_allows_public_views())
-                    || (isset($ownerobj) && is_probationary_user($ownerobj->id))
-                )
+                && (get_config('allowpublicviews') != 1
+                    || (isset($ownerobj) && !$ownerobj->institution_allows_public_views()))
             ) {
                 continue;
             }
@@ -5142,6 +4325,7 @@ class View {
     }
 }
 
+
 function create_view_form($group=null, $institution=null, $template=null, $collection=null) {
     global $USER;
     $form = array(
@@ -5257,12 +4441,12 @@ function createview_cancel_submit(Pieform $form, $values) {
     if (isset($values['institution'])) {
         redirect(get_config('wwwroot') . 'view/institutionviews.php?institution=' . $values['institution']);
     }
-    redirect(get_config('wwwroot') . 'view/index.php');
+    redirect(get_config('wwwroot') . 'view/');
 }
 
 function searchviews_submit(Pieform $form, $values) {
     $tag = $query = null;
-    if ($values['query'] != '') {
+    if (!empty($values['query'])) {
         if ($values['type'] == 'tagsonly') {
             $tag = $values['query'];
         }
@@ -5383,9 +4567,6 @@ function objection_form() {
         'title' => get_string('complaint', 'view'),
         'rows'  => 5,
         'cols'  => 80,
-        'rules' => array(
-            'required' => true
-        )
     );
     $form['elements']['submit'] = array(
         'type'  => 'submitcancel',

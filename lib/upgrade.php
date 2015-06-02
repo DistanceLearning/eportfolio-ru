@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -51,19 +67,9 @@ function check_upgrades($name=null) {
         }
         if (empty($coreversion)) {
             if (is_mysql()) { // Show a more informative error message if using mysql with skip-innodb
-                // In MySQL 5.6.x, we run the command 'SHOW ENGINES' to check if InnoDB is enabled or not
                 global $db;
-                $result = $db->Execute("SHOW ENGINES");
-                $hasinnodb = false;
-                while (!$result->EOF) {
-                    if ($result->fields['Engine'] == 'InnoDB' && ($result->fields['Support'] == 'YES' || $result->fields['Support'] == 'DEFAULT')) {
-                        $hasinnodb = true;
-                        break;
-                    }
-                    $result->MoveNext();
-                }
-
-                if (!$hasinnodb) {
+                $result = $db->Execute("SHOW VARIABLES LIKE 'have_innodb'");
+                if ($result->fields['Value'] != 'YES') {
                     throw new ConfigSanityException("Mahara requires InnoDB tables.  Please ensure InnoDB tables are enabled in your MySQL server.");
                 }
             }
@@ -518,9 +524,21 @@ function upgrade_plugin($upgrade) {
 
 function core_postinst() {
     $status = true;
+    $pages = site_content_pages();
+    $now = db_format_timestamp(time());
+    foreach ($pages as $name) {
+        $page = new stdClass();
+        $page->name = $name;
+        $page->ctime = $now;
+        $page->mtime = $now;
+        $page->content = get_string($page->name . 'defaultcontent', 'install');
+        if (!insert_record('site_content',$page)) {
+            $status = false;
+        }
+    }
 
     // Attempt to create session directories
-    $sessionpath = get_config('sessionpath');
+    $sessionpath = get_config('dataroot') . 'sessions';
     if (check_dir_exists($sessionpath)) {
         // Create three levels of directories, named 0-9, a-f
         $characters = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
@@ -551,7 +569,6 @@ function core_postinst() {
         $status = false;
     }
 
-    $now = db_format_timestamp(time());
     // Set default search plugin
     set_config('searchplugin', 'internal');
 
@@ -581,7 +598,7 @@ function core_postinst() {
     $key->setAttributes(XMLDB_KEY_FOREIGN, array('logo'), 'artefact', array('id'));
     add_key($table, $key);
 
-    // PostgreSQL supports indexes over functions of columns, MySQL does not.
+    // PostgreSQL supports indexes over functions of columns, MySQL does not. 
     // We make use if this if we can
     if (is_postgres()) {
         // Improve the username index
@@ -654,9 +671,6 @@ function core_postinst() {
     );
     update_safe_iframes($iframesources, $iframedomains);
 
-    require_once(get_config('docroot') . 'lib/file.php');
-    update_magicdb_path();
-
     return $status;
 }
 
@@ -670,18 +684,6 @@ function core_install_lastcoredata_defaults() {
     $institution->theme  = 'default';
     $institution->priority = 0;
     insert_record('institution', $institution);
-
-    $pages = site_content_pages();
-    $now = db_format_timestamp(time());
-    foreach ($pages as $name) {
-        $page = new stdClass();
-        $page->name = $name;
-        $page->ctime = $now;
-        $page->mtime = $now;
-        $page->content = get_string($page->name . 'defaultcontent', 'install', get_string('staticpageconfigdefault', 'install'));
-        $page->institution = 'mahara';
-        insert_record('site_content', $page);
-    }
 
     $auth_instance = new StdClass;
     $auth_instance->instancename  = 'Internal';
@@ -711,19 +713,10 @@ function core_install_lastcoredata_defaults() {
         insert_record('usr', $user);
     }
 
-    // install the default layout options
-    install_view_layout_defaults();
-
     require_once('group.php');
     install_system_profile_view();
     install_system_dashboard_view();
     install_system_grouphomepage_view();
-
-    require_once('license.php');
-    install_licenses_default();
-
-    require_once('skin.php');
-    install_skins_default();
 
     // Insert the admin user
     $user = new StdClass;
@@ -751,9 +744,6 @@ function core_install_lastcoredata_defaults() {
     // the order of installation stuff.
 
     install_blocktype_extras();
-
-    // also install the new watchlist notification
-    install_watchlist_notification();
 }
 
 function core_install_firstcoredata_defaults() {
@@ -762,7 +752,6 @@ function core_install_firstcoredata_defaults() {
 
     set_config('session_timeout', 86400);
     set_config('sitename', 'Mahara');
-    set_config('defaultregistrationexpirylifetime', 1209600);
     set_config('defaultaccountinactivewarn', 604800);
     set_config('creategroups', 'all');
     set_config('createpublicgroups', 'all');
@@ -822,7 +811,6 @@ function core_install_firstcoredata_defaults() {
         'addfriendrequest',
         'removefriendrequest',
         'creategroup',
-        'loginas',
     );
 
     foreach ($eventtypes as $et) {
@@ -894,7 +882,6 @@ function core_install_firstcoredata_defaults() {
         'cron_institution_data_weekly'              => array('55', '23', '*', '*', '6'),
         'cron_institution_data_daily'               => array('51', '23', '*', '*', '*'),
         'check_imap_for_bounces'                    => array('*', '*', '*', '*', '*'),
-        'cron_event_log_expire'                     => array('7', '23', '*', '*', '*'),
     );
     foreach ($cronjobs as $callfunction => $times) {
         $cron = new StdClass;
@@ -906,6 +893,9 @@ function core_install_firstcoredata_defaults() {
         $cron->dayofweek    = $times[4];
         insert_record('cron', $cron);
     }
+
+    // install the view column widths
+    install_view_column_widths();
 
     $viewtypes = array('dashboard', 'portfolio', 'profile', 'grouphomepage');
     foreach ($viewtypes as $vt) {
@@ -1101,145 +1091,20 @@ function install_blocktype_extras() {
 
 /**
  * Installs all the allowed column widths for views. Used when installing core
- * defaults, and also when upgrading from 1.7 to 1.8
+ * defaults, and also when upgrading from 0.8 to 0.9
  */
 function install_view_column_widths() {
-    require_once('view.php');
-
-    $layout = new stdClass();
-    $delayinserts = array();
-    $x = 0;
-    foreach (View::$basic_column_layouts as $column => $widths) {
-        foreach ($widths as $width) {
-            // If we're upgrading, then this width may already be present
-            // from the conversion of an exising layout.
-            if (!record_exists('view_layout_columns', 'widths', $width)) {
-                $layout = new stdClass();
-                $layout->columns = $column;
-                $layout->widths = $width;
-                insert_record('view_layout_columns', $layout);
-            }
-        }
-    }
-}
-
-function install_view_layout_defaults() {
     db_begin();
     require_once('view.php');
 
-    // Make sure all the column widths are present
-    install_view_column_widths();
-
-    // Fetch all the existing layouts so we can check below whether each default already exists
-    $oldlayouts = array();
-    $layoutrecs = get_records_assoc('view_layout', 'iscustom', '0', '', 'id, rows, iscustom');
-    if ($layoutrecs) {
-        foreach ($layoutrecs as $rec) {
-            $rows = get_records_sql_assoc(
-                    'select vlrc.row, vlc.widths
-                    from
-                        {view_layout_rows_columns} vlrc
-                        inner join {view_layout_columns} vlc
-                            on vlrc.columns = vlc.id
-                    where vlrc.viewlayout = ?
-                    order by vlrc.row',
-                    array($rec->id)
-            );
-            if (!$rows) {
-                // This layout has no rows. Strange, but let's just ignore it for now.
-                log_warn('view_layout ' . $rec->id . ' is missing its row or column width records.');
-                continue;
-            }
-            $allwidths = '';
-            foreach ($rows as $rowrec) {
-                $allwidths .= $rowrec->widths . '-';
-            }
-            // Drop the last comma
-            $allwidths = substr($allwidths, 0, -1);
-            $oldlayouts[$rec->id] = $allwidths;
+    $layout = new StdClass;
+    foreach (View::$layouts as $column => $widths) {
+        foreach ($widths as $width) {
+            $layout->columns = $column;
+            $layout->widths = $width;
+            insert_record('view_layout', $layout);
         }
     }
-
-    foreach (View::$defaultlayoutoptions as $id => $rowscols) {
-        // Check to see whether it matches an existing record
-        $allwidths = '';
-        $numrows = 0;
-        foreach ($rowscols as $row => $col) {
-            if ($row != 'order') {
-                $allwidths .= $col . '-';
-                $numrows++;
-            }
-        }
-        $allwidths = substr($allwidths, 0, -1);
-        $found = array_search($allwidths, $oldlayouts);
-        if ($found !== false) {
-            // There's a perfect match in the DB already. Just make sure it has the right menu order
-            if (isset($rowscols['order'])) {
-                update_record(
-                        'view_layout',
-                        (object)array(
-                                'id' => $found,
-                                'layoutmenuorder'=>$rowscols['order']
-                        )
-                );
-            }
-            continue;
-        }
-
-        // It doesn't exist yet! So, set it up.
-        $vlid = insert_record(
-                'view_layout',
-                (object)array(
-                    'iscustom' => 0,
-                    'rows' => $numrows,
-                    'layoutmenuorder' => (isset($rowscols['order']) ? $rowscols['order'] : 0)
-                ),
-                'id',
-                true
-        );
-        insert_record(
-                'usr_custom_layout',
-                (object)array(
-                        'usr' => 0,
-                        'group' => null,
-                        'layout' => $vlid,
-                )
-        );
-
-        foreach ($rowscols as $row => $col) {
-            // The 'order' field indicates menu order if this layout is meant to be present
-            // in the default layout menu
-            if ($row == 'order') {
-                continue;
-            }
-
-            // Check for the ID of the column widths that match this row
-            $colsid = get_field('view_layout_columns', 'id', 'widths', $col);
-            if (!$colsid) {
-                // For some reason this layout_columns wasn't present yet.
-                // We'll just insert it, but also throw a warning
-                $colsid = insert_record(
-                        'view_layout_columns',
-                        (object) array(
-                                'columns' => substr_count($col, ','),
-                                'widths' => $col
-                        ),
-                        'id',
-                        true
-                );
-                log_warn('Default layout option ' . $id . ' uses a column set that is not present in the list of default column widths.');
-            }
-            insert_record(
-                    'view_layout_rows_columns',
-                    (object)array(
-                        'viewlayout' => $vlid,
-                        'row' => $row,
-                        'columns' => $colsid,
-                    )
-            );
-        }
-    }
-
     db_commit();
 }
 
@@ -1274,9 +1139,7 @@ function update_safe_iframe_regex() {
                 throw new SystemException('Invalid site passed to update_safe_iframe_regex');
             }
         }
-        // Allowed iframe URLs should be one of the partial URIs in iframe_source,
-        // prefaced by http:// or https:// or just // (which is a protocol-relative URL)
-        $iframeregexp = '%^(http:|https:|)//(' . str_replace('.', '\.', implode('|', $prefixes)) . ')%';
+        $iframeregexp = '%^https?://(' . str_replace('.', '\.', implode('|', $prefixes)) . ')%';
     }
     set_config('iframeregexp', isset($iframeregexp) ? $iframeregexp : null);
 }
@@ -1341,7 +1204,7 @@ function activate_plugin_submit(Pieform $form, $values) {
     global $SESSION;
     if ($values['plugintype'] == 'blocktype') {
         if (strpos($values['pluginname'], '/') !== false) {
-            list($artefact, $values['pluginname']) = explode('/', $values['pluginname']);
+            list($artefact, $values['pluginname']) = split('/', $values['pluginname']);
             // Don't enable blocktypes unless the artefact plugin that provides them is also enabled
             if ($values['enable'] && !get_field('artefact_installed', 'active', 'name', $artefact)) {
                 $SESSION->add_error_msg(get_string('pluginnotenabled', 'mahara', $artefact));
@@ -1437,68 +1300,5 @@ function site_warnings() {
         $warnings[] = get_string('mbstringneeded', 'error');
     }
 
-    if (get_config('dbtype') == 'mysql') {
-        $warnings[] = get_string('switchtomysqli', 'error');
-    }
-
     return $warnings;
-}
-
-function install_watchlist_notification() {
-        if (!record_exists('config', 'field', 'watchlistnotification_delay')) {
-            set_config('watchlistnotification_delay', 20);
-        }
-
-        if (!table_exists(new XMLDBTable('watchlist_queue'))) {
-            $table = new XMLDBTable('watchlist_queue');
-            $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
-            $table->addFieldInfo('usr', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-            $table->addFieldInfo('block', XMLDB_TYPE_INTEGER, 10, null, false);
-            $table->addFieldInfo('view', XMLDB_TYPE_INTEGER, 10, null, XMLDB_NOTNULL);
-            $table->addFieldInfo('changed_on', XMLDB_TYPE_DATETIME,  null, null, XMLDB_NOTNULL);
-            $table->addKeyInfo('viewfk', XMLDB_KEY_FOREIGN, array('view'), 'view', array('id'));
-            $table->addKeyInfo('blockfk', XMLDB_KEY_FOREIGN, array('block'), 'block_instance', array('id'));
-            $table->addKeyInfo('usrfk', XMLDB_KEY_FOREIGN, array('usr'), 'usr', array('id'));
-            $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
-            create_table($table);
-        }
-
-        // new event type: delete blockinstance
-        $e = new StdClass;
-        $e->name = 'deleteblockinstance';
-        ensure_record_exists('event_type', $e, $e);
-
-        // install the core event subscriptions
-        $subs = array(
-            array(
-                'event'         => 'blockinstancecommit',
-                'callfunction'  => 'watchlist_record_changes',
-            ),
-            array(
-                'event'         => 'deleteblockinstance',
-                'callfunction'  => 'watchlist_block_deleted',
-            ),
-            array(
-                'event'         => 'saveartefact',
-                'callfunction'  => 'watchlist_record_changes',
-            ),
-            array(
-                'event'         => 'saveview',
-                'callfunction'  => 'watchlist_record_changes',
-            ),
-        );
-
-        foreach ($subs as $sub) {
-            ensure_record_exists('event_subscription', (object)$sub, (object)$sub);
-        }
-
-        // install the cronjobs...
-        $cron = new StdClass;
-        $cron->callfunction = 'watchlist_process_notifications';
-        $cron->minute       = '*';
-        $cron->hour         = '*';
-        $cron->day          = '*';
-        $cron->month        = '*';
-        $cron->dayofweek    = '*';
-        ensure_record_exists('cron', $cron, $cron);
 }

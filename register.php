@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage core
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -67,12 +83,8 @@ if (!empty($_SESSION['registrationcancelled'])) {
 if (isset($key)) {
 
     // Begin the registration form buliding
-    if (!$registration = get_record_select('usr_registration', '"key" = ? AND pending != 1', array($key))) {
-        die_info(get_string('registrationnosuchkey1', 'auth.internal'));
-    }
-
-    if (strtotime($registration->expiry) < time()) {
-        die_info(get_string('registrationexpiredkey', 'auth.internal'));
+    if (!$registration = get_record_select('usr_registration', '"key" = ? AND expiry >= ? AND pending != 1', array($key, db_format_timestamp(time())))) {
+        die_info(get_string('registrationnosuchkey', 'auth.internal'));
     }
 
     // In case a new session has started, reset the session language
@@ -91,7 +103,7 @@ if (isset($key)) {
         $registrationid = $registration->id;
         unset($registration->id);
         unset($registration->expiry);
-        if ($expirytime = get_config('defaultregistrationexpirylifetime')) {
+        if ($expirytime = get_config('defaultaccountlifetime')) {
             $registration->expiry = db_format_timestamp(time() + $expirytime);
         }
         $registration->lastlogin = db_format_timestamp(time());
@@ -115,15 +127,6 @@ if (isset($key)) {
         $user->username         = get_new_username($user->firstname . $user->lastname);
         $user->passwordchange   = 1;
 
-        // Points that indicate the user is a "new user" who should be restricted from spammy activities.
-        // We count these down when they do good things; when they have 0 they're no longer a "new user"
-        if (is_using_probation()) {
-            $user->probation = get_config('probationstartingpoints');
-        }
-        else {
-            $user->probation = 0;
-        }
-
         if ($registration->institution != 'mahara') {
             if (count_records_select('institution', "name != 'mahara'") == 1 || $registration->pending == 2) {
                 if (get_config_plugin('artefact', 'file', 'institutionaloverride')) {
@@ -145,8 +148,7 @@ if (isset($key)) {
             // Else, since there are multiple, request to join
             else {
                 if ($registration->pending == 2) {
-                    if (get_config('requireregistrationconfirm')
-                        || get_field('institution', 'registerconfirm', 'name', $registration->institution)) {
+                    if ($confirm = get_field('institution', 'registerconfirm', 'name', $registration->institution)) {
                         $user->join_institution($registration->institution);
                     }
                 }
@@ -216,7 +218,7 @@ $smarty = smarty();
 $smarty->assign('register_form', $formhtml);
 $smarty->assign('registerdescription', $registerdescription);
 if ($registerterms) {
-    $smarty->assign('termsandconditions', '<a name="user_acceptterms"></a>' . get_site_page_content('termsandconditions'));
+    $smarty->assign('termsandconditions', get_site_page_content('termsandconditions'));
 }
 $smarty->assign('PAGEHEADING', TITLE);
 $smarty->assign('INLINEJAVASCRIPT', $js);

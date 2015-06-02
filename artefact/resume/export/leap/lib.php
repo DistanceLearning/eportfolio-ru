@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage artefact-resume-export-leap
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -119,15 +135,8 @@ class LeapExportElementResumeComposite extends LeapExportElement {
     }
 
     public function set_composites() {
-        $this->composites = get_records_sql_array('SELECT '.db_format_tsfield('a.mtime', 'mtime').', b.* FROM {artefact} a JOIN {' . $this->artefact->get_other_table_name() . '} b
+        $this->composites = get_records_sql_array('SELECT '.db_format_tsfield('a.mtime', 'mtime').', b.* FROM {artefact} a JOIN {'.$this->artefact->get_other_table_name().'} b
             ON a.id = b.artefact
-            WHERE b.artefact = ?', array($this->artefact->get('id')));
-    }
-
-    public function get_composite_attachments() {
-        return get_records_sql_array('SELECT aa.attachment FROM {artefact} a JOIN {' . $this->artefact->get_other_table_name() . '} b
-            ON a.id = b.artefact
-            JOIN {artefact_attachment} aa ON a.id = aa.artefact
             WHERE b.artefact = ?', array($this->artefact->get('id')));
     }
 
@@ -138,18 +147,16 @@ class LeapExportElementResumeComposite extends LeapExportElement {
     public function get_export_xml() {
         // also get composite children content
         $xml = '';
-        if (!empty($this->composites)) {
-            foreach ($this->composites as $c) {
-                $classname = 'LeapExportElementResumeCompositeChild' . $this->artefact->get('artefacttype');
-                $child = new $classname($this->artefact, $this->exporter, $c);
-                $xml .= $child->get_export_xml();
-                if ($siblings = $child->get_siblings()) {
-                    foreach ($siblings as $sibling) {
-                        $xml .= $sibling->get_export_xml();
-                    }
+        foreach ($this->composites as $c) {
+            $classname = 'LeapExportElementResumeCompositeChild' . $this->artefact->get('artefacttype');
+            $child = new $classname($this->artefact, $this->exporter, $c);
+            $xml .= $child->get_export_xml();
+            if ($siblings = $child->get_siblings()) {
+                foreach ($siblings as $sibling) {
+                    $xml .= $sibling->get_export_xml();
                 }
-                $this->children[$child->get_id()] = array('type' => 'has_part', 'attachments' => $this->get_composite_attachments(), 'display_order' => $c->displayorder+1); // LEAP starts at 1, we start at 0
             }
+            $this->children[$child->get_id()] = array('type' => 'has_part', 'display_order' => $c->displayorder+1); // LEAP starts at 1, we start at 0
         }
         $this->assign_smarty_vars();
         $this->add_links();
@@ -165,13 +172,7 @@ class LeapExportElementResumeComposite extends LeapExportElement {
     public function add_links() {
         foreach ($this->children as $childid => $reldata) {
             $type = array_shift($reldata); // shift off type and don't pass it to the helper method in extras
-            $attachments = array_shift($reldata);
             $this->add_generic_link($childid, $type, $reldata);
-            if (!empty($attachments)) {
-                foreach ($attachments as $attachment) {
-                    $this->add_generic_link($attachment->attachment,'related');
-                }
-            }
         }
     }
 

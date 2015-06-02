@@ -1,22 +1,37 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 define('INTERNAL', 1);
 define('INSTITUTIONALADMIN', 1);
 require(dirname(dirname(dirname(__FILE__))) . '/init.php');
-define('TITLE', get_string('Institutions', 'admin'));
+define('TITLE', get_string('institutions', 'admin'));
 define('SECTION_PLUGINTYPE', 'core');
 define('SECTION_PLUGINNAME', 'admin');
 define('SECTION_PAGE', 'institutions');
 require_once('pieforms/pieform.php');
-require_once('license.php');
 define('MENUITEM', 'manageinstitutions/institutions');
 
 $institution = param_variable('i', '');
@@ -157,8 +172,6 @@ if ($institution || $add) {
             delete_records('view_access', 'institution', $values['i']);
             delete_records('institution_data', 'institution', $values['i']);
             delete_records('institution_registration', 'institution', $values['i']);
-            delete_records('site_content', 'institution', $values['i']);
-            delete_records('institution_config', 'institution', $values['i']);
             delete_records('institution', 'name', $values['i']);
             db_commit();
 
@@ -225,17 +238,13 @@ if ($institution || $add) {
         $data->displayname = '';
         $data->expiry = null;
         if (!get_config('usersuniquebyusername')) {
-            $data->registerallowed = 0;
+            $data->registerallowed = 1;
             $data->registerconfirm = 1;
         }
         $data->theme = 'sitedefault';
         $data->defaultmembershipperiod = null;
         $data->showonlineusers = 2;
         $data->allowinstitutionpublicviews = get_config('allowpublicviews') ? 1 : 0;
-        $data->licensemandatory = 0;
-        $data->licensedefault = '';
-        $data->dropdownmenu = get_config('dropdownmenu') ? 1 : 0;
-        $data->skins = get_config('skins') ? 1 : 0;
         $lockedprofilefields = array();
 
         $authtypes = auth_get_available_auth_types();
@@ -332,13 +341,11 @@ if ($institution || $add) {
         $elements['registerconfirm'] = array(
             'type'         => 'checkbox',
             'title'        => get_string('registrationconfirm', 'admin'),
-            'description'  => get_string('registrationconfirmdescription1', 'admin'),
-            'disabled'     => get_config('requireregistrationconfirm') == true,
+            'description'  => get_string('registrationconfirmdescription', 'admin'),
             'defaultvalue' => $data->registerconfirm,
         );
     }
 
-    // Some fields to hide from the default institution config screen
     if (empty($data->name) || $data->name != 'mahara') {
         $elements['defaultmembershipperiod'] = array(
             'type'         => 'expiry',
@@ -347,26 +354,6 @@ if ($institution || $add) {
             'defaultvalue' => $data->defaultmembershipperiod,
             'help'   => true,
         );
-
-        $languages = get_languages();
-        // Get the default language. If the institution has one stored, use that. Otherwise, use 'sitedefault'
-        $defaultlang = false;
-        if (!empty($data->name)) {
-            $defaultlang = get_config_institution($data->name, 'lang');
-        }
-        // If the defaultlang they provided is no longer valid, use "site default"
-        if (!$defaultlang || !array_key_exists($defaultlang, $languages)) {
-            $defaultlang = 'sitedefault';
-        }
-        $elements['lang'] = array(
-            'type' => 'select',
-            'defaultvalue' => $defaultlang,
-            'title' => get_string('institutionlanguage', 'admin'),
-            'description' => get_string('institutionlanguagedescription', 'admin'),
-            'options' => array_merge(array('sitedefault' => get_string('sitedefault', 'admin') . ' (' . $languages[get_config('lang')] . ')'), $languages),
-            'ignore' => (count($languages) < 2),
-        );
-
         $elements['logo'] = array(
             'type'        => 'file',
             'title'       => get_string('Logo', 'admin'),
@@ -416,25 +403,6 @@ if ($institution || $add) {
             'title'        => get_string('resetcolours', 'admin'),
             'description'  => get_string('resetcoloursdesc', 'admin'),
         );
-        $elements['dropdownmenu'] = array(
-            'type'         => 'checkbox',
-            'title'        => get_string('dropdownmenu', 'admin'),
-            'description'  => get_string('dropdownmenudescriptioninstitution','admin'),
-            'defaultvalue' => $data->dropdownmenu,
-            'help'         => true,
-        );
-    }
-    // The skins checkbox should be shown for the default institution
-    if (get_config('skins')) {
-        $elements['skins'] = array(
-            'type' => 'checkbox',
-            'title' => get_string('skins', 'admin'),
-            'description' => get_string('skinsinstitutiondescription', 'admin'),
-            'defaultvalue' => $data->skins,
-        );
-    }
-    // Some more fields that are hidden from the default institution
-    if (empty($data->name) || $data->name != 'mahara') {
         $elements['showonlineusers'] = array(
             'type'                  => 'select',
             'disabled'              => get_config('showonlineuserssideblock') ? '' : 'disabled',
@@ -444,20 +412,6 @@ if ($institution || $add) {
             'collapseifoneoption'   => true,
             'options'               => $showonlineusersoptions,
         );
-        if (get_config('licensemetadata')) {
-            $elements['licensemandatory'] = array(
-                'type'         => 'checkbox',
-                'title'        => get_string('licensemandatory', 'admin'),
-                'description'  => get_string('licensemandatorydescription','admin'),
-                'defaultvalue' => $data->licensemandatory,
-            );
-            $elements['licensedefault'] = license_form_el_basic(null, true);
-            $elements['licensedefault']['title'] = get_string('licensedefault','admin');
-            $elements['licensedefault']['description'] = get_string('licensedefaultdescription','admin');
-            if ($data->licensedefault) {
-                $elements['licensedefault']['defaultvalue'] = $data->licensedefault;
-            }
-        }
         if ($USER->get('admin') || get_config_plugin('artefact', 'file', 'institutionaloverride')) {
             $elements['defaultquota'] = array(
                'type'         => 'bytes',
@@ -527,7 +481,7 @@ if ($institution || $add) {
     }
     $elements['lockedfieldshelp'] = array(
         'value' => '<tr id="lockedfieldshelp"><th colspan="2">'
-        . get_help_icon('core', 'admin', 'institution', 'lockedfields')
+        . get_help_icon('core', 'admin', 'institution', 'lockedfields') 
         . '</th></tr>'
     );
 
@@ -610,11 +564,6 @@ function institution_validate(Pieform $form, $values) {
         }
     }
 
-    if (get_config('licensemetadata') && !empty($values['licensemandatory']) &&
-        (isset($values['licensedefault']) && $values['licensedefault'] == '')) {
-        $form->set_error('licensedefault', get_string('licensedefaultmandatory', 'admin'));
-    }
-
     // Check uploaded logo
     if (!empty($values['logo'])) {
         require_once('file.php');
@@ -640,10 +589,6 @@ function institution_validate(Pieform $form, $values) {
             $form->set_error('logo', get_string('profileiconimagetoobig', 'artefact.file', $width, $height, $imagemaxwidth, $imagemaxheight));
         }
     }
-
-    if (!empty($values['lang']) && $values['lang'] != 'sitedefault' && !array_key_exists($values['lang'], get_languages())) {
-        $form->set_error('lang', get_string('institutionlanginvalid', 'admin'));
-    }
 }
 
 function institution_submit(Pieform $form, $values) {
@@ -651,17 +596,16 @@ function institution_submit(Pieform $form, $values) {
 
     db_begin();
     // Update the basic institution record...
+    $newinstitution = new StdClass;
     if ($add) {
-        $newinstitution = new Institution();
-        $newinstitution->initialise($values['name'], $values['displayname']);
-        $institution = $newinstitution->name;
+        $institution = $newinstitution->name = strtolower($values['name']);
     }
     else {
-        $newinstitution = new Institution($institution);
-        $newinstitution->displayname = $values['displayname'];
         $oldinstitution = get_record('institution', 'name', $institution);
     }
 
+    $newinstitution->displayname                  = $values['displayname'];
+    $newinstitution->authplugin                   = empty($values['authplugin']) ? null : $values['authplugin'];
     $newinstitution->showonlineusers              = !isset($values['showonlineusers']) ? 2 : $values['showonlineusers'];
     if (get_config('usersuniquebyusername')) {
         // Registering absolutely not allowed when this setting is on, it's a 
@@ -673,19 +617,7 @@ function institution_submit(Pieform $form, $values) {
         $newinstitution->registerallowed              = ($values['registerallowed']) ? 1 : 0;
         $newinstitution->registerconfirm              = ($values['registerconfirm']) ? 1 : 0;
     }
-
-    if (!empty($values['lang'])) {
-        if ($values['lang'] == 'sitedefault') {
-            $newinstitution->lang = null;
-        }
-        else {
-            $newinstitution->lang = $values['lang'];
-        }
-    }
-
     $newinstitution->theme                        = (empty($values['theme']) || $values['theme'] == 'sitedefault') ? null : $values['theme'];
-    $newinstitution->dropdownmenu                 = (!empty($values['dropdownmenu'])) ? 1 : 0;
-    $newinstitution->skins                 = (!empty($values['skins'])) ? 1 : 0;
 
     if ($newinstitution->theme == 'custom') {
         if (!empty($oldinstitution->style)) {
@@ -717,11 +649,6 @@ function institution_submit(Pieform $form, $values) {
         $newinstitution->style = null;
     }
 
-    if (get_config('licensemetadata')) {
-        $newinstitution->licensemandatory = (!empty($values['licensemandatory'])) ? 1 : 0;
-        $newinstitution->licensedefault = (isset($values['licensedefault'])) ? $values['licensedefault'] : '';
-    }
-
     if (!empty($values['resetcustom']) && !empty($oldinstitution->style)) {
         $newinstitution->style = null;
     }
@@ -745,7 +672,6 @@ function institution_submit(Pieform $form, $values) {
 
     $newinstitution->allowinstitutionpublicviews  = (isset($values['allowinstitutionpublicviews']) && $values['allowinstitutionpublicviews']) ? 1 : 0;
 
-    // TODO: Move handling of authentication instances within the Institution class as well?
     if (!empty($values['authplugin'])) {
         $allinstances = array_merge($values['authplugin']['instancearray'], $values['authplugin']['deletearray']);
 
@@ -787,44 +713,27 @@ function institution_submit(Pieform $form, $values) {
             delete_records('auth_remote_user', 'authinstance', $instanceid);
             delete_records('auth_instance_config', 'instance', $instanceid);
             delete_records('auth_instance', 'id', $instanceid);
-            // Make it no longer be the parent authority to any auth instances
-            delete_records('auth_instance_config', 'field', 'parent', 'value', $instanceid);
         }
     }
 
-    // Save the changes to the DB
-    $newinstitution->commit();
-
     if ($add) {
-        // Automatically create an internal authentication authinstance
-        $authinstance = (object)array(
-            'instancename' => 'internal',
-            'priority'     => 0,
-            'institution'  => $newinstitution->name,
-            'authname'     => 'internal',
-        );
-        insert_record('auth_instance', $authinstance);
-
-        // We need to add the default lines to the site_content table for this institution
-        // We also need to set the institution to be using default static pages to begin with
-        // so that using custom institution pages is an opt-in situation
-        $pages = site_content_pages();
-        $now = db_format_timestamp(time());
-        foreach ($pages as $name) {
-            $page = new stdClass();
-            $page->name = $name;
-            $page->ctime = $now;
-            $page->mtime = $now;
-            $page->content = get_string($page->name . 'defaultcontent', 'install', get_string('staticpageconfiginstitution', 'install'));
-            $page->institution = $newinstitution->name;
-            insert_record('site_content', $page);
-
-            $institutionconfig = new stdClass();
-            $institutionconfig->institution = $newinstitution->name;
-            $institutionconfig->field = 'sitepages_' . $name;
-            $institutionconfig->value = 'mahara';
-            insert_record('institution_config', $institutionconfig);
+        insert_record('institution', $newinstitution);
+        // If registration has been turned on, then we automatically insert an 
+        // internal authentication authinstance
+        if ($newinstitution->registerallowed) {
+            $authinstance = (object)array(
+                'instancename' => 'internal',
+                'priority'     => 0,
+                'institution'  => $newinstitution->name,
+                'authname'     => 'internal',
+            );
+            insert_record('auth_instance', $authinstance);
         }
+    }
+    else {
+        $where = new StdClass;
+        $where->name = $institution;
+        update_record('institution', $newinstitution, $where);
     }
 
     if (is_null($newinstitution->style) && !empty($oldinstitution->style)) {
@@ -888,7 +797,7 @@ function institution_submit(Pieform $form, $values) {
     db_commit();
 
     if ($add) {
-        if (!$newinstitution->registerallowed) {
+        if ($newinstitution->registerallowed) {
             // If registration is not allowed, then an authinstance will not 
             // have been created, and thus cause the institution page to add 
             // its own error message on the next page load
@@ -996,16 +905,12 @@ if ($institution && $institution != 'mahara') {
 }
 
 function search_submit(Pieform $form, $values) {
-    redirect('/admin/users/institutions.php' . ((isset($values['query']) && ($values['query'] != '')) ? '?query=' . urlencode($values['query']) : ''));
+    redirect('/admin/users/institutions.php' . (!empty($values['query']) ? '?query=' . urlencode($values['query']) : ''));
 }
 
-// Hide/disable options based on theme selected
-$themeoptionsjs = '
+// Hide custom colour boxes unless theme selector is on 'custom'
+$customthemejs = '
 $j(function() {
-    if ($j("#institution_theme").val() == "sitedefault") {
-        $j("#institution_dropdownmenu").attr("disabled", true);
-        $j("#institution_dropdownmenu").attr("checked", false);
-    }
     $j("#institution_theme").change(function() {
         if ($(this).value == "custom") {
             $j(".customtheme").removeClass("js-hidden");
@@ -1013,19 +918,12 @@ $j(function() {
         else {
             $j(".customtheme").addClass("js-hidden");
         }
-        if ($(this).value == "sitedefault") {
-            $j("#institution_dropdownmenu").attr("disabled", true);
-            $j("#institution_dropdownmenu").attr("checked", false);
-        }
-        else {
-            $j("#institution_dropdownmenu").removeAttr("disabled");
-        }
     });
 });
 ';
 
 $smarty = smarty();
-$smarty->assign('INLINEJAVASCRIPT', $themeoptionsjs);
+$smarty->assign('INLINEJAVASCRIPT', $customthemejs);
 $smarty->assign('institution_form', $institutionform);
 $smarty->assign('instancestring', $instancestring);
 $smarty->assign('add', $add);

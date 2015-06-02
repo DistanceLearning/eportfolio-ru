@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -78,7 +94,7 @@ $elements = array(
         ),
     ),
     'password' => array(
-        'type' => 'password',
+        'type' => 'text',
         'title' => get_string('password'),
         'rules' => array('required' => true),
     ),
@@ -205,14 +221,8 @@ function adduser_validate(Pieform $form, $values) {
         $form->set_error('firstname', null);
         $form->set_error('lastname', null);
         $form->set_error('email', null);
-        if (!$values['leap2afile'] && ($_FILES['leap2afile']['error'] == UPLOAD_ERR_INI_SIZE || $_FILES['leap2afile']['error'] == UPLOAD_ERR_FORM_SIZE)) {
-            $form->reply(PIEFORM_ERR, array(
-                'message' => get_string('uploadedfiletoobig'),
-                'goto'    => '/admin/users/add.php'));
-            $form->set_error('leap2afile', get_string('uploadedfiletoobig'));
-            return;
-        }
-        else if (!$values['leap2afile']) {
+
+        if (!$values['leap2afile']) {
             $form->set_error('leap2afile', $form->i18n('rule', 'required', 'required'));
             return;
         }
@@ -270,7 +280,7 @@ function adduser_submit(Pieform $form, $values) {
     global $USER, $SESSION, $TRANSPORTER;
     db_begin();
 
-    raise_time_limit(180);
+    ini_set('max_execution_time', 180);
 
     // Create user
     $user = (object)array(
@@ -291,15 +301,11 @@ function adduser_submit(Pieform $form, $values) {
     }
 
     $authinstance = get_record('auth_instance', 'id', $values['authinstance']);
-    $remoteauth = false;
-    if ($authinstance->authname != 'internal') {
-        $remoteauth = true;
-    }
     if (!isset($values['remoteusername'])){
         $values['remoteusername'] = null;
     }
 
-    $user->id = create_user($user, array(), $authinstance->institution, $remoteauth, $values['remoteusername'], $values);
+    $user->id = create_user($user, array(), $authinstance->institution, $authinstance, $values['remoteusername'], $values);
 
     if (isset($user->admin) && $user->admin) {
         require_once('activity.php');

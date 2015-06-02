@@ -1,11 +1,27 @@
 <?php
 /**
+ * Mahara: Electronic portfolio, weblog, resume builder and social networking
+ * Copyright (C) 2006-2009 Catalyst IT Ltd and others; see:
+ *                         http://wiki.mahara.org/Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package    mahara
  * @subpackage admin
  * @author     Catalyst IT Ltd
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
- * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 2006-2009 Catalyst IT Ltd http://catalyst.net.nz
  *
  */
 
@@ -20,14 +36,11 @@ define('SECTION_PAGE', 'usersearch');
 require_once('searchlib.php');
 
 $search = (object) array(
-    'query'          => trim(param_variable('query', '')),
-    'f'              => param_alpha('f', null), // first initial
-    'l'              => param_alpha('l', null), // last initial
-    'sortby'         => param_alpha('sortby', 'firstname'),
-    'sortdir'        => param_alpha('sortdir', 'asc'),
-    'loggedin'       => param_alpha('loggedin', 'any'),
-    'loggedindate'   => param_variable('loggedindate', strftime(get_string('strftimedatetimeshort'))),
-    'duplicateemail' => param_boolean('duplicateemail', false),
+    'query'       => trim(param_variable('query', '')),
+    'f'           => param_alpha('f', null), // first initial
+    'l'           => param_alpha('l', null), // last initial
+    'sortby'      => param_alpha('sortby', 'firstname'),
+    'sortdir'     => param_alpha('sortdir', 'asc'),
 );
 
 $offset  = param_integer('offset', 0);
@@ -47,58 +60,10 @@ else {
     );
 }
 
-$loggedintypes = array();
-$loggedintypes[] = array('name' => 'any', 'string' => get_string('anyuser', 'admin'));
-$loggedintypes[] = array('name' => 'ever', 'string' => get_string('usershaveloggedin', 'admin'));
-$loggedintypes[] = array('name' => 'never', 'string' => get_string('usershaveneverloggedin', 'admin'));
-$loggedintypes[] = array('name' => 'since', 'string' => get_string('usershaveloggedinsince', 'admin'));
-$loggedintypes[] = array('name' => 'notsince', 'string' => get_string('usershavenotloggedinsince', 'admin'));
-
-$calendar = array(
-    'name' => 'loggedindate',
-    'id' => 'loggedindate',
-    'tabindex' => false,
-    'type' => 'calendar',
-    'title' => get_string('date'),
-    'imagefile' => $THEME->get_url('images/btn_calendar.png'),
-    'defaultvalue' => strtotime($search->loggedindate),
-    'caloptions'   => array(
-        'showsTime'      => true,
-        'ifFormat'       => get_string('strftimedatetimeshort'),
-    ),
-);
-$calendarform = new Pieform(array(
-    'name' => 'loggedinform',
-    'elements' => array(
-        'loggedindate' => $calendar,
-    ),
-));
-$calendarform->include_plugin('element', 'calendar');
-$loggedindate = pieform_element_calendar($calendarform, $calendar);
-
-list($html, $columns, $pagination, $search) = build_admin_user_search_results($search, $offset, $limit);
-
-$js = <<<EOF
-addLoadEvent(function() {
-    var p = {$pagination['javascript']}
-
-    new UserSearch(p);
-})
-EOF;
-
-$smarty = smarty(array('adminusersearch', 'paginator'), array(), array('ascending' => 'mahara', 'descending' => 'mahara'));
+$smarty = smarty(array('adminusersearch'));
 $smarty->assign('search', $search);
-$smarty->assign('limit', $limit);
-$smarty->assign('loggedintypes', $loggedintypes);
-$smarty->assign('loggedindate', $loggedindate);
 $smarty->assign('alphabet', explode(',', get_string('alphabet')));
 $smarty->assign('institutions', $institutions);
-$smarty->assign('results', $html);
-$smarty->assign('pagination', $pagination['html']);
-$smarty->assign('columns', $columns);
-$smarty->assign('searchurl', $search['url']);
-$smarty->assign('sortby', $search['sortby']);
-$smarty->assign('sortdir', $search['sortdir']);
-$smarty->assign('INLINEJAVASCRIPT', $js);
+$smarty->assign('results', build_admin_user_search_results($search, $offset, $limit));
 $smarty->assign('PAGEHEADING', TITLE);
 $smarty->display('admin/users/search.tpl');

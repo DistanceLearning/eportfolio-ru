@@ -1,16 +1,19 @@
 {if $blocktypes}
-<div class="blocktype-list">
+<ul>
 {foreach from=$blocktypes item=blocktype}
 {* TODO at this point we have now $blocktype.singleonly *}
-    <div class="blocktype">
-        <a class="blocktypelink" href="#">
-            <input type="radio" id="blocktype-list-radio-{$blocktype.name}" class="blocktype-radio" name="blocktype" value="{$blocktype.name}">
-            <img src="{$blocktype.thumbnail_path}" title="{$blocktype.description}" alt="{$blocktype.description}" width="24" height="24">
-            <label for="blocktype-list-radio-{$blocktype.name}" class="blocktypetitle">{$blocktype.title}</label>
-        </a>
-    </div>
+    <li title="{$blocktype.title}">
+        <div class="blocktype">
+            {* The width and height are required so that the javascript that places the clones knows how
+               big it should make itself. Talk to Nigel before changing this *}
+            <img src="{$blocktype.thumbnail_path}" alt="{str tag='Preview' section='view'}" width="73" height="61">
+            <h4 class="blocktype-title js-hidden">{$blocktype.title}</h4>
+            <div class="blocktype-description js-hidden">{$blocktype.description}</div>
+            <input type="{if $javascript}hidden{else}radio{/if}" class="blocktype-radio" name="blocktype" value="{$blocktype.name}">
+        </div>
+    </li>
 {/foreach}
-</div>
+</ul>
 {* The div below is an IE6 fix *}
 <div class="cb" style="line-height: 0;">&nbsp;</div>
 {else}
