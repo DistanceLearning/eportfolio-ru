@@ -1,0 +1,23 @@
+/**
+ * CSS rules for the resume artefact plugin
+ *
+ * @author     Catalyst IT Ltd
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL version 3 or later
+ * @copyright  For copyright information on Mahara, please see the README file distributed with this software.
+ */
+.teststatus a {
+    margin-left: 5px;
+}
+#container #testswrap table td.errmsg {
+   padding-left: 20px;
+}
+/* test testasks */
+#testaskslist th.completed,
+#testaskslist td.completed,
+#testaskslist td.incomplete {
+    text-align: center;
+    padding-top: 8px;
+}
+.testtestaskdescription p {
+    margin: 0 0 5px;
+}

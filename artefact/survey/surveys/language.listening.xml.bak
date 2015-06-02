@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<survey name="language.listening" version="" author="" helpLanguage="secondary">
+	<title
+		en.utf8="Cоответствие различных профессий разным типам личности"
+	/>
+	<description
+		
+		en.utf8=""
+	/>
+	<instructions
+		en.utf8="Отметьте ту позицию, которая является для вас приемлемой."
+	/>
+	<translator
+		
+		en.utf8=""
+	/>
+	<questions sections="separated">
+		<section name="A1" collapsible="1" collapsed="0" color="255,0,0,100"
+			
+			en.utf8="Человек-человек Исполнительский тип"
+		>
+			<question type="checkbox" id="q01" help="1"
+				
+				en.utf8="1.	Вы отличаетесь… 1)	повышенной чувствительностью;"
+			/>
+			<question type="checkbox" id="q02"
+				
+				en.utf8="2)	склонностью к пониженному настроению;"
+			/>
+			<question type="checkbox" id="q03" help="1"
+				
+				en.utf8="3)	переменчивостью настроения;"
+			/>
+			<question type="checkbox" id="q04"
+				
+				en.utf8="4)	большой силой чувств и влечений;"
+			/>
+			<question type="checkbox" id="q05"
+				
+				en.utf8="5)	длительностью переживаний;"
+			/>
+			<question type="checkbox" id="q06"
+				
+				en.utf8="6)	сдержанностью чувств;"
+			/>
+			<question type="checkbox" id="q07"
+				
+				en.utf8="7)	скрытностью своих подлинных переживаний;"
+			/>
+			<question type="checkbox" id="q08"
+				
+				en.utf8="8)	приподнятым настроением."
+			/>
+		</section>
+		<section name="A2" collapsible="1" collapsed="0" color="255,0,0,100"
+			en.utf8="Человек-человек Творческий"
+		>
+			<question type="checkbox" id="q09"
+				en.utf8="2.	Вы часто… 1)	испытываете болезненные ощущения"
+			/>
+			<question type="checkbox" id="q10"
+				en.utf8="2)	критикуете себя;"
+			/>
+			<question type="checkbox" id="q11"
+				en.utf8="3)	стараетесь показать себя"
+			/>
+			<question type="checkbox" id="q12"
+				en.utf8="4)	испытываете чувство раздражения;"
+			/>
+			<question type="checkbox" id="q13"
+				en.utf8="5)	бываете упрямыми;"
+			/>
+			<question type="checkbox" id="q14"
+				en.utf8="6)	сомневаетесь при выборе решения;"
+			/>
+			<question type="checkbox" id="q15"
+				en.utf8="7)	ограничиваете свои контакты с окружающими;"
+			/>
+			<question type="checkbox" id="q16"
+				en.utf8="8)	легко увлекаетесь новым."
+			/>
+		</section>
+		<section name="B1" collapsible="1" collapsed="0" color="0,255,0,100"
+			en.utf8="Человек-техника Исполнительский"
+		>
+			<question type="checkbox" id="q12"
+				en.utf8="3.	Вы озабочены… 1)	своим здоровьем;"
+			/>
+			<question type="checkbox" id="q13"
+				en.utf8="2)	собственной самооценкой;"
+			/>
+			<question type="checkbox" id="q14"
+				en.utf8="3)	недостатком внимания окружающих;"
+			/>
+			<question type="checkbox" id="q15"
+				en.utf8="4)	всевозможными препятствиями;"
+			/>
+			<question type="checkbox" id="q16"
+				en.utf8="5)	уважением и признанием со стороны других;"
+			/>
+			<question type="checkbox" id="q17"
+				en.utf8="6)	возможными неудачами;"
+			/>
+		</section>
+		<section name="B2" collapsible="1" collapsed="0" color="0,255,0,100"
+			en.utf8="Человек-техника – Творческий"
+		>
+			<question type="checkbox" id="q18"
+				en.utf8="4.	Вы стремитесь…1)	к отдыху;"
+			/>
+			<question type="checkbox" id="q19"
+				en.utf8="2)	соответствовать требований окружающих"
+			/>
+			<question type="checkbox" id="q20"
+				en.utf8="3)	вызвать интерес к себе;"
+			/>
+			<question type="checkbox" id="q21"
+				en.utf8="4)	к немедленному достижению желаемого;"
+			/>
+			<question type="checkbox" id="q22"
+				en.utf8="5)	к превосходству и первенству;"
+			/>
+			<question type="checkbox" id="q23"
+				en.utf8="6)	к безопасности;"
+			/>
+		</section>
+		<section name="C1" collapsible="1" collapsed="0" color="0,0,255,100"
+			en.utf8="Человек-информация – Исполнительский"
+		>
+			<question type="checkbox" id="q24"
+				en.utf8="5.	Вам бывает трудно в ситуациях…1)	высоких нагрузок;"
+			/>
+			<question type="checkbox" id="q25"
+				en.utf8="2)	разрыва привязанностей;"
+			/>
+			<question type="checkbox" id="q26"
+				en.utf8="3)	когда вас не замечают;"
+			/>
+			<question type="checkbox" id="q27"
+				en.utf8="4)	вынужденного ожидания;"
+			/>
+			<question type="checkbox" id="q28"
+				en.utf8="5)	когда вас пытаются унизить;"
+			/>
+			<question type="checkbox" id="q29"
+				en.utf8="6)	угрозы недостатка информации или времени"
+			/>
+		</section>
+		<section name="C2" collapsible="1" collapsed="0" color="0,0,255,100"
+			en.utf8="Человек-информация – Творческий"
+		>
+			<question type="checkbox" id="q30"
+				en.utf8="6.	Вы способны…1)	анализировать состояние своего организма"
+			/>
+		</section>
+	</questions>
+	<results type="percent" mode="range" showResults="1" showSummary="1" showResponses="0" showChart="1">
+		<result section="A1">
+			<range low="0%" high="50%" include="low"
+				
+				en.utf8="Агрохимия"
+			/>
+
+
+
+			<range low="50%" high="100%" include="both"
+				
+				en.utf8="Проектирование"
+			/>
+		</result>
+		<result section="A2">
+			<range low="0%" high="50%" include="low"
+				en.utf8="Журналистика"
+			/>
+			<range low="50%" high="100%" include="both"
+				en.utf8="Педагогика"
+			/>
+		</result>
+		<result section="B1">
+			<range low="0%" high="50%" include="low"
+				en.utf8="Право"
+			/>
+			<range low="50%" high="100%" include="both"
+				en.utf8="Психофизиология"
+			/>
+		</result>
+		<result section="B2">
+			<range low="0%" high="50%" include="low"
+				en.utf8="Физкультура"
+			/>
+			<range low="50%" high="100%" include="both"
+				en.utf8="Археология"
+			/>
+		</result>
+		<result section="C1">
+			<range low="0%" high="50%" include="low"
+				en.utf8="Информационные Технологии"
+			/>
+			<range low="50%" high="100%" include="both"
+				en.utf8="Метрология"
+			/>
+		</result>
+		<result section="C2">
+			<range low="0%" high="50%" include="low"
+				en.utf8="Информатика"
+			/>
+			<range low="50%" high="100%" include="both"
+				en.utf8="http://Портфолио"
+			/>
+		</result>
+		<!-- type: Area, Bar, Line, Plot, PlotLine, Spline, 2DPie, 3DPie, Radar, Polar -->
+		<chart type="bar" coloroverride="true" />
+	</results>
+</survey>
